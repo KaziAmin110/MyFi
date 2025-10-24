@@ -4,7 +4,7 @@
   "description": "A simple Node.js backend server with TypeScript.",
   "main": "app.ts",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only app.ts",
+    "dev": "ts-node-dev --respawn --transpile-only src/app.ts",
     "start": "node dist/app.js",
     "build": "tsc"
   },
