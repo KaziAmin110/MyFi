@@ -1,6 +1,5 @@
 import { supabase } from "../database/db";
 import User from "../entities/user.entities";
-// import redisClient from "../../config/redis.config";
 
 // Updates Password of Existing User in the Database Based on User Id
 export const updateUserPassword = async (
