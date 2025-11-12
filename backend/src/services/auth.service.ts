@@ -157,7 +157,7 @@ export const getResetTokenByAttribute = async (
 };
 
 // Deletes Refresh Token from Database Based on Attribute
-export const deleteResetTokenByAttribute = async (
+export const deleteRefreshTokenByAttribute = async (
   attribute: string,
   value: any
 ) => {
@@ -173,7 +173,7 @@ export const deleteResetTokenByAttribute = async (
 
     return {
       success: true,
-      message: "Reset Token Deleted Successfully",
+      message: "Refresh Token Deleted Successfully",
       status: 201,
     };
   } catch (error: any) {

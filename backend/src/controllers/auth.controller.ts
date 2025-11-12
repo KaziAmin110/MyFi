@@ -16,7 +16,7 @@ import {
   updatePasswordResetDB,
   removePasswordResetTokenDB,
   getResetTokenByAttribute,
-  deleteResetTokenByAttribute,
+  deleteRefreshTokenByAttribute,
   isValidEmailFormat,
   isValidPassword,
   generateCode,
@@ -131,17 +131,15 @@ export const signIn = async (
     const signInResult = await getSignInInfoDB("email", email);
 
     if (!signInResult) {
-      const error = new Error("User does not exist in the database");
+      const error = new Error("User does not exist");
       (error as any).statusCode = 404;
       throw error;
     }
 
-    console.log("Sign In Result: ", signInResult);
-
     const [user, hashedPasswordFromDB] = signInResult as [User, string | null];
 
     if (!hashedPasswordFromDB) {
-      const error = new Error("User does not exist in the database");
+      const error = new Error("User does not exist");
       (error as any).statusCode = 404;
       throw error;
     }
@@ -201,7 +199,7 @@ export const signOut = async (
   try {
     // Deletes Refresh Token in DB associated with user_id
     const user_id = req.user;
-    await deleteResetTokenByAttribute("id", user_id);
+    await deleteRefreshTokenByAttribute("id", user_id);
 
     // await redisClient.flushAll();
 
@@ -294,7 +292,7 @@ export const resetPassword = async (
   next: NextFunction
 ): Promise<Response | void> => {
   try {
-    const { reset_token, password } = req.body;
+    const { reset_token, new_password } = req.body;
 
     if (!reset_token) {
       const error = new Error("Token Field is Not Present in API Request");
@@ -302,13 +300,13 @@ export const resetPassword = async (
       throw error;
     }
 
-    if (!password) {
-      const error = new Error("Password Field Not Present in API request");
+    if (!new_password) {
+      const error = new Error("New Password Field Not Present in API request");
       (error as any).statusCode = 400;
       throw error;
     }
 
-    if (!isValidPassword(password)) {
+    if (!isValidPassword(new_password)) {
       const error = new Error(
         "Password must meet the following requirements: 8 characters : Atleast One Special Character : Atleast One Alphanumeric Character"
       );
@@ -325,7 +323,7 @@ export const resetPassword = async (
     const isValidToken = verifyPasswordResetToken(data);
 
     if (isValidToken) {
-      const hashedPassword = await User.hashPassword(password);
+      const hashedPassword = await User.hashPassword(new_password);
       await updateUserPassword("email", data.email, hashedPassword);
       await removePasswordResetTokenDB("email", data.email);
       return res.status(200).json({
