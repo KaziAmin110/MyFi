@@ -10,7 +10,6 @@ export const {
   SUPABASE_URL,
   SUPABASE_KEY,
   DB_URI,
-  SUPABASE_ANON_KEY,
   ACCESS_SECRET,
   EVENTS_EMAIL,
   EVENTS_PASSWORD,
@@ -23,7 +22,6 @@ export const {
   SUPABASE_URL?: string;
   SUPABASE_KEY?: string;
   DB_URI?: string;
-  SUPABASE_ANON_KEY?: string;
   ACCESS_SECRET?: string;
   EVENTS_EMAIL?: string;
   EVENTS_PASSWORD?: string;

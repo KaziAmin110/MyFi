@@ -249,11 +249,7 @@ export const getSignInInfoDB = async (attribute: string, value: any) => {
       .eq(attribute, value)
       .single() as any);
 
-    if (error) {
-      throw error;
-    }
     if (data) {
-      // Store in Redis Cache with expiration (5 minutes)
       return [new User(data.id, data.name, data.email), data.password];
     }
     // No Password Associated with Given Attribute

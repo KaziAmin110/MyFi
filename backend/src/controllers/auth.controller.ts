@@ -129,13 +129,16 @@ export const signIn = async (
     }
 
     const signInResult = await getSignInInfoDB("email", email);
+
     if (!signInResult) {
-      const error = new Error("User not found");
+      const error = new Error("User does not exist in the database");
       (error as any).statusCode = 404;
       throw error;
     }
 
-    const [user, hashedPasswordFromDB] = signInResult as any[];
+    console.log("Sign In Result: ", signInResult);
+
+    const [user, hashedPasswordFromDB] = signInResult as [User, string | null];
 
     if (!hashedPasswordFromDB) {
       const error = new Error("User does not exist in the database");
@@ -161,6 +164,7 @@ export const signIn = async (
     const refreshTokenAge = 24 * 60 * 60 * 1000;
 
     await updateRefreshToken(user.id, refreshToken);
+
     // Setting the refresh token in an HTTP-Only Cookie
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
@@ -181,6 +185,7 @@ export const signIn = async (
       },
     });
   } catch (error: any) {
+    console.log(error);
     return res
       .status(error.statusCode || 500)
       .json({ success: false, message: error.message || "Server Error" });
