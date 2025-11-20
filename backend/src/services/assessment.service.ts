@@ -8,12 +8,14 @@ export type SessionData = {
 };
 
 export type QuestionData = {
+  question_id: string;
   question_number: number;
   text: string;
   habitude_type: string;
 };
 
 export type AnsweredQuestionData = {
+  question_id: string;
   question_number: number;
   answer_value: number;
 };
@@ -48,6 +50,7 @@ export const getOnboardingCompletedStatus = async (
   }
 };
 
+// Fetches the assessment session details for a given user and assessment
 export const getAssessmentSessionData = async (
   user_id: string,
   assessment_id: string
@@ -118,6 +121,7 @@ export const getAllUserSessions = async (
   }
 };
 
+// Creates a new assessment session
 export const createNewAssessmentSession = async (
   user_id: string,
   assessment_id: string
@@ -158,13 +162,14 @@ export const createNewAssessmentSession = async (
   }
 };
 
+// Fetches the questions for a given assessment
 export const getAssessmentQuestions = async (
   assessment_id: string
 ): Promise<QuestionData[]> => {
   try {
     const { data, error } = await supabase
       .from("questions")
-      .select("question_text, habitude_type, order_index")
+      .select("id, question_text, habitude_type, order_index")
       .eq("assessment_id", assessment_id)
       .order("order_index", { ascending: true });
 
@@ -181,6 +186,7 @@ export const getAssessmentQuestions = async (
     }
 
     return data.map((question) => ({
+      question_id: question.id,
       question_number: question.order_index,
       text: question.question_text,
       habitude_type: question.habitude_type,
@@ -191,13 +197,14 @@ export const getAssessmentQuestions = async (
   }
 };
 
+// Fetches the previously answered questions for a given session
 export const getPreviouslyAnsweredQuestions = async (
   session_id: string
 ): Promise<AnsweredQuestionData[]> => {
   try {
     const { data, error } = await supabase
       .from("assessment_responses")
-      .select(`answer_value, questions!inner(order_index)`)
+      .select(`answer_value, questions!inner(id,order_index)`)
       .eq("session_id", session_id)
       .order("questions(order_index)", { ascending: true });
 
@@ -213,12 +220,70 @@ export const getPreviouslyAnsweredQuestions = async (
       return [];
     }
 
-    return data.map((answer) => ({
-      question_number: answer.questions[0].order_index,
+    return data.map((answer: any) => ({
+      question_id: answer.questions.id,
+      question_number: answer.questions.order_index,
       answer_value: answer.answer_value,
     }));
   } catch (error) {
     console.error("Error fetching previously answered questions:", error);
+    throw error;
+  }
+};
+
+// Save the user's response to a question
+export const saveAssessmentAnswer = async (
+  session_id: string,
+  question_id: string,
+  answer_value: number | string
+): Promise<void> => {
+  try {
+    const { error: answerError } = await supabase
+      .from("assessment_responses")
+      .upsert(
+        {
+          session_id,
+          question_id,
+          answer_value,
+          answered_at: new Date(),
+        },
+        { onConflict: "session_id, question_id" }
+      );
+
+    if (answerError) {
+      throw new Error(answerError.message);
+    }
+
+    const { data: questionData } = await supabase
+      .from("questions")
+      .select("order_index")
+      .eq("id", question_id)
+      .single();
+
+    if (questionData) {
+      const { data: sessionData } = await supabase
+        .from("assessment_sessions")
+        .select("current_question_index")
+        .eq("id", session_id)
+        .single();
+
+      const nextPotentialIndex = questionData.order_index + 1;
+
+      if (
+        sessionData &&
+        nextPotentialIndex > sessionData.current_question_index
+      ) {
+        await supabase
+          .from("assessment_sessions")
+          .update({
+            current_question_index: nextPotentialIndex,
+            updated_at: new Date(),
+          })
+          .eq("id", session_id);
+      }
+    }
+  } catch (error) {
+    console.error("Error saving answer:", error);
     throw error;
   }
 };

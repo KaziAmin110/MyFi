@@ -5,6 +5,7 @@ import {
   getAssessmentQuestions,
   getAssessmentSessionData,
   getPreviouslyAnsweredQuestions,
+  saveAssessmentAnswer,
 } from "../services/assessment.service";
 
 const ONBOARDING_ASSESSMENT_ID = "1";
@@ -58,6 +59,34 @@ export const initializeOnboardingAssessment = async (
   } catch (error: any) {
     return res
       .status(error.statusCode || 500)
+      .json({ success: false, message: error.message || "Server Error" });
+  }
+};
+
+export const submitAnswer = async (
+  req: Request,
+  res: Response
+): Promise<Response | void> => {
+  try {
+    const { session_id } = req.params;
+    const { question_id, answer_value } = req.body;
+
+    if (!session_id || !question_id || answer_value === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields",
+      });
+    }
+
+    await saveAssessmentAnswer(session_id, question_id, answer_value);
+
+    return res.status(200).json({
+      success: true,
+      message: "Response saved successfully",
+    });
+  } catch (error: any) {
+    return res
+      .status(500)
       .json({ success: false, message: error.message || "Server Error" });
   }
 };
