@@ -90,22 +90,26 @@ export const signUp = async (
     const refreshToken = user.generateRefreshToken();
     const refreshTokenAge = 24 * 60 * 60 * 1000;
 
-    await updateRefreshToken(user.id, refreshToken);
-
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: NODE_ENV === "production",
       maxAge: refreshTokenAge,
     });
 
+    const [_, onboarding_status] = await Promise.all([
+      updateRefreshToken(user.id, refreshToken),
+      getOnboardingCompletedStatus(user.id, ONBOARDING_ASSESSMENT_ID),
+    ]);
+
     return res.status(201).json({
       success: true,
       message: "User Created Successfully",
       accessToken,
-      userInfo: {
+      user: {
         id: user.id,
         name: user.name,
         email: user.email,
+        onboarding_completed: !!onboarding_status,
       },
     });
   } catch (error: any) {
@@ -169,7 +173,7 @@ export const signIn = async (
       httpOnly: true,
       secure: NODE_ENV === "production",
       maxAge: refreshTokenAge,
-      sameSite: "strict", 
+      sameSite: "strict",
     });
 
     const [_, onboarding_status] = await Promise.all([
