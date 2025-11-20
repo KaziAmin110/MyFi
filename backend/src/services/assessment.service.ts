@@ -86,8 +86,7 @@ export const getAssessmentSessionData = async (
 
 // Fetches all active assessment session details for a given user
 export const getAllUserSessions = async (
-  user_id: string,
-  assessment_id: string
+  user_id: string
 ): Promise<SessionData[] | null> => {
   try {
     const { data, error } = await supabase
