@@ -1,7 +1,7 @@
 import { supabase } from "../database/db";
 
 type OnboardingStatus = {
-  id: string;
+  session_id: string;
   current_question_index: number;
   status: "in_progress" | "completed";
 };
@@ -28,10 +28,46 @@ export const getOnboardingCompletedStatus = async (
     if (!data) {
       return false;
     }
-    
+
     return data.status === "completed";
   } catch (error) {
     console.error("Error fetching onboarding status:", error);
+    throw error;
+  }
+};
+
+// Fetches the assessment session details for a given user
+export const getAssessmentSessionData = async (
+  user_id: string,
+  assessment_id: string
+): Promise<OnboardingStatus | null> => {
+  try {
+    const { data, error } = await supabase
+      .from("assessment_sessions")
+      .select("id, current_question_index, status")
+      .eq("user_id", user_id)
+      .eq("assessment_id", assessment_id)
+      .maybeSingle();
+
+    if (error) {
+      console.error(
+        "Supbase error fetching active assessment session:",
+        error.message
+      );
+      return null;
+    }
+
+    if (!data) {
+      return null;
+    }
+
+    return {
+      session_id: data.id,
+      current_question_index: data.current_question_index,
+      status: data.status,
+    };
+  } catch (error) {
+    console.error("Error fetching active assessment session:", error);
     throw error;
   }
 };
