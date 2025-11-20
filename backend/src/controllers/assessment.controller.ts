@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import {
+  AnsweredQuestionData,
   createNewAssessmentSession,
   getAssessmentQuestions,
   getAssessmentSessionData,
@@ -29,7 +30,7 @@ export const initializeOnboardingAssessment = async (
     }
 
     let finalSessionData = existingSession;
-    let previously_answered = null;
+    let previously_answered: AnsweredQuestionData[] = [];
 
     if (!finalSessionData) {
       finalSessionData = await createNewAssessmentSession(
@@ -48,7 +49,9 @@ export const initializeOnboardingAssessment = async (
         session_id: finalSessionData.session_id,
         current_question_index: finalSessionData.current_question_index,
         questions: assessmentQuestions,
-        previously_answered,
+        previously_answered: previously_answered?.length
+          ? previously_answered
+          : null,
       },
     });
   } catch (error: any) {

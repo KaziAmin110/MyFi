@@ -1,19 +1,19 @@
 import { supabase } from "../database/db";
 
-type SessionData = {
+export type SessionData = {
   session_id: string;
   assessment_id: string;
   current_question_index: number;
   status: "in_progress" | "completed";
 };
 
-type QuestionData = {
+export type QuestionData = {
   question_number: number;
   text: string;
   habitude_type: string;
 };
 
-type AnsweredQuestionData = {
+export type AnsweredQuestionData = {
   question_number: number;
   answer_value: number;
 };
