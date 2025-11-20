@@ -1,7 +1,8 @@
 import { supabase } from "../database/db";
 
-type OnboardingStatus = {
+type SessionData = {
   session_id: string;
+  assessment_id: string;
   current_question_index: number;
   status: "in_progress" | "completed";
 };
@@ -37,17 +38,15 @@ export const getOnboardingCompletedStatus = async (
 };
 
 // Fetches the assessment session details for a given user
-export const getAssessmentSessionData = async (
+export const getAllUserSessions = async (
   user_id: string,
   assessment_id: string
-): Promise<OnboardingStatus | null> => {
+): Promise<SessionData[] | null> => {
   try {
     const { data, error } = await supabase
       .from("assessment_sessions")
-      .select("id, current_question_index, status")
-      .eq("user_id", user_id)
-      .eq("assessment_id", assessment_id)
-      .maybeSingle();
+      .select("id, assessment_id, current_question_index, status")
+      .eq("user_id", user_id);
 
     if (error) {
       console.error(
@@ -57,15 +56,16 @@ export const getAssessmentSessionData = async (
       return null;
     }
 
-    if (!data) {
+    if (!data || data.length === 0) {
       return null;
     }
 
-    return {
-      session_id: data.id,
-      current_question_index: data.current_question_index,
-      status: data.status,
-    };
+    return data.map((session) => ({
+      session_id: session.id,
+      assessment_id: session.assessment_id,
+      current_question_index: session.current_question_index,
+      status: session.status,
+    }));
   } catch (error) {
     console.error("Error fetching active assessment session:", error);
     throw error;
