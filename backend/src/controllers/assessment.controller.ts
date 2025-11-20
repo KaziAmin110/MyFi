@@ -47,7 +47,8 @@ export const initializeOnboardingAssessment = async (
       success: true,
       data: {
         session_id: finalSessionData.session_id,
-        current_question_index: finalSessionData.current_question_index,
+        current_question_number: finalSessionData.current_question_index,
+        num_questions: assessmentQuestions.length,
         questions: assessmentQuestions,
         previously_answered: previously_answered?.length
           ? previously_answered
