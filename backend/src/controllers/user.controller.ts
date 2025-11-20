@@ -4,7 +4,7 @@ import { getAllUserSessions } from "../services/assessment.service";
 
 const ONBOARDING_ASSESSMENT_ID = "1";
 
-// Fetches User Profile Information and Onboarding Status
+// Fetches User Profile Information and Active Assessment Sessions
 export const getUserContext = async (
   req: Request & { user?: string },
   res: Response

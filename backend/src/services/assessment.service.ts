@@ -37,7 +37,7 @@ export const getOnboardingCompletedStatus = async (
   }
 };
 
-// Fetches the assessment session details for a given user
+// Fetches all active assessment session details for a given user
 export const getAllUserSessions = async (
   user_id: string,
   assessment_id: string
