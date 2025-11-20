@@ -26,11 +26,14 @@ import {
   createUserWithProvider,
   updateUserWithProvider,
 } from "../services/auth.service";
+import { getOnboardingCompletedStatus } from "../services/assessment.service";
 
 interface AuthRequestBody {
   email: string;
   password: string;
 }
+
+const ONBOARDING_ASSESSMENT_ID = "1";
 
 // Allows for the Creation of a New User in the Supabase DB
 export const signUp = async (
@@ -87,22 +90,26 @@ export const signUp = async (
     const refreshToken = user.generateRefreshToken();
     const refreshTokenAge = 24 * 60 * 60 * 1000;
 
-    await updateRefreshToken(user.id, refreshToken);
-
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: NODE_ENV === "production",
       maxAge: refreshTokenAge,
     });
 
+    const [_, onboarding_status] = await Promise.all([
+      updateRefreshToken(user.id, refreshToken),
+      getOnboardingCompletedStatus(user.id, ONBOARDING_ASSESSMENT_ID),
+    ]);
+
     return res.status(201).json({
       success: true,
       message: "User Created Successfully",
       accessToken,
-      userInfo: {
+      user: {
         id: user.id,
         name: user.name,
         email: user.email,
+        onboarding_completed: !!onboarding_status,
       },
     });
   } catch (error: any) {
@@ -161,25 +168,29 @@ export const signIn = async (
     const refreshToken = user.generateRefreshToken();
     const refreshTokenAge = 24 * 60 * 60 * 1000;
 
-    await updateRefreshToken(user.id, refreshToken);
-
     // Setting the refresh token in an HTTP-Only Cookie
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: NODE_ENV === "production",
       maxAge: refreshTokenAge,
-      sameSite: "strict", // Helps prevent CSRF attacks
+      sameSite: "strict",
     });
+
+    const [_, onboarding_status] = await Promise.all([
+      updateRefreshToken(user.id, refreshToken),
+      getOnboardingCompletedStatus(user.id, ONBOARDING_ASSESSMENT_ID),
+    ]);
 
     return res.status(200).json({
       success: true,
       message: "User Signed In Successfully",
       accessToken,
       refreshToken,
-      userInfo: {
+      user: {
         id: user.id,
         name: user.name,
         email: user.email,
+        onboarding_completed: !!onboarding_status,
       },
     });
   } catch (error: any) {
