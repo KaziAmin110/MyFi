@@ -202,17 +202,17 @@ export const isValidPassword = (password: string) => {
   return passwordRegex.test(password);
 };
 
-export const generateCode = () => {
-  const arr = [];
-  for (let i = 0; i < 3; i++) {
-    for (let i = 0; i < 4; i++) {
-      const charCode = Math.floor(Math.random() * 26) + "A".charCodeAt(0);
-      const randomChar = String.fromCharCode(charCode);
-      arr.push(randomChar);
-    }
-    arr.push("-");
+// Generates a 5-Digit Random Alphanumeric Code
+export const generateCode = (): string => {
+  const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let code = "";
+
+  for (let i = 0; i < 5; i++) {
+    const randomIndex = Math.floor(Math.random() * characters.length);
+    code += characters[randomIndex];
   }
-  return arr.slice(0, -1).join("");
+
+  return code;
 };
 
 // Retrieves User Entity Based on Attribute
