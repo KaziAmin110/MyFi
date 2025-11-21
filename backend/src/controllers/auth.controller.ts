@@ -96,10 +96,7 @@ export const signUp = async (
       maxAge: refreshTokenAge,
     });
 
-    const [_, onboarding_status] = await Promise.all([
-      updateRefreshToken(user.id, refreshToken),
-      getOnboardingCompletedStatus(user.id, ONBOARDING_ASSESSMENT_ID),
-    ]);
+    await updateRefreshToken(user.id, refreshToken);
 
     return res.status(201).json({
       success: true,
@@ -109,7 +106,6 @@ export const signUp = async (
         id: user.id,
         name: user.name,
         email: user.email,
-        onboarding_completed: !!onboarding_status,
       },
     });
   } catch (error: any) {
@@ -166,20 +162,16 @@ export const signIn = async (
     // Generating the token via the user entity method
     const accessToken = user.generateAccessToken();
     const refreshToken = user.generateRefreshToken();
-    const refreshTokenAge = 24 * 60 * 60 * 1000;
 
     // Setting the refresh token in an HTTP-Only Cookie
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: NODE_ENV === "production",
-      maxAge: refreshTokenAge,
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
       sameSite: "strict",
     });
 
-    const [_, onboarding_status] = await Promise.all([
-      updateRefreshToken(user.id, refreshToken),
-      getOnboardingCompletedStatus(user.id, ONBOARDING_ASSESSMENT_ID),
-    ]);
+    await updateRefreshToken(user.id, refreshToken);
 
     return res.status(200).json({
       success: true,
@@ -190,7 +182,6 @@ export const signIn = async (
         id: user.id,
         name: user.name,
         email: user.email,
-        onboarding_completed: !!onboarding_status,
       },
     });
   } catch (error: any) {
