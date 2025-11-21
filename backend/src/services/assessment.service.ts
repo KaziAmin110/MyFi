@@ -252,7 +252,7 @@ export const saveAssessmentAnswer = async (
       );
 
     if (answerError) {
-      throw new Error(answerError.message);
+      throw new Error("Invalid Session or Question id");
     }
 
     const { data: questionData } = await supabase
@@ -268,19 +268,22 @@ export const saveAssessmentAnswer = async (
         .eq("id", session_id)
         .single();
 
-      const nextPotentialIndex = questionData.order_index + 1;
+      // Moves to next question if the answered question is the current index
+      if (sessionData) {
+        const isCurrentQuestion =
+          sessionData.current_question_index === questionData.order_index;
 
-      if (
-        sessionData &&
-        nextPotentialIndex > sessionData.current_question_index
-      ) {
-        await supabase
-          .from("assessment_sessions")
-          .update({
-            current_question_index: nextPotentialIndex,
-            updated_at: new Date(),
-          })
-          .eq("id", session_id);
+        if (isCurrentQuestion) {
+          const nextIndex = sessionData.current_question_index + 1;
+
+          await supabase
+            .from("assessment_sessions")
+            .update({
+              current_question_index: nextIndex,
+              updated_at: new Date(),
+            })
+            .eq("id", session_id);
+        }
       }
     }
   } catch (error) {
@@ -319,40 +322,31 @@ export const validateAllQuestionsAnswered = async (
   assessment_id: string
 ): Promise<boolean> => {
   try {
-    // Total Questions Count
-    const { count: totalQuestions, error: questionError } = await supabase
-      .from("questions")
-      .select("id", { count: "exact", head: true })
-      .eq("assessment_id", assessment_id);
+    const [questionsResult, answersResult] = await Promise.all([
+      // Get Total Questions
+      supabase
+        .from("questions")
+        .select("id", { count: "exact", head: true })
+        .eq("assessment_id", assessment_id),
 
-    if (questionError) {
-      console.error(
-        "Supbase error fetching total questions count:",
-        questionError.message
-      );
-      throw questionError;
-    }
+      // Get Total Answers
+      supabase
+        .from("assessment_responses")
+        .select("question_id", { count: "exact", head: true })
+        .eq("session_id", session_id),
+    ]);
 
-    // Answered Questions Count
-    const { count: answeredQuestions, error: answerError } = await supabase
-      .from("assessment_responses")
-      .select("question_id", { count: "exact", head: true })
-      .eq("session_id", session_id);
+    const { count: totalQuestions, error: questionError } = questionsResult;
+    const { count: answeredQuestions, error: answerError } = answersResult;
 
-    if (answerError) {
-      console.error(
-        "Supbase error fetching answered questions count:",
-        answerError.message
-      );
-      throw answerError;
-    }
+    if (questionError) throw questionError;
+    if (answerError) throw answerError;
 
-    return (
-      (totalQuestions &&
-        answeredQuestions &&
-        totalQuestions <= answeredQuestions) ||
-      false
-    );
+    // We treat null counts as 0
+    const qCount = totalQuestions || 0;
+    const aCount = answeredQuestions || 0;
+
+    return qCount > 0 && aCount >= qCount;
   } catch (error) {
     console.error("Error validating all questions answered:", error);
     throw error;
