@@ -97,7 +97,7 @@ export const signUp = async (
       maxAge: refreshTokenAge,
     });
 
-    updateRefreshToken(user.id, refreshToken);
+    await updateRefreshToken(user.id, refreshToken);
 
     return res.status(201).json({
       success: true,
@@ -160,7 +160,6 @@ export const signIn = async (
       throw error;
     }
 
-    // Generating the token via the user entity method
     const accessToken = user.generateAccessToken();
     const refreshToken = user.generateRefreshToken();
 
@@ -172,7 +171,7 @@ export const signIn = async (
       sameSite: "strict",
     });
 
-    updateRefreshToken(user.id, refreshToken);
+    await updateRefreshToken(user.id, refreshToken);
 
     return res.status(200).json({
       success: true,
@@ -193,13 +192,14 @@ export const signIn = async (
   }
 };
 
+// Allows User to Sign In with OAuth
 export const oauthSignIn = async (
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<Response | void> => {
   try {
-    const { provider, token, user_name } = req.body; // user_name needed for Apple first login
+    const { provider, token } = req.body;
 
     let email = "";
     let name = "";
@@ -233,7 +233,7 @@ export const oauthSignIn = async (
         avatarUrl
       );
 
-      if ("status" in updateResult && "message" in updateResult) {
+      if (!(updateResult instanceof User)) {
         return res.status(updateResult.status || 500).json({
           success: false,
           message: updateResult.message || "Failed to update user",
@@ -249,7 +249,7 @@ export const oauthSignIn = async (
         avatarUrl
       );
 
-      if ("error" in createResult) {
+      if (!(createResult instanceof User)) {
         return res.status(createResult.status || 500).json({
           success: false,
           message: createResult.error || "Failed to create user",
@@ -264,7 +264,7 @@ export const oauthSignIn = async (
     const accessToken = user.generateAccessToken();
     const refreshToken = user.generateRefreshToken();
 
-    updateRefreshToken(user.id, refreshToken);
+    await updateRefreshToken(user.id, refreshToken);
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
