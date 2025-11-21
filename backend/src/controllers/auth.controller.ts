@@ -1,10 +1,12 @@
 import { Request, Response, NextFunction } from "express";
 import nodemailer from "nodemailer";
+import { OAuth2Client } from "google-auth-library";
 import jwt from "jsonwebtoken";
 import User from "../entities/user.entities";
 import {
   NODE_ENV,
   EVENTS_EMAIL,
+  GOOGLE_CLIENT_ID,
   EVENTS_PASSWORD,
   REFRESH_SECRET,
 } from "../config/env";
@@ -26,14 +28,13 @@ import {
   createUserWithProvider,
   updateUserWithProvider,
 } from "../services/auth.service";
-import { getOnboardingCompletedStatus } from "../services/assessment.service";
 
 interface AuthRequestBody {
   email: string;
   password: string;
 }
 
-const ONBOARDING_ASSESSMENT_ID = "1";
+const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 // Allows for the Creation of a New User in the Supabase DB
 export const signUp = async (
@@ -96,7 +97,7 @@ export const signUp = async (
       maxAge: refreshTokenAge,
     });
 
-    await updateRefreshToken(user.id, refreshToken);
+    updateRefreshToken(user.id, refreshToken);
 
     return res.status(201).json({
       success: true,
@@ -171,7 +172,7 @@ export const signIn = async (
       sameSite: "strict",
     });
 
-    await updateRefreshToken(user.id, refreshToken);
+    updateRefreshToken(user.id, refreshToken);
 
     return res.status(200).json({
       success: true,
@@ -189,6 +190,103 @@ export const signIn = async (
     return res
       .status(error.statusCode || 500)
       .json({ success: false, message: error.message || "Server Error" });
+  }
+};
+
+export const oauthSignIn = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<Response | void> => {
+  try {
+    const { provider, token, user_name } = req.body; // user_name needed for Apple first login
+
+    let email = "";
+    let name = "";
+    let providerId = "";
+    let avatarUrl = "";
+
+    // Verify Token based on Provider
+    if (provider === "google") {
+      const ticket = await googleClient.verifyIdToken({
+        idToken: token,
+        audience: GOOGLE_CLIENT_ID,
+      });
+      const payload = ticket.getPayload();
+
+      if (!payload) throw new Error("Invalid Google Token");
+
+      email = payload.email!;
+      name = payload.name || "";
+      providerId = payload.sub;
+      avatarUrl = payload.picture || "";
+    } else {
+      throw new Error("Invalid Provider");
+    }
+
+    let user = await getUserByAttribute("email", email);
+
+    if (user) {
+      const updateResult = await updateUserWithProvider(
+        email,
+        providerId,
+        avatarUrl
+      );
+
+      if ("status" in updateResult && "message" in updateResult) {
+        return res.status(updateResult.status || 500).json({
+          success: false,
+          message: updateResult.message || "Failed to update user",
+        });
+      }
+
+      user = updateResult;
+    } else {
+      const createResult = await createUserWithProvider(
+        name,
+        email,
+        providerId,
+        avatarUrl
+      );
+
+      if ("error" in createResult) {
+        return res.status(createResult.status || 500).json({
+          success: false,
+          message: createResult.error || "Failed to create user",
+        });
+      }
+
+      user = createResult;
+    }
+
+    if (!user) throw new Error("Failed to process user");
+
+    const accessToken = user.generateAccessToken();
+    const refreshToken = user.generateRefreshToken();
+
+    updateRefreshToken(user.id, refreshToken);
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: NODE_ENV === "production",
+      maxAge: 24 * 60 * 60 * 1000,
+      sameSite: "strict",
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "User Signed In Successfully via OAuth",
+      accessToken,
+      refreshToken,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+      },
+    });
+  } catch (error: any) {
+    console.log(error);
+    return res.status(400).json({ success: false, message: error.message });
   }
 };
 

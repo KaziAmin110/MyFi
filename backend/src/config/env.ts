@@ -16,6 +16,7 @@ export const {
   REFRESH_SECRET,
   ACCESS_EXPIRES_IN,
   REFRESH_EXPIRES_IN,
+  GOOGLE_CLIENT_ID,
 } = process.env as {
   PORT?: string;
   NODE_ENV?: string;
@@ -28,4 +29,5 @@ export const {
   REFRESH_SECRET?: string;
   ACCESS_EXPIRES_IN?: string;
   REFRESH_EXPIRES_IN?: string;
+  GOOGLE_CLIENT_ID?: string;
 };
