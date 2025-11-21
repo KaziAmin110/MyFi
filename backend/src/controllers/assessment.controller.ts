@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import {
   AnsweredQuestionData,
   createNewAssessmentSession,
+  getAndCalculateResults,
   getAssessmentQuestions,
   getAssessmentSessionData,
   getPreviouslyAnsweredQuestions,
@@ -139,6 +140,45 @@ export const submitAssessment = async (
       message: "Assessment submitted successfully",
     });
   } catch (error: any) {
+    return res
+      .status(500)
+      .json({ success: false, message: error.message || "Server Error" });
+  }
+};
+
+export const getAssessmentResults = async (
+  req: Request & { user?: string },
+  res: Response
+): Promise<Response | void> => {
+  try {
+    const { session_id } = req.params;
+    const user_id = req.user as string;
+
+    if (!session_id) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing session ID",
+      });
+    }
+    // Validate Session Ownership and Completion
+    const results = await getAndCalculateResults(session_id, user_id);
+
+    if (!results) {
+      return res.status(404).json({
+        success: false,
+        message: "Assessment not found or not completed",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        habitude_summary: results,
+        metadata: {},
+      },
+    });
+  } catch (error: any) {
+    console.error("Get Results Error:", error);
     return res
       .status(500)
       .json({ success: false, message: error.message || "Server Error" });

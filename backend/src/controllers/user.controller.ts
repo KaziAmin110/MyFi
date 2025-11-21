@@ -33,6 +33,7 @@ export const getUserContext = async (
         user: {
           ...userData,
           onboarding_completed: isOnboardingCompleted,
+          onboarding_session_id: onboardingSession?.session_id || null,
         },
         active_sessions: activeSessions || null,
       },

@@ -21,6 +21,8 @@ export type AnsweredQuestionData = {
   answer_value: number;
 };
 
+export type AssessmentReport = Record<string, number>;
+
 // Fetches the onboarding status for a given user and assessment
 export const getOnboardingCompletedStatus = async (
   user_id: string,
@@ -377,6 +379,73 @@ export const markSessionAsCompleted = async (
     }
   } catch (error) {
     console.error("Error marking session as completed:", error);
+    throw error;
+  }
+};
+
+// Fetches and calculates results for a given session
+export const getAndCalculateResults = async (
+  session_id: string,
+  user_id: string
+): Promise<AssessmentReport | null> => {
+  try {
+    interface OptimizedResponse {
+      assessment_responses: {
+        answer_value: number;
+        questions: {
+          habitude_type: string;
+        };
+      }[];
+    }
+
+    const { data, error } = await supabase
+      .from("assessment_sessions")
+      .select(
+        `
+        id,
+        assessment_responses (
+          answer_value,
+          questions (
+            habitude_type
+          )
+        )
+      `
+      )
+      .eq("id", session_id)
+      .eq("user_id", user_id)
+      .eq("status", "completed")
+      .maybeSingle();
+
+    if (error) {
+      console.error(
+        "Supabase error fetching optimized results:",
+        error.message
+      );
+      throw error;
+    }
+
+    if (!data) return null;
+
+    const sessionData = data as unknown as OptimizedResponse;
+    const responses = sessionData.assessment_responses;
+
+    if (!responses || responses.length === 0) return {};
+
+    const scoreMap: AssessmentReport = {};
+
+    responses.forEach((r) => {
+      const habitudeType = r.questions?.habitude_type;
+      const val = Number(r.answer_value) || 0;
+
+      if (habitudeType) {
+        const key = habitudeType.toLowerCase();
+        scoreMap[key] = (scoreMap[key] || 0) + val;
+      }
+    });
+
+    return scoreMap;
+  } catch (error) {
+    console.error("Error calculating results:", error);
     throw error;
   }
 };
