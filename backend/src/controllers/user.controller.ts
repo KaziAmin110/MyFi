@@ -14,11 +14,11 @@ export const getUserContext = async (
 
     const [userData, allSessions] = await Promise.all([
       getUserProfile(user_id as string),
-      getAllUserSessions(user_id as string, ONBOARDING_ASSESSMENT_ID),
+      getAllUserSessions(user_id as string),
     ]);
 
     const onboardingSession = allSessions?.find(
-      (session) => session.assessment_id === ONBOARDING_ASSESSMENT_ID
+      (session) => session.assessment_id == ONBOARDING_ASSESSMENT_ID
     );
 
     const isOnboardingCompleted = onboardingSession?.status === "completed";
@@ -33,6 +33,7 @@ export const getUserContext = async (
         user: {
           ...userData,
           onboarding_completed: isOnboardingCompleted,
+          onboarding_session_id: onboardingSession?.session_id || null,
         },
         active_sessions: activeSessions || null,
       },
