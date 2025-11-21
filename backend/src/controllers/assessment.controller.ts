@@ -7,6 +7,7 @@ import {
   getAssessmentSessionData,
   getPreviouslyAnsweredQuestions,
   getSessionData,
+  getUserAssessmentHistory,
   markSessionAsCompleted,
   saveAssessmentAnswer,
   validateAllQuestionsAnswered,
@@ -179,6 +180,26 @@ export const getAssessmentResults = async (
     });
   } catch (error: any) {
     console.error("Get Results Error:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: error.message || "Server Error" });
+  }
+};
+
+export const getAssessmentHistory = async (
+  req: Request & { user?: string },
+  res: Response
+): Promise<Response | void> => {
+  try {
+    const user_id = req.user as string;
+
+    const history = await getUserAssessmentHistory(user_id);
+
+    return res.status(200).json({
+      success: true,
+      data: history,
+    });
+  } catch (error: any) {
     return res
       .status(500)
       .json({ success: false, message: error.message || "Server Error" });

@@ -21,6 +21,13 @@ export type AnsweredQuestionData = {
   answer_value: number;
 };
 
+export type AssessmentHistoryItem = {
+  session_id: string;
+  assessment_title: string;
+  completed_at: Date | null;
+  score_summary?: any;
+};
+
 export type AssessmentReport = Record<string, number>;
 
 // Fetches the onboarding status for a given user and assessment
@@ -446,6 +453,46 @@ export const getAndCalculateResults = async (
     return scoreMap;
   } catch (error) {
     console.error("Error calculating results:", error);
+    throw error;
+  }
+};
+
+// Fetches history for a user, only COMPLETED sessions with the Assessment Title
+export const getUserAssessmentHistory = async (
+  user_id: string
+): Promise<AssessmentHistoryItem[]> => {
+  try {
+    const { data, error } = await supabase
+      .from("assessment_sessions")
+      .select(
+        `
+        id,
+        completed_at,
+        assessments!inner (
+          title,
+          version
+        )
+      `
+      )
+      .eq("user_id", user_id)
+      .eq("status", "completed")
+      .order("completed_at", { ascending: false }); // Newest first
+
+    if (error) {
+      console.error("Supabase error fetching history:", error.message);
+      throw error;
+    }
+
+    if (!data || data.length === 0) return [];
+
+    return data.map((row: any) => ({
+      session_id: row.id,
+      assessment_title: row.assessments?.title || "Unknown Assessment",
+      version: row.assessments?.version,
+      completed_at: row.completed_at,
+    }));
+  } catch (error) {
+    console.error("Error fetching assessment history:", error);
     throw error;
   }
 };

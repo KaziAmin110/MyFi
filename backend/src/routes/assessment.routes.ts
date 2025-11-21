@@ -33,4 +33,8 @@ assessmentRouter.get(
   getAssessmentResults
 );
 
+assessmentRouter.get(
+    "/sessions/:session"
+)
+
 export default assessmentRouter;
