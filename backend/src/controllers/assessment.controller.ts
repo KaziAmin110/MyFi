@@ -83,6 +83,13 @@ export const submitAnswer = async (
       });
     }
 
+    if (answer_value < -1 || answer_value > 1) {
+      return res.status(400).json({
+        success: false,
+        message: "Response value must be between -1 and 1",
+      });
+    }
+
     await saveAssessmentAnswer(session_id, question_id, answer_value);
 
     return res.status(200).json({
@@ -175,7 +182,6 @@ export const getAssessmentResults = async (
       success: true,
       data: {
         habitude_summary: results,
-        metadata: {},
       },
     });
   } catch (error: any) {
