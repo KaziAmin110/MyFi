@@ -32,14 +32,17 @@ export const updateRefreshToken = async (id: string, refresh_token: string) => {
     const { data, error } = await supabase
       .from("users")
       .update({ refresh_token })
-      .eq("id", id)
-      .select("refresh_token");
+      .eq("id", id);
 
     if (error) {
       return { error: error.message, status: 500 };
     }
 
-    return { data, message: "Refresh Token Updated Successfully", status: 201 };
+    return {
+      success: true,
+      message: "Refresh Token Updated Successfully",
+      status: 201,
+    };
   } catch (error: any) {
     return {
       error: error.message,
