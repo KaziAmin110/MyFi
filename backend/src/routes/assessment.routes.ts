@@ -3,6 +3,7 @@ import { authenticateUser } from "../middlewares/auth.middleware";
 import {
   initializeOnboardingAssessment,
   submitAnswer,
+  submitAssessment,
 } from "../controllers/assessment.controller";
 
 const assessmentRouter = Router();
@@ -17,6 +18,12 @@ assessmentRouter.post(
   "/sessions/:session_id/answers",
   authenticateUser,
   submitAnswer
+);
+
+assessmentRouter.post(
+  "/sessions/:session_id/submit",
+  authenticateUser,
+  submitAssessment
 );
 
 export default assessmentRouter;

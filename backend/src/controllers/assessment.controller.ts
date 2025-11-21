@@ -5,7 +5,10 @@ import {
   getAssessmentQuestions,
   getAssessmentSessionData,
   getPreviouslyAnsweredQuestions,
+  getSessionData,
+  markSessionAsCompleted,
   saveAssessmentAnswer,
+  validateAllQuestionsAnswered,
 } from "../services/assessment.service";
 
 const ONBOARDING_ASSESSMENT_ID = "1";
@@ -83,6 +86,57 @@ export const submitAnswer = async (
     return res.status(200).json({
       success: true,
       message: "Response saved successfully",
+    });
+  } catch (error: any) {
+    return res
+      .status(500)
+      .json({ success: false, message: error.message || "Server Error" });
+  }
+};
+
+export const submitAssessment = async (
+  req: Request,
+  res: Response
+): Promise<Response | void> => {
+  try {
+    const { session_id } = req.params;
+
+    if (!session_id) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields",
+      });
+    }
+
+    // Check Valid Session Status
+    const sessionData = await getSessionData(session_id);
+
+    if (!sessionData) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or already completed session",
+      });
+    }
+
+    // Checks to see if all questions have been answered
+    const allQuestionsAnswered = await validateAllQuestionsAnswered(
+      session_id,
+      sessionData.assessment_id
+    );
+
+    if (!allQuestionsAnswered) {
+      return res.status(400).json({
+        success: false,
+        message: "All questions must be answered before submission",
+      });
+    }
+
+    // Update session status to completed
+    await markSessionAsCompleted(session_id);
+
+    return res.status(200).json({
+      success: true,
+      message: "Assessment submitted successfully",
     });
   } catch (error: any) {
     return res

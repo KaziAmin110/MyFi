@@ -1,3 +1,4 @@
+import { count } from "console";
 import { supabase } from "../database/db";
 
 export type SessionData = {
@@ -284,6 +285,104 @@ export const saveAssessmentAnswer = async (
     }
   } catch (error) {
     console.error("Error saving answer:", error);
+    throw error;
+  }
+};
+
+// Validates if a session is valid and in progress
+export const getSessionData = async (
+  session_id: string
+): Promise<{ id: string; assessment_id: string } | null> => {
+  try {
+    const { data, error } = await supabase
+      .from("assessment_sessions")
+      .select("id, assessment_id")
+      .eq("id", session_id)
+      .eq("status", "in_progress")
+      .maybeSingle();
+
+    if (error) {
+      console.error("Supbase error checking session validity:", error.message);
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error checking session validity:", error);
+    throw error;
+  }
+};
+
+// Validates if all questions have been answered in a session
+export const validateAllQuestionsAnswered = async (
+  session_id: string,
+  assessment_id: string
+): Promise<boolean> => {
+  try {
+    // Total Questions Count
+    const { count: totalQuestions, error: questionError } = await supabase
+      .from("questions")
+      .select("id", { count: "exact", head: true })
+      .eq("assessment_id", assessment_id);
+
+    if (questionError) {
+      console.error(
+        "Supbase error fetching total questions count:",
+        questionError.message
+      );
+      throw questionError;
+    }
+
+    // Answered Questions Count
+    const { count: answeredQuestions, error: answerError } = await supabase
+      .from("assessment_responses")
+      .select("question_id", { count: "exact", head: true })
+      .eq("session_id", session_id);
+
+    if (answerError) {
+      console.error(
+        "Supbase error fetching answered questions count:",
+        answerError.message
+      );
+      throw answerError;
+    }
+
+    return (
+      (totalQuestions &&
+        answeredQuestions &&
+        totalQuestions <= answeredQuestions) ||
+      false
+    );
+  } catch (error) {
+    console.error("Error validating all questions answered:", error);
+    throw error;
+  }
+};
+
+// Marks session as completed
+export const markSessionAsCompleted = async (
+  session_id: string
+): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from("assessment_sessions")
+      .update({
+        status: "completed",
+        updated_at: new Date(),
+        completed_at: new Date(),
+      })
+      .eq("id", session_id)
+      .eq("status", "in_progress");
+
+    if (error) {
+      console.error(
+        "Supabase error marking session as completed:",
+        error.message
+      );
+      throw error;
+    }
+  } catch (error) {
+    console.error("Error marking session as completed:", error);
     throw error;
   }
 };
