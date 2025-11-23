@@ -15,6 +15,7 @@ import {
 
 const ONBOARDING_ASSESSMENT_ID = "1";
 
+// Initializes Onboarding Assessment
 export const initializeOnboardingAssessment = async (
   req: Request & { user?: string },
   res: Response
@@ -68,6 +69,7 @@ export const initializeOnboardingAssessment = async (
   }
 };
 
+// Submits a response to an assessment question
 export const submitAnswer = async (
   req: Request,
   res: Response
@@ -103,6 +105,7 @@ export const submitAnswer = async (
   }
 };
 
+// Submits an assessment for completion
 export const submitAssessment = async (
   req: Request,
   res: Response
@@ -154,6 +157,7 @@ export const submitAssessment = async (
   }
 };
 
+// Fetches Assessment Results
 export const getAssessmentResults = async (
   req: Request & { user?: string },
   res: Response
@@ -192,6 +196,7 @@ export const getAssessmentResults = async (
   }
 };
 
+// Fetches Assessment History
 export const getAssessmentHistory = async (
   req: Request & { user?: string },
   res: Response
