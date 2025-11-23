@@ -287,6 +287,47 @@ export const forgotPassword = async (
   }
 };
 
+// Verifies Password Reset Token
+export const verifyResetToken = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<Response | void> => {
+  try {
+    const { reset_token } = req.body;
+
+    if (!reset_token) {
+      const error = new Error("Token Field is Not Present in API Request");
+      (error as any).statusCode = 400;
+      throw error;
+    }
+
+    const data = await getResetTokenByAttribute("reset_token", reset_token);
+
+    if (!data) {
+      const error = new Error("Invalid Password Reset Token");
+      (error as any).statusCode = 400;
+      throw error;
+    }
+    const isValidToken = verifyPasswordResetToken(data);
+
+    if (isValidToken) {
+      return res.status(200).json({
+        success: true,
+        message: "Password Reset Token is Valid",
+      });
+    } else {
+      const error = new Error("Invalid Password Reset Token: Expired");
+      (error as any).statusCode = 400;
+      throw error;
+    }
+  } catch (err: any) {
+    return res
+      .status(err.statusCode || 500)
+      .json({ success: false, message: err.message || "Server Error" });
+  }
+};
+
 // Allows User to Reset Their Password using the Password Reset Token
 export const resetPassword = async (
   req: Request,
