@@ -15,7 +15,7 @@ authRouter.post("/sign-up", signUp);
 authRouter.post("/sign-in", signIn);
 authRouter.post("/sign-out", authenticateUser, signOut);
 authRouter.post("/forgot-password", forgotPassword);
-authRouter.post("/auth/verify-code", verifyResetToken);
+authRouter.post("/verify-token", verifyResetToken);
 authRouter.post("/reset-password", resetPassword);
 
 export default authRouter;

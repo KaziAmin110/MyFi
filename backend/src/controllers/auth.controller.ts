@@ -11,9 +11,7 @@ import {
 import {
   updateUserPassword,
   updateRefreshToken,
-  createPasswordResetDB,
   verifyPasswordResetToken,
-  updatePasswordResetDB,
   removePasswordResetTokenDB,
   getResetTokenByAttribute,
   deleteRefreshTokenByAttribute,
@@ -25,6 +23,7 @@ import {
   getSignInInfoDB,
   createUserWithProvider,
   updateUserWithProvider,
+  upsertPasswordResetDB,
 } from "../services/auth.service";
 import { getOnboardingCompletedStatus } from "../services/assessment.service";
 
@@ -34,6 +33,14 @@ interface AuthRequestBody {
 }
 
 const ONBOARDING_ASSESSMENT_ID = "1";
+
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: EVENTS_EMAIL,
+    pass: EVENTS_PASSWORD,
+  },
+});
 
 // Allows for the Creation of a New User in the Supabase DB
 export const signUp = async (
@@ -224,7 +231,6 @@ export const forgotPassword = async (
 ): Promise<Response | void> => {
   try {
     const { email } = req.body;
-    const user = await getUserByAttribute("email", email);
 
     if (!email) {
       const error = new Error("Email field is not present in API Request");
@@ -232,35 +238,18 @@ export const forgotPassword = async (
       throw error;
     }
 
-    if (!user) {
-      const error = new Error("Email not found");
-      (error as any).statusCode = 404;
-      throw error;
-    }
+    const user = await getUserByAttribute("email", email);
 
-    const reset_token = generateCode();
-    const resetTokenExpires = new Date(
-      Date.now() + 60 * 60 * 1000
-    ).toISOString(); // 1 hour
+    // If user exists, generate token and send email
+    if (user) {
+      const reset_token = generateCode();
+      const resetTokenExpires = new Date(
+        Date.now() + 60 * 60 * 1000
+      ).toISOString(); // 1 hour
 
-    const resetData = await getResetTokenByAttribute("email", email);
+      await upsertPasswordResetDB(email, reset_token, resetTokenExpires);
 
-    if (!resetData) {
-      await createPasswordResetDB(email, reset_token, resetTokenExpires);
-    } else {
-      await updatePasswordResetDB(email, reset_token, resetTokenExpires);
-    }
-
-    // Nodemailer Setup
-    try {
-      const transporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: {
-          user: EVENTS_EMAIL,
-          pass: EVENTS_PASSWORD,
-        },
-      });
-
+      // Nodemailer Setup
       const mailOptions = {
         from: EVENTS_EMAIL,
         to: email,
@@ -268,18 +257,15 @@ export const forgotPassword = async (
         text: `Your Password Reset Token Is: ${reset_token}`,
       };
 
-      await transporter.sendMail(mailOptions);
-
-      return res.status(200).json({
-        success: true,
-        message: "Reset Email Sent Succesfully",
+      transporter.sendMail(mailOptions).catch((mailErr) => {
+        console.error("Error sending reset email:", mailErr);
       });
-    } catch (mailErr) {
-      console.error("Error sending reset email:", mailErr);
-      const error = new Error("Failed to send reset email");
-      (error as any).statusCode = 500;
-      throw error;
     }
+
+    return res.status(200).json({
+      success: true,
+      message: "If valid email, a reset code has been sent",
+    });
   } catch (err: any) {
     return res
       .status(err.statusCode || 500)
