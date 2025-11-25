@@ -8,13 +8,59 @@ import {
 } from "react-native";
 import React, { useState } from "react";
 import { Link, router } from "expo-router";
+import * as SecureStore from "expo-secure-store";
+
+export const API_URL = "http://192.168.12.203:5500/api/auth";
+
+export async function signIn(data: {
+  email: string;
+  password: string;
+}) {
+  const res = await fetch(`${API_URL}/sign-in`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+
+  const json = await res.json();
+  if (!res.ok)
+    throw new Error(json.message || "Login failed");
+
+  return json;
+}
 
 const login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false); // Track password visibility
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  // Track password visibility
-  const [showPassword, setShowPassword] = useState(false);
+  const handleLogin = async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const data = await signIn({ email, password });
+
+      // Extract what the backend returns
+      const token = data.token ?? data.accessToken ?? data.jwt;
+      const user  = data.user;
+
+      // Store safely
+      await SecureStore.setItemAsync("token", String(token));
+
+      if (user) {
+        await SecureStore.setItemAsync("user", JSON.stringify(user));
+      }
+
+      router.replace("../account/dashboard"); // Go to the home dashboard page
+    } catch(err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <ScrollView className="flex-1 px-6 pt-16 bg-white">
@@ -71,9 +117,15 @@ const login = () => {
         Forgot password?
       </Link>
 
-      <TouchableOpacity className="py-4 mt-5 mb-20 bg-primary rounded-xl">
+      {error ? <Text className="text-red-500 mb-2">{error}</Text> : null}
+
+      <TouchableOpacity
+        disabled={loading}
+        onPress={handleLogin}
+        className="py-4 mt-5 mb-20 bg-primary rounded-xl"
+      >
         <Text className="text-lg font-medium text-center text-white">
-          Log in
+          {loading ? "Logging in..." : "Log in"}
         </Text>
       </TouchableOpacity>
 
