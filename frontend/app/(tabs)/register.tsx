@@ -2,7 +2,7 @@ import { ScrollView, Text, TextInput, TouchableOpacity, View, Image } from "reac
 import React, { useState } from 'react'
 import { Link, router } from "expo-router";
 
-export const API_URL = "http://192.168.12.203:5500/api/auth";
+export const API_URL = "http://localhost:5500/api/auth";
 
 export async function signUp(data: {
   name: string;

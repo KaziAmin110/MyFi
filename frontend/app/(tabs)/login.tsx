@@ -10,7 +10,7 @@ import React, { useState } from "react";
 import { Link, router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 
-export const API_URL = "http://192.168.12.203:5500/api/auth";
+export const API_URL = "http://localhost:5500/api/auth";
 
 export async function signIn(data: {
   email: string;
