@@ -152,6 +152,7 @@ export const createNewAssessmentSession = async (
         assessment_id,
         current_question_index: 1,
         status: "in_progress",
+        updated_at: new Date(),
       })
       .select("id, assessment_id, current_question_index, status")
       .maybeSingle();
@@ -310,13 +311,17 @@ export const saveAssessmentAnswer = async (
 };
 
 // Validates if a session is valid and in progress
-export const getSessionData = async (
+export const getExistingSessionData = async (
   session_id: string
-): Promise<{ id: string; assessment_id: string } | null> => {
+): Promise<{
+  id: string;
+  assessment_id: string;
+  current_question_index: number;
+} | null> => {
   try {
     const { data, error } = await supabase
       .from("assessment_sessions")
-      .select("id, assessment_id")
+      .select("id, assessment_id, current_question_index")
       .eq("id", session_id)
       .eq("status", "in_progress")
       .maybeSingle();

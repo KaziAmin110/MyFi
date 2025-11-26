@@ -5,8 +5,8 @@ import {
   getAndCalculateResults,
   getAssessmentQuestions,
   getAssessmentSessionData,
+  getExistingSessionData,
   getPreviouslyAnsweredQuestions,
-  getSessionData,
   getUserAssessmentHistory,
   isOngoingAssessment,
   markSessionAsCompleted,
@@ -122,7 +122,7 @@ export const submitAssessment = async (
     }
 
     // Check Valid Session Status
-    const sessionData = await getSessionData(session_id);
+    const sessionData = await getExistingSessionData(session_id);
 
     if (!sessionData) {
       return res.status(400).json({
@@ -225,7 +225,7 @@ export const createAssessmentSession = async (
 ): Promise<Response | void> => {
   try {
     const user_id = req.user as string;
-    const { assessment_id } = req.body;
+    const { assessment_id } = req.params;
 
     if (!assessment_id) {
       return res.status(400).json({
@@ -247,14 +247,21 @@ export const createAssessmentSession = async (
       });
     }
 
-    const newSession = await createNewAssessmentSession(
-      user_id as string,
-      assessment_id
-    );
+    const [newSession, assessmentQuestions] = await Promise.all([
+      createNewAssessmentSession(user_id as string, assessment_id),
+      getAssessmentQuestions(assessment_id),
+    ]);
 
     return res.status(200).json({
       success: true,
-      data: newSession,
+      message: "Assessment session created successfully",
+      data: {
+        session_id: newSession.session_id,
+        assessment_id: newSession.assessment_id,
+        current_question_number: newSession.current_question_index,
+        num_questions: assessmentQuestions.length,
+        questions: assessmentQuestions,
+      },
     });
   } catch (error: any) {
     return res
@@ -279,36 +286,31 @@ export const continueAssessmentSession = async (
       });
     }
 
-    const sessionData = await getAssessmentSessionData(
-      user_id as string,
-      session_id
-    );
+    const sessionData = await getExistingSessionData(session_id);
 
     if (!sessionData) {
       return res.status(404).json({
         success: false,
-        message: "Session not found",
+        message: "Session not found or already completed",
       });
     }
 
-    if (sessionData.status === "completed") {
-      return res.status(400).json({
-        success: false,
-        message: "Session has already been completed",
-      });
-    }
-
-    const assessmentQuestions = await getAssessmentQuestions(
-      sessionData.assessment_id
-    );
+    const [assessmentQuestions, previouslyAnswered] = await Promise.all([
+      getAssessmentQuestions(sessionData.assessment_id),
+      getPreviouslyAnsweredQuestions(session_id),
+    ]);
 
     return res.status(200).json({
       success: true,
+      message: "Assessment session continued successfully",
       data: {
-        session_id: sessionData.session_id,
+        session_id: sessionData.id,
         current_question_number: sessionData.current_question_index,
         num_questions: assessmentQuestions.length,
         questions: assessmentQuestions,
+        previously_answered: previouslyAnswered?.length
+          ? previouslyAnswered
+          : null,
       },
     });
   } catch (error: any) {
