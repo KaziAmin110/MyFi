@@ -525,3 +525,30 @@ export const getUserAssessmentHistory = async (
     throw error;
   }
 };
+
+export const isOngoingAssessment = async (
+  user_id: string,
+  assessment_id: string
+) => {
+  try {
+    const { data, error } = await supabase
+      .from("assessment_sessions")
+      .select("id")
+      .eq("user_id", user_id)
+      .eq("assessment_id", assessment_id)
+      .eq("status", "in_progress");
+
+    if (error) {
+      console.error(
+        "Supabase error checking ongoing assessment:",
+        error.message
+      );
+      throw error;
+    }
+
+    return data && data.length > 0 ? true : false;
+  } catch (error) {
+    console.error("Error checking ongoing assessment:", error);
+    throw error;
+  }
+};

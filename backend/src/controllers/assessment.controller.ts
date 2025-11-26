@@ -8,6 +8,7 @@ import {
   getPreviouslyAnsweredQuestions,
   getSessionData,
   getUserAssessmentHistory,
+  isOngoingAssessment,
   markSessionAsCompleted,
   saveAssessmentAnswer,
   validateAllQuestionsAnswered,
@@ -209,6 +210,106 @@ export const getAssessmentHistory = async (
     return res.status(200).json({
       success: true,
       data: history,
+    });
+  } catch (error: any) {
+    return res
+      .status(500)
+      .json({ success: false, message: error.message || "Server Error" });
+  }
+};
+
+// Creates a New Assessment Session
+export const createAssessmentSession = async (
+  req: Request & { user?: string },
+  res: Response
+): Promise<Response | void> => {
+  try {
+    const user_id = req.user as string;
+    const { assessment_id } = req.body;
+
+    if (!assessment_id) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing assessment ID",
+      });
+    }
+
+    const isOngoingAssessmentSession = await isOngoingAssessment(
+      user_id,
+      assessment_id
+    );
+
+    if (isOngoingAssessmentSession) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "You already have an ongoing assessment session for this assessment",
+      });
+    }
+
+    const newSession = await createNewAssessmentSession(
+      user_id as string,
+      assessment_id
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: newSession,
+    });
+  } catch (error: any) {
+    return res
+      .status(500)
+      .json({ success: false, message: error.message || "Server Error" });
+  }
+};
+
+// Continues an Existing Assessment Session
+export const continueAssessmentSession = async (
+  req: Request & { user?: string },
+  res: Response
+): Promise<Response | void> => {
+  try {
+    const user_id = req.user as string;
+    const { session_id } = req.params;
+
+    if (!session_id) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing session ID",
+      });
+    }
+
+    const sessionData = await getAssessmentSessionData(
+      user_id as string,
+      session_id
+    );
+
+    if (!sessionData) {
+      return res.status(404).json({
+        success: false,
+        message: "Session not found",
+      });
+    }
+
+    if (sessionData.status === "completed") {
+      return res.status(400).json({
+        success: false,
+        message: "Session has already been completed",
+      });
+    }
+
+    const assessmentQuestions = await getAssessmentQuestions(
+      sessionData.assessment_id
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        session_id: sessionData.session_id,
+        current_question_number: sessionData.current_question_index,
+        num_questions: assessmentQuestions.length,
+        questions: assessmentQuestions,
+      },
     });
   } catch (error: any) {
     return res
