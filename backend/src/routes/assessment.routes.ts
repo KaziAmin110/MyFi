@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { authenticateUser } from "../middlewares/auth.middleware";
 import {
+  continueAssessmentSession,
+  createAssessmentSession,
   getAssessmentResults,
   initializeOnboardingAssessment,
   submitAnswer,
@@ -27,6 +29,12 @@ assessmentRouter.post(
   submitAssessment
 );
 
+assessmentRouter.post(
+  "/:assessment_id/start",
+  authenticateUser,
+  createAssessmentSession
+);
+
 assessmentRouter.get(
   "/sessions/:session_id/results",
   authenticateUser,
@@ -34,7 +42,9 @@ assessmentRouter.get(
 );
 
 assessmentRouter.get(
-    "/sessions/:session"
-)
+  "/sessions/:session_id/continue",
+  authenticateUser,
+  continueAssessmentSession
+);
 
 export default assessmentRouter;
