@@ -179,9 +179,18 @@ const Login = () => {
         </TouchableOpacity>
       </View>
 
-      <Link href="/(tabs)/login" className="text-right text-sm #111010">
-        Forgot password?
-      </Link>
+      <TouchableOpacity
+        onPress={() =>
+          Alert.alert(
+            "Forgot Password",
+            "This feature will be implemented soon"
+          )
+        }
+      >
+        <Text className="text-right text-sm text-gray-600 mb-1">
+          Forgot password?
+        </Text>
+      </TouchableOpacity>
 
       <TouchableOpacity
         className="py-4 mt-5 mb-20 bg-primary rounded-xl"
