@@ -24,8 +24,16 @@ export type AnsweredQuestionData = {
 export type AssessmentHistoryItem = {
   session_id: string;
   assessment_title: string;
-  completed_at: Date | null;
-  score_summary?: any;
+  status: "in_progress" | "completed";
+  current_question_index?: number;
+  updated_at?: Date | string;
+  completed_at?: Date | string | null;
+  version: number;
+};
+
+export type AssessmentDashboardResponse = {
+  in_progress: AssessmentHistoryItem[];
+  completed: AssessmentHistoryItem[];
 };
 
 export type AssessmentReport = Record<string, number>;
@@ -144,6 +152,7 @@ export const createNewAssessmentSession = async (
         assessment_id,
         current_question_index: 1,
         status: "in_progress",
+        updated_at: new Date(),
       })
       .select("id, assessment_id, current_question_index, status")
       .maybeSingle();
@@ -302,13 +311,17 @@ export const saveAssessmentAnswer = async (
 };
 
 // Validates if a session is valid and in progress
-export const getSessionData = async (
+export const getExistingSessionData = async (
   session_id: string
-): Promise<{ id: string; assessment_id: string } | null> => {
+): Promise<{
+  id: string;
+  assessment_id: string;
+  current_question_index: number;
+} | null> => {
   try {
     const { data, error } = await supabase
       .from("assessment_sessions")
-      .select("id, assessment_id")
+      .select("id, assessment_id, current_question_index")
       .eq("id", session_id)
       .eq("status", "in_progress")
       .maybeSingle();
@@ -457,16 +470,20 @@ export const getAndCalculateResults = async (
   }
 };
 
-// Fetches history for a user, only COMPLETED sessions with the Assessment Title
+// Fetches history for a user, returs both completed and in-progress sessions
 export const getUserAssessmentHistory = async (
   user_id: string
-): Promise<AssessmentHistoryItem[]> => {
+): Promise<AssessmentDashboardResponse> => {
   try {
     const { data, error } = await supabase
       .from("assessment_sessions")
       .select(
         `
         id,
+        assessment_id,
+        current_question_index,
+        status,
+        updated_at,
         completed_at,
         assessments!inner (
           title,
@@ -475,24 +492,68 @@ export const getUserAssessmentHistory = async (
       `
       )
       .eq("user_id", user_id)
-      .eq("status", "completed")
-      .order("completed_at", { ascending: false }); // Newest first
+      .order("updated_at", { ascending: false }); // Newest first
 
     if (error) {
       console.error("Supabase error fetching history:", error.message);
       throw error;
     }
 
-    if (!data || data.length === 0) return [];
+    const result: AssessmentDashboardResponse = {
+      in_progress: [],
+      completed: [],
+    };
 
-    return data.map((row: any) => ({
-      session_id: row.id,
-      assessment_title: row.assessments?.title || "Unknown Assessment",
-      version: row.assessments?.version,
-      completed_at: row.completed_at,
-    }));
+    if (!data || data.length === 0) return result;
+
+    data.forEach((row: any) => {
+      const item: AssessmentHistoryItem = {
+        session_id: row.id,
+        assessment_title: row.assessments?.title || "Unknown Assessment",
+        version: row.assessments?.version,
+        status: row.status,
+        current_question_index: row.current_question_index,
+        updated_at: row.updated_at,
+        completed_at: row.completed_at,
+      };
+
+      if (row.status === "completed") {
+        result.completed.push(item);
+      } else if (row.status === "in_progress") {
+        result.in_progress.push(item);
+      }
+    });
+
+    return result;
   } catch (error) {
     console.error("Error fetching assessment history:", error);
+    throw error;
+  }
+};
+
+export const isOngoingAssessment = async (
+  user_id: string,
+  assessment_id: string
+) => {
+  try {
+    const { data, error } = await supabase
+      .from("assessment_sessions")
+      .select("id")
+      .eq("user_id", user_id)
+      .eq("assessment_id", assessment_id)
+      .eq("status", "in_progress");
+
+    if (error) {
+      console.error(
+        "Supabase error checking ongoing assessment:",
+        error.message
+      );
+      throw error;
+    }
+
+    return data && data.length > 0 ? true : false;
+  } catch (error) {
+    console.error("Error checking ongoing assessment:", error);
     throw error;
   }
 };

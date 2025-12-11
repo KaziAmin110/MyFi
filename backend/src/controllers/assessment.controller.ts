@@ -5,9 +5,10 @@ import {
   getAndCalculateResults,
   getAssessmentQuestions,
   getAssessmentSessionData,
+  getExistingSessionData,
   getPreviouslyAnsweredQuestions,
-  getSessionData,
   getUserAssessmentHistory,
+  isOngoingAssessment,
   markSessionAsCompleted,
   saveAssessmentAnswer,
   validateAllQuestionsAnswered,
@@ -15,6 +16,7 @@ import {
 
 const ONBOARDING_ASSESSMENT_ID = "1";
 
+// Initializes Onboarding Assessment
 export const initializeOnboardingAssessment = async (
   req: Request & { user?: string },
   res: Response
@@ -68,6 +70,7 @@ export const initializeOnboardingAssessment = async (
   }
 };
 
+// Submits a response to an assessment question
 export const submitAnswer = async (
   req: Request,
   res: Response
@@ -103,6 +106,7 @@ export const submitAnswer = async (
   }
 };
 
+// Submits an assessment for completion
 export const submitAssessment = async (
   req: Request,
   res: Response
@@ -118,7 +122,7 @@ export const submitAssessment = async (
     }
 
     // Check Valid Session Status
-    const sessionData = await getSessionData(session_id);
+    const sessionData = await getExistingSessionData(session_id);
 
     if (!sessionData) {
       return res.status(400).json({
@@ -154,6 +158,7 @@ export const submitAssessment = async (
   }
 };
 
+// Fetches Assessment Results
 export const getAssessmentResults = async (
   req: Request & { user?: string },
   res: Response
@@ -192,6 +197,7 @@ export const getAssessmentResults = async (
   }
 };
 
+// Fetches Assessment History
 export const getAssessmentHistory = async (
   req: Request & { user?: string },
   res: Response
@@ -204,6 +210,108 @@ export const getAssessmentHistory = async (
     return res.status(200).json({
       success: true,
       data: history,
+    });
+  } catch (error: any) {
+    return res
+      .status(500)
+      .json({ success: false, message: error.message || "Server Error" });
+  }
+};
+
+// Creates a New Assessment Session
+export const createAssessmentSession = async (
+  req: Request & { user?: string },
+  res: Response
+): Promise<Response | void> => {
+  try {
+    const user_id = req.user as string;
+    const { assessment_id } = req.params;
+
+    if (!assessment_id) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing assessment ID",
+      });
+    }
+
+    const isOngoingAssessmentSession = await isOngoingAssessment(
+      user_id,
+      assessment_id
+    );
+
+    if (isOngoingAssessmentSession) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "You already have an ongoing assessment session for this assessment",
+      });
+    }
+
+    const [newSession, assessmentQuestions] = await Promise.all([
+      createNewAssessmentSession(user_id as string, assessment_id),
+      getAssessmentQuestions(assessment_id),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      message: "Assessment session created successfully",
+      data: {
+        session_id: newSession.session_id,
+        assessment_id: newSession.assessment_id,
+        current_question_number: newSession.current_question_index,
+        num_questions: assessmentQuestions.length,
+        questions: assessmentQuestions,
+      },
+    });
+  } catch (error: any) {
+    return res
+      .status(500)
+      .json({ success: false, message: error.message || "Server Error" });
+  }
+};
+
+// Continues an Existing Assessment Session
+export const continueAssessmentSession = async (
+  req: Request & { user?: string },
+  res: Response
+): Promise<Response | void> => {
+  try {
+    const user_id = req.user as string;
+    const { session_id } = req.params;
+
+    if (!session_id) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing session ID",
+      });
+    }
+
+    const sessionData = await getExistingSessionData(session_id);
+
+    if (!sessionData) {
+      return res.status(404).json({
+        success: false,
+        message: "Session not found or already completed",
+      });
+    }
+
+    const [assessmentQuestions, previouslyAnswered] = await Promise.all([
+      getAssessmentQuestions(sessionData.assessment_id),
+      getPreviouslyAnsweredQuestions(session_id),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      message: "Assessment session continued successfully",
+      data: {
+        session_id: sessionData.id,
+        current_question_number: sessionData.current_question_index,
+        num_questions: assessmentQuestions.length,
+        questions: assessmentQuestions,
+        previously_answered: previouslyAnswered?.length
+          ? previouslyAnswered
+          : null,
+      },
     });
   } catch (error: any) {
     return res

@@ -2,14 +2,58 @@ import { ScrollView, Text, TextInput, TouchableOpacity, View, Image } from "reac
 import React, { useState } from 'react'
 import { Link, router } from "expo-router";
 
-const register = () => {
-    const [firstName, setFirstName] = useState('');
-    const [lastName, setLastName] = useState('');
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+export const API_URL = "http://localhost:5500/api/auth";
 
-    // Track password visibility
-    const [showPassword, setShowPassword] = useState(false);
+export async function signUp(data: {
+  name: string;
+  email: string;
+  password: string;
+}) {
+  const res = await fetch(`${API_URL}/sign-up`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+
+  const json = await res.json();
+  if (!res.ok)
+    throw new Error(json.message || "Registration failed");
+
+  return json;
+}
+
+const register = () => {
+    const [firstName, setFirstName] = useState("");
+    const [lastName, setLastName] = useState("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false); // track password visibility
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+
+    const handleRegister = async () => {
+        setLoading(true);
+        setError("");
+
+        if (!firstName || !lastName || !email || !password) {
+            setError("All fields are required.");
+            setLoading(false);
+            return;
+        }
+
+        try {
+            await signUp({
+                name: `${firstName} ${lastName}`.trim(),
+                email,
+                password
+            });
+            router.replace("/login"); // go to login after register
+        } catch(err: any) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <ScrollView className="flex-1 bg-white px-6 pt-16">
@@ -76,8 +120,16 @@ const register = () => {
                 </TouchableOpacity>
             </View>
 
-            <TouchableOpacity className="bg-primary rounded-xl py-4 mt-5 mb-10">
-                <Text className="text-center text-white font-medium text-lg">Register</Text>
+            {error ? <Text className="text-red-500 mb-2">{error}</Text> : null}
+
+            <TouchableOpacity
+                disabled={loading}
+                onPress={handleRegister}
+                className="bg-primary rounded-xl py-4 mt-5 mb-10"
+            >
+                <Text className="text-center text-white font-medium text-lg">
+                    {loading ? "Registering..." : "Register"}
+                </Text>
             </TouchableOpacity>
 
             <View className="flex-row items-center mb-6">

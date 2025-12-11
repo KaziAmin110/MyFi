@@ -76,7 +76,7 @@ export const createPasswordResetDB = async (
 };
 
 // Updates Password Reset Row with New Password Reset Token and Expiration Date
-export const updatePasswordResetDB = async (
+export const upsertPasswordResetDB = async (
   email: string,
   reset_token: string,
   reset_token_expiry: string
@@ -84,14 +84,19 @@ export const updatePasswordResetDB = async (
   try {
     const { error } = await supabase
       .from("password_reset")
-      .update({ reset_token, reset_token_expiry })
-      .eq("email", email);
+      .upsert(
+        { email, reset_token, reset_token_expiry },
+        { onConflict: "email" }
+      );
 
     if (error) {
       return { error: error.message, status: 500 };
     }
 
-    return { message: "User created successfully", status: 201 };
+    return {
+      message: "Password reset token upserted successfully",
+      status: 201,
+    };
   } catch (error: any) {
     return {
       error: error.message,
