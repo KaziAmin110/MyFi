@@ -10,10 +10,7 @@ import {
 } from "react-native";
 import React, { useState, useEffect } from "react";
 import { Link, router } from "expo-router";
-import {
-  GoogleSignin,
-  statusCodes,
-} from "@react-native-google-signin/google-signin";
+import * as Google from "expo-auth-session/providers/google";
 import axios from "axios";
 import { API_ENDPOINTS } from "../../config/api";
 import { GOOGLE_WEB_CLIENT_ID } from "../../config/oauth";
@@ -28,16 +25,63 @@ const Login = () => {
   // Track password visibility
   const [showPassword, setShowPassword] = useState(false);
 
-  // Configure Google Sign-In when component mounts
-  useEffect(() => {
-    GoogleSignin.configure({
-      webClientId: GOOGLE_WEB_CLIENT_ID,
-      offlineAccess: true,
-    });
+  // Use Expo's auth proxy for consistent redirect URI
+  const redirectUri = "https://auth.expo.io/@myfi/myfi";
 
-    // Check if user is already logged in
+  // Configure Expo Google Auth - use code flow instead of id_token
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    clientId: GOOGLE_WEB_CLIENT_ID,
+    redirectUri,
+  });
+
+  // Debug: Log request configuration
+  useEffect(() => {
+    console.log("🔧 OAuth Request Config:", {
+      clientId: GOOGLE_WEB_CLIENT_ID,
+      redirectUri,
+      request: request ? "Request object exists" : "No request object",
+    });
+  }, [request]);
+
+  // Debug: Log all response changes
+  useEffect(() => {
+    console.log("📱 OAuth Response changed:", response);
+    if (response) {
+      console.log("Response type:", response.type);
+      if ("authentication" in response) {
+        console.log("Authentication data:", response.authentication);
+      }
+      if ("error" in response) {
+        console.log("Error data:", response.error);
+      }
+    }
+  }, [response]);
+
+  // Check if user is already logged in on mount
+  useEffect(() => {
     checkLoginStatus();
   }, []);
+  z;
+  // Handle Google OAuth response
+  useEffect(() => {
+    if (response?.type === "success") {
+      const { authentication } = response;
+      console.log("✅ OAuth Success, authentication:", authentication);
+      // Try idToken first, fall back to accessToken
+      const token = authentication?.idToken || authentication?.accessToken;
+      if (token) {
+        handleGoogleAuthSuccess(token);
+      } else {
+        console.error("❌ No token received from Google");
+        Alert.alert("Error", "Failed to get authentication token");
+        setGoogleLoading(false);
+      }
+    } else if (response?.type === "error") {
+      console.error("❌ OAuth Error:", response.error);
+      Alert.alert("Error", response.error?.message || "Authentication failed");
+      setGoogleLoading(false);
+    }
+  }, [response]);
 
   const checkLoginStatus = async () => {
     const isLoggedIn = await tokenStorage.isLoggedIn();
@@ -80,49 +124,54 @@ const Login = () => {
 
   // Handle Google OAuth Sign-In
   const handleGoogleSignIn = async () => {
-    setGoogleLoading(true);
     try {
-      // Check if Google Play Services are available (Android)
-      await GoogleSignin.hasPlayServices();
+      console.log("🔵 Starting Google Sign-In...");
+      console.log("Request ready?", !!request);
+      setGoogleLoading(true);
 
-      // Sign in with Google
-      await GoogleSignin.signIn();
+      const result = await promptAsync();
+      console.log("🎯 promptAsync result:", result);
+    } catch (error) {
+      console.error("❌ Google Sign-In Error:", error);
+      Alert.alert("Error", "Failed to initiate Google sign-in");
+      setGoogleLoading(false);
+    }
+  };
 
-      // Get the ID token
-      const tokens = await GoogleSignin.getTokens();
-      const idToken = tokens.idToken;
+  // Handle successful Google authentication
+  const handleGoogleAuthSuccess = async (token: string | undefined) => {
+    if (!token) {
+      Alert.alert("Error", "Failed to get Google token");
+      setGoogleLoading(false);
+      return;
+    }
+
+    try {
+      console.log("✅ Got Google token, sending to backend...");
 
       // Send token to your backend
       const response = await axios.post(API_ENDPOINTS.oauthSignIn, {
         provider: "google",
-        token: idToken,
+        token: token,
       });
 
       if (response.data.success) {
-        const { accessToken, refreshToken, user } = response.data;
+        const { accessToken: jwtToken, refreshToken, user } = response.data;
 
         // Store tokens and user data
-        await tokenStorage.saveTokens(accessToken, refreshToken);
+        await tokenStorage.saveTokens(jwtToken, refreshToken);
         await tokenStorage.saveUser(user);
 
         Alert.alert("Success", "Signed in with Google successfully!");
         router.replace("/account/dashboard");
       }
     } catch (error: any) {
-      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-        console.log("User cancelled Google sign-in");
-      } else if (error.code === statusCodes.IN_PROGRESS) {
-        console.log("Google sign-in in progress");
-      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-        Alert.alert("Error", "Google Play Services not available");
-      } else {
-        const message =
-          error.response?.data?.message ||
-          error.message ||
-          "Google sign-in failed";
-        Alert.alert("Error", message);
-        console.error("Google Sign-In Error:", error);
-      }
+      const message =
+        error.response?.data?.message ||
+        error.message ||
+        "Google sign-in failed";
+      Alert.alert("Error", message);
+      console.error("❌ Backend OAuth Error:", error);
     } finally {
       setGoogleLoading(false);
     }
