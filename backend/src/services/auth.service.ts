@@ -205,12 +205,12 @@ export const isValidPassword = (password: string) => {
   return passwordRegex.test(password);
 };
 
-// Generates a 5-Digit Random Alphanumeric Code
+// Generates a 6-Digit Random Alphanumeric Code
 export const generateCode = (): string => {
   const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   let code = "";
 
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 6; i++) {
     const randomIndex = Math.floor(Math.random() * characters.length);
     code += characters[randomIndex];
   }

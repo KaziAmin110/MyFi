@@ -58,7 +58,7 @@ const login = () => {
                 </TouchableOpacity>
             </View>
 
-            <Link href="/login" className="text-right text-sm #111010">Forgot password?</Link>
+            <Link href="/forgot_password" className="text-right text-sm #111010">Forgot password?</Link>
 
             <TouchableOpacity className="bg-primary rounded-xl py-4 mt-5 mb-20">
                 <Text className="text-center text-white font-medium text-lg">Log in</Text>
