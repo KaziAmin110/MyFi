@@ -13,8 +13,13 @@ import { Link, router } from "expo-router";
 import * as Google from "expo-auth-session/providers/google";
 import axios from "axios";
 import { API_ENDPOINTS } from "../../config/api";
-import { GOOGLE_WEB_CLIENT_ID } from "../../config/oauth";
+import {
+  GOOGLE_WEB_CLIENT_ID,
+  GOOGLE_IOS_CLIENT_ID,
+  GOOGLE_ANDROID_CLIENT_ID,
+} from "../../config/oauth";
 import { tokenStorage } from "../../utils/tokenStorage";
+import * as AuthSession from "expo-auth-session";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -25,33 +30,37 @@ const Login = () => {
   // Track password visibility
   const [showPassword, setShowPassword] = useState(false);
 
-  // Configure Expo Google Auth - request ID token for backend verification
+  // Configure Expo Google Auth
   const [request, response, promptAsync] = Google.useAuthRequest({
     clientId: GOOGLE_WEB_CLIENT_ID,
+    iosClientId: GOOGLE_IOS_CLIENT_ID,
+    androidClientId: GOOGLE_ANDROID_CLIENT_ID,
     responseType: "id_token",
     scopes: ["openid", "profile", "email"],
+    redirectUri: AuthSession.makeRedirectUri({
+      scheme: "myfi",
+      path: "login",
+    }),
   });
 
-  // Debug: Log request configuration
+  // Debug: Log request configuration (only once when ready)
   useEffect(() => {
-    console.log("OAuth Request Config:", {
-      clientId: GOOGLE_WEB_CLIENT_ID,
-      redirectUri: request?.redirectUri || "Auto-generated",
-      request: request ? "Request object exists" : "No request object",
-    });
+    if (!request) return;
+
+    console.log("✅ OAuth Request Ready");
+    console.log("📍 Redirect URI:", request.redirectUri);
   }, [request]);
 
-  // Debug: Log all response changes
+  // Debug: Log response changes
   useEffect(() => {
-    console.log("📱 OAuth Response changed:", response);
-    if (response) {
-      console.log("Response type:", response.type);
-      if ("authentication" in response) {
-        console.log("Authentication data:", response.authentication);
-      }
-      if ("error" in response) {
-        console.log("Error data:", response.error);
-      }
+    if (!response) return;
+
+    console.log("📱 OAuth Response:", response.type);
+
+    if (response.type === "success") {
+      console.log("✅ Authentication successful");
+    } else if (response.type === "error") {
+      console.log("❌ OAuth Error:", response.error);
     }
   }, [response]);
 
