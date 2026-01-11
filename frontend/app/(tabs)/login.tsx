@@ -25,20 +25,18 @@ const Login = () => {
   // Track password visibility
   const [showPassword, setShowPassword] = useState(false);
 
-  // Use Expo's auth proxy for consistent redirect URI
-  const redirectUri = "https://auth.expo.io/@myfi/myfi";
-
-  // Configure Expo Google Auth - use code flow instead of id_token
+  // Configure Expo Google Auth - request ID token for backend verification
   const [request, response, promptAsync] = Google.useAuthRequest({
     clientId: GOOGLE_WEB_CLIENT_ID,
-    redirectUri,
+    responseType: "id_token",
+    scopes: ["openid", "profile", "email"],
   });
 
   // Debug: Log request configuration
   useEffect(() => {
-    console.log("🔧 OAuth Request Config:", {
+    console.log("OAuth Request Config:", {
       clientId: GOOGLE_WEB_CLIENT_ID,
-      redirectUri,
+      redirectUri: request?.redirectUri || "Auto-generated",
       request: request ? "Request object exists" : "No request object",
     });
   }, [request]);
@@ -61,7 +59,7 @@ const Login = () => {
   useEffect(() => {
     checkLoginStatus();
   }, []);
-  z;
+
   // Handle Google OAuth response
   useEffect(() => {
     if (response?.type === "success") {
@@ -79,6 +77,9 @@ const Login = () => {
     } else if (response?.type === "error") {
       console.error("❌ OAuth Error:", response.error);
       Alert.alert("Error", response.error?.message || "Authentication failed");
+      setGoogleLoading(false);
+    } else if (response?.type === "cancel") {
+      console.log("User cancelled OAuth");
       setGoogleLoading(false);
     }
   }, [response]);
@@ -125,12 +126,12 @@ const Login = () => {
   // Handle Google OAuth Sign-In
   const handleGoogleSignIn = async () => {
     try {
-      console.log("🔵 Starting Google Sign-In...");
+      console.log("Starting Google Sign-In...");
       console.log("Request ready?", !!request);
       setGoogleLoading(true);
 
       const result = await promptAsync();
-      console.log("🎯 promptAsync result:", result);
+      console.log("promptAsync result:", result);
     } catch (error) {
       console.error("❌ Google Sign-In Error:", error);
       Alert.alert("Error", "Failed to initiate Google sign-in");
