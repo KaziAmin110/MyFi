@@ -420,19 +420,25 @@ export const upsertUserWithProvider = async (
   try {
     const { data, error } = await supabase
       .from("users")
-      .upsert({
-        email,
-        name,
-        provider,
-        provider_id: providerId,
-        avatar_url: avatarUrl,
-      })
-      .eq("email", email)
+      .upsert(
+        {
+          email,
+          name,
+          provider,
+          provider_id: providerId,
+          avatar_url: avatarUrl,
+        },
+        { onConflict: "email" }
+      )
       .select("id, name, email, provider_id, avatar_url, provider")
       .single();
 
     if (error) {
       throw new Error(error.message);
+    }
+
+    if (!data) {
+      throw new Error("Upsert operation did not return any data");
     }
 
     return new User(
