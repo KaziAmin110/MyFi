@@ -25,8 +25,7 @@ import {
   getUserByAttribute,
   createUser,
   getSignInInfoDB,
-  createUserWithProvider,
-  updateUserWithProvider,
+  upsertUserWithProvider,
 } from "../services/auth.service";
 
 interface AuthRequestBody {
@@ -192,7 +191,7 @@ export const signIn = async (
   }
 };
 
-// Allows User to Sign In with OAuth
+// Allows User to Sign In with OAuth (Google)
 export const oauthSignIn = async (
   req: Request,
   res: Response,
@@ -208,70 +207,55 @@ export const oauthSignIn = async (
 
     // Verify Token based on Provider
     if (provider === "google") {
-      const ticket = await googleClient.verifyIdToken({
-        idToken: token,
-        audience: GOOGLE_CLIENT_ID,
-      });
-      const payload = ticket.getPayload();
+      try {
+        const ticket = await googleClient.verifyIdToken({
+          idToken: token,
+          audience: GOOGLE_CLIENT_ID,
+        });
+        const payload = ticket.getPayload();
 
-      if (!payload) throw new Error("Invalid Google Token");
+        if (!payload || !payload.email) throw new Error("Invalid Google Token");
 
-      email = payload.email!;
-      name = payload.name || "";
-      providerId = payload.sub;
-      avatarUrl = payload.picture || "";
+        email = payload.email!;
+        name = payload.name || "";
+        providerId = payload.sub;
+        avatarUrl = payload.picture || "";
+      } catch (error: any) {
+        return res.status(401).json({
+          success: false,
+          message: "Invalid Google Token",
+        });
+      }
+    } else if (provider === "apple") {
+      // Apple OAuth verification logic would go here
     } else {
       throw new Error("Invalid Provider");
     }
 
-    let user = await getUserByAttribute("email", email);
+    let user = await upsertUserWithProvider(
+      email,
+      name,
+      provider,
+      providerId,
+      avatarUrl
+    );
 
-    if (user) {
-      const updateResult = await updateUserWithProvider(
-        email,
-        providerId,
-        avatarUrl
-      );
-
-      if (!(updateResult instanceof User)) {
-        return res.status(updateResult.status || 500).json({
-          success: false,
-          message: updateResult.message || "Failed to update user",
-        });
-      }
-
-      user = updateResult;
-    } else {
-      const createResult = await createUserWithProvider(
-        name,
-        email,
-        providerId,
-        avatarUrl
-      );
-
-      if (!(createResult instanceof User)) {
-        return res.status(createResult.status || 500).json({
-          success: false,
-          message: createResult.error || "Failed to create user",
-        });
-      }
-
-      user = createResult;
+    if (!user) {
+      throw new Error("Failed to create or update user with OAuth provider");
     }
-
-    if (!user) throw new Error("Failed to process user");
 
     const accessToken = user.generateAccessToken();
     const refreshToken = user.generateRefreshToken();
 
     await updateRefreshToken(user.id, refreshToken);
 
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: NODE_ENV === "production",
-      maxAge: 24 * 60 * 60 * 1000,
-      sameSite: "strict",
-    });
+    // Setting the refresh token in an HTTP-Only Cookie
+    // res.cookie("refreshToken", refreshToken, {
+    //   httpOnly: true,
+    //   secure: NODE_ENV === "production",
+    //   maxAge: 24 * 60 * 60 * 1000,
+    //   sameSite: "strict",
+    // });
 
     return res.status(200).json({
       success: true,
@@ -282,11 +266,13 @@ export const oauthSignIn = async (
         id: user.id,
         name: user.name,
         email: user.email,
+        avatar: user.avatar_url,
       },
     });
   } catch (error: any) {
-    console.log(error);
-    return res.status(400).json({ success: false, message: error.message });
+    console.error("[OAuth SignIn Error]: ", error);
+
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 

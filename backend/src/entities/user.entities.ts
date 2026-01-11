@@ -16,18 +16,21 @@ class User {
   name: string;
   email: string;
   provider_id: string | null;
+  provider: string | null;
   avatar_url: string | null;
 
   constructor(
     id: string,
     name: string,
     email: string,
+    provider: string | null = null,
     providerId: string | null = null,
     avatarUrl: string | null = null
   ) {
     this.id = id;
     this.name = name;
     this.email = email;
+    this.provider = provider;
     this.provider_id = providerId;
     this.avatar_url = avatarUrl;
   }

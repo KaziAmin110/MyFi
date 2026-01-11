@@ -409,3 +409,41 @@ export const updateUserWithProvider = async (
     return { status: 500, message: error.message };
   }
 };
+
+export const upsertUserWithProvider = async (
+  email: string,
+  name: string,
+  provider: string,
+  providerId: string,
+  avatarUrl: string
+) => {
+  try {
+    const { data, error } = await supabase
+      .from("users")
+      .upsert({
+        email,
+        name,
+        provider,
+        provider_id: providerId,
+        avatar_url: avatarUrl,
+      })
+      .eq("email", email)
+      .select("id, name, email, provider_id, avatar_url, provider")
+      .single();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return new User(
+      data.id,
+      data.name,
+      data.email,
+      data.provider,
+      data.provider_id,
+      data.avatar_url
+    );
+  } catch (error: any) {
+    return false;
+  }
+};
