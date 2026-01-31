@@ -99,7 +99,7 @@ Be specific but brief. This summary will be used as context for continuing the c
 }
 
 export async function generatePersonaBackstory(profile: any): Promise<{name: string, age: number, backstory: string}> {
-  if (!genAI) return "Generic person with typical financial situation.";
+  if (!genAI) return { name: 'Client', age: 30, backstory: 'Generic person with typical financial situation.' };
   
   const model = process.env.GEMINI_CHAT_MODEL || 'gemini-2.5-flash';
   

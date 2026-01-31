@@ -25,6 +25,8 @@ export async function saveSession(session: any) {
       persona: p.persona || null,
       persona_backstory: p.persona_backstory || null,
       first_impressions: session.first_impressions || null,
+      name: p.name || null,
+      age: p.age || null,
       
       // Store counts for each pile
       spontaneous_thats_me: p.spontaneous_thats_me || 0,
@@ -86,6 +88,8 @@ export async function getSession(sessionId: string) {
     const profile = {
       persona: s.persona || 'person',
       persona_backstory: s.persona_backstory || '',
+      name: s.name || 'Client',
+      age: s.age || 30,
       
       spontaneous_thats_me: s.spontaneous_thats_me || 0,
       spontaneous_sometimes_me: s.spontaneous_sometimes_me || 0,

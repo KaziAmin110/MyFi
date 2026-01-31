@@ -39,6 +39,8 @@ export function generateRandomProfile() {
     id: `profile_${Date.now()}_${Math.random().toString(36).slice(2,8)}`,
     persona: samplePersonas[Math.floor(Math.random() * samplePersonas.length)],
     persona_backstory: '',
+    name: '',
+    age: 0,
     
     spontaneous_thats_me: spontaneous.thats_me,
     spontaneous_sometimes_me: spontaneous.sometimes_me,
