@@ -24,6 +24,7 @@ export async function saveSession(session: any) {
       // Store persona and backstory
       persona: p.persona || null,
       persona_backstory: p.persona_backstory || null,
+      first_impressions: session.first_impressions || null,
       
       // Store counts for each pile
       spontaneous_thats_me: p.spontaneous_thats_me || 0,
@@ -123,7 +124,8 @@ export async function getSession(sessionId: string) {
       transcript, 
       status: s.status,
       cache_name: s.cache_name || null,
-      coach_notes: s.coach_notes || ''
+      coach_notes: s.coach_notes || '',
+      first_impressions: s.first_impressions || ''
     };
 }
 

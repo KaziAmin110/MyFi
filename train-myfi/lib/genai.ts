@@ -98,7 +98,7 @@ Be specific but brief. This summary will be used as context for continuing the c
   }
 }
 
-export async function generatePersonaBackstory(profile: any): Promise<string> {
+export async function generatePersonaBackstory(profile: any): Promise<{name: string, age: number, backstory: string}> {
   if (!genAI) return "Generic person with typical financial situation.";
   
   const model = process.env.GEMINI_CHAT_MODEL || 'gemini-2.5-flash';
@@ -120,25 +120,21 @@ export async function generatePersonaBackstory(profile: any): Promise<string> {
   dominantHabitudes.push(habitudes[0].name, habitudes[1].name);
   lowHabitudes.push(habitudes[5].name, habitudes[4].name);
   
-  const systemPrompt = `You are creating a realistic financial backstory for a coaching client. Based on their Money Habitudes profile, create a 3-paragraph backstory that includes:
+  const systemPrompt = `You are creating a realistic character profile for a coaching client. Generate their identity and financial backstory.
 
-Paragraph 1: Current financial situation
-- Specific income range (realistic for their persona: ${profile.persona})
-- Debt amounts if any (credit card, loans, etc.)
-- Savings/emergency fund status
-- Recent major financial decision
+Format your response as JSON:
+{
+  "name": "[realistic first name appropriate for their background]",
+  "age": [realistic age for ${profile.persona}],
+  "backstory": "[1 paragraph, 4-5 sentences about their financial situation]"
+}
 
-Paragraph 2: Spending patterns and behaviors
-- 2-3 specific money habits tied to their dominant habitudes (${dominantHabitudes.join(', ')})
-- Include contradictory behaviors they don't recognize
-- Recent examples of these patterns in action
+For the backstory paragraph, based on their Money Habitudes profile, include:
+- Current financial situation (income range realistic for ${profile.persona}, debt/savings status)
+- 2 specific money habits tied to dominant habitudes (${dominantHabitudes.join(', ')})
+- 1 blind spot or anxiety related to low habitudes (${lowHabitudes.join(', ')})
 
-Paragraph 3: Emotional relationship with money
-- Hidden anxieties or blind spots related to low habitudes (${lowHabitudes.join(', ')})
-- What they avoid thinking about
-- What they justify or rationalize
-
-CRITICAL: Make this feel like a real person with messy, contradictory behaviors. Include specific numbers and situations. Don't make them self-aware - they think their choices make sense.`;
+CRITICAL: Be concise but specific. Make this feel like a real person with contradictory behaviors. Include 1-2 specific numbers/situations. Don't make them self-aware.`;
 
   try {
     const result = await genAI.models.generateContent({
@@ -146,12 +142,35 @@ CRITICAL: Make this feel like a real person with messy, contradictory behaviors.
       config: { systemInstruction: systemPrompt },
       contents: [{
         role: 'user',
-        parts: [{ text: `Create backstory for: ${profile.persona}\n\nMoney Habitudes:\n- Spontaneous: ${profile.spontaneous_thats_me} thats_me\n- Status: ${profile.status_thats_me} thats_me\n- Carefree: ${profile.carefree_thats_me} thats_me\n- Planning: ${profile.planning_thats_me} thats_me\n- Giving: ${profile.giving_thats_me} thats_me\n- Security: ${profile.security_thats_me} thats_me` }]
+        parts: [{ text: `Create profile for: ${profile.persona}\n\nMoney Habitudes:\n- Spontaneous: ${profile.spontaneous_thats_me} thats_me\n- Status: ${profile.status_thats_me} thats_me\n- Carefree: ${profile.carefree_thats_me} thats_me\n- Planning: ${profile.planning_thats_me} thats_me\n- Giving: ${profile.giving_thats_me} thats_me\n- Security: ${profile.security_thats_me} thats_me` }]
       }]
     });
-    return result.text;
+    
+    const text = result.text;
+    // Try to parse JSON from the response
+    try {
+      // Remove markdown code blocks if present
+      const jsonText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      const parsed = JSON.parse(jsonText);
+      return {
+        name: parsed.name || 'Client',
+        age: parsed.age || 30,
+        backstory: parsed.backstory || text
+      };
+    } catch (parseErr) {
+      // If JSON parsing fails, treat entire response as backstory
+      return {
+        name: 'Client',
+        age: 30,
+        backstory: text
+      };
+    }
   } catch (err) {
-    return `${profile.persona} with typical financial situation and money habits.`;
+    return {
+      name: 'Client',
+      age: 30,
+      backstory: `${profile.persona} with typical financial situation and money habits.`
+    };
   }
 }
 

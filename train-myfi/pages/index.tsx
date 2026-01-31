@@ -13,7 +13,10 @@ export default function Home() {
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summary, setSummary] = useState<string>('');
   const [coachNotes, setCoachNotes] = useState<string>('');
+  const [firstImpressions, setFirstImpressions] = useState<string>('');
   const [notesSaving, setNotesSaving] = useState(false);
+  const [impressionsSaving, setImpressionsSaving] = useState(false);
+  const [showBackstory, setShowBackstory] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'assessment'>('overview');
   const chatRef = useRef<HTMLDivElement>(null);
@@ -112,7 +115,9 @@ export default function Home() {
       setSession(s);
       setProfile(s.profile);
       setCoachNotes('');
+      setFirstImpressions('');
       setSummary('');
+      setShowBackstory(false);
       loadSessionsList(); // Refresh sessions list
     } catch (e) {
       console.error('Failed to create profile', e);
@@ -133,7 +138,9 @@ export default function Home() {
         setSession(null);
         setProfile(null);
         setCoachNotes('');
+        setFirstImpressions('');
         setSummary('');
+        setShowBackstory(false);
       }
       loadSessionsList();
     } catch (e) {
@@ -148,7 +155,9 @@ export default function Home() {
       setSession(s);
       setProfile(s.profile);
       setCoachNotes(s.coach_notes || '');
+      setFirstImpressions(s.first_impressions || '');
       setSummary('');
+      setShowBackstory(false);
     } catch (e) {
       console.error('Failed to load session', e);
     }
@@ -181,6 +190,22 @@ export default function Home() {
       console.error('Failed to save notes', e);
     } finally {
       setNotesSaving(false);
+    }
+  }
+
+  async function saveFirstImpressions() {
+    if (!session) return;
+    setImpressionsSaving(true);
+    try {
+      await fetch('/api/updateCoachNotes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: session.session_id, firstImpressions })
+      });
+    } catch (e) {
+      console.error('Failed to save impressions', e);
+    } finally {
+      setImpressionsSaving(false);
     }
   }
 
@@ -292,26 +317,83 @@ export default function Home() {
             {profile ? (
               <div className="profile-card">
                 <div className="persona">Persona: {profile.persona}</div>
+                {profile.name && (
+                  <div style={{fontSize: '14px', color: 'rgba(255,255,255,0.8)', marginTop: '4px'}}>
+                    Name: {profile.name}{profile.age ? `, Age: ${profile.age}` : ''}
+                  </div>
+                )}
 
                 {/* Overview Tab */}
                 {activeTab === 'overview' && (
                   <>
+                    <div className="habitude-section" style={{marginBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '16px'}}>
+                      <div className="habitude-name">First Impressions</div>
+                      <div style={{fontSize: '11px', color: 'var(--muted)', marginBottom: '8px'}}>
+                        What are your initial thoughts when seeing this assessment data?
+                      </div>
+                      <textarea
+                        value={firstImpressions}
+                        onChange={(e) => setFirstImpressions(e.target.value)}
+                        onBlur={saveFirstImpressions}
+                        placeholder="Your first impressions after seeing their Money Habitudes profile..."
+                        style={{
+                          width: '100%',
+                          minHeight: '80px',
+                          padding: '8px',
+                          backgroundColor: 'rgba(255,255,255,0.05)',
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          borderRadius: '6px',
+                          color: 'var(--text)',
+                          fontSize: '13px',
+                          fontFamily: 'inherit',
+                          resize: 'vertical'
+                        }}
+                      />
+                      {impressionsSaving && <div style={{fontSize: '11px', color: 'var(--muted)', marginTop: '4px'}}>Saving...</div>}
+                    </div>
+
                     {profile.persona_backstory && (
                       <div className="habitude-section" style={{marginBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '16px'}}>
-                        <div className="habitude-name">Financial Backstory</div>
-                        <div style={{
-                          fontSize: '12px',
-                          lineHeight: '1.5',
-                          color: 'rgba(255,255,255,0.7)',
-                          whiteSpace: 'pre-wrap'
-                        }}>
-                          {profile.persona_backstory}
-                        </div>
+                        <button
+                          onClick={() => setShowBackstory(!showBackstory)}
+                          style={{
+                            width: '100%',
+                            padding: '8px 12px',
+                            backgroundColor: 'rgba(255,255,255,0.05)',
+                            border: '1px solid rgba(255,255,255,0.2)',
+                            borderRadius: '6px',
+                            color: 'var(--text)',
+                            fontSize: '13px',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: showBackstory ? '12px' : '0'
+                          }}
+                        >
+                          <span>🔍 Real Financial Backstory (Hidden)</span>
+                          <span style={{fontSize: '16px'}}>{showBackstory ? '▼' : '▶'}</span>
+                        </button>
+                        {showBackstory && (
+                          <div style={{
+                            fontSize: '12px',
+                            lineHeight: '1.5',
+                            color: 'rgba(255,255,255,0.7)',
+                            whiteSpace: 'pre-wrap',
+                            padding: '12px',
+                            backgroundColor: 'rgba(255,165,0,0.1)',
+                            border: '1px solid rgba(255,165,0,0.3)',
+                            borderRadius: '6px'
+                          }}>
+                            {profile.persona_backstory}
+                          </div>
+                        )}
                       </div>
                     )}
 
                     <div className="habitude-section" style={{marginBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '16px'}}>
-                      <div className="habitude-name">Coach Notes</div>
+                      <div className="habitude-name">Coaching Notes</div>
                       <textarea
                         value={coachNotes}
                         onChange={(e) => setCoachNotes(e.target.value)}

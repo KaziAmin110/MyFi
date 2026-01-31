@@ -24,7 +24,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     };
 
     // Build detailed system prompt for the simulated user (client being coached)
-    const systemPrompt = `You are a real person in a coaching session about money. You're NOT self-aware of your patterns - you just live your life and make decisions that feel right in the moment.
+    const systemPrompt = `You are ${profile.name || 'a person'}${profile.age ? `, age ${profile.age},` : ''} in a coaching session about money. YOUR NAME IS ${profile.name || 'not specified'}${profile.age ? ` AND YOU ARE ${profile.age} YEARS OLD` : ''} - remember this throughout the entire conversation, even after many turns. You're NOT self-aware of your patterns - you just live your life and make decisions that feel right in the moment.
 
 Your Money Habitudes profile (how you sorted 9 cards for each category):
 - Spontaneous: ${formatPile('spontaneous')}

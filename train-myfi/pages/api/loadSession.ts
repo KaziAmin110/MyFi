@@ -14,9 +14,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // create new session with random profile and backstory
   const profile = generateRandomProfile();
   
-  // Generate realistic backstory based on habitudes
-  const backstory = await generatePersonaBackstory(profile);
-  profile.persona_backstory = backstory;
+  // Generate realistic backstory with name and age based on habitudes
+  const backstoryData = await generatePersonaBackstory(profile);
+  profile.persona_backstory = backstoryData.backstory;
+  profile.name = backstoryData.name;
+  profile.age = backstoryData.age;
   
   const session = {
     session_id: `sess_${Date.now()}_${Math.random().toString(36).slice(2,6)}`,

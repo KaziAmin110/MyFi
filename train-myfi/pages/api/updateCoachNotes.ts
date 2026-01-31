@@ -7,15 +7,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const { sessionId, notes } = req.body;
+    const { sessionId, notes, firstImpressions } = req.body;
     
     if (!sessionId) {
       return res.status(400).json({ error: 'sessionId required' });
     }
 
+    const updateData: any = {};
+    if (notes !== undefined) updateData.coach_notes = notes || '';
+    if (firstImpressions !== undefined) updateData.first_impressions = firstImpressions || '';
+
     await supa
       .from('sessions')
-      .update({ coach_notes: notes || '' })
+      .update(updateData)
       .eq('id', sessionId);
 
     return res.status(200).json({ success: true });
