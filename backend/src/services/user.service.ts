@@ -75,3 +75,40 @@ export const uploadFile = async (
     throw error;
   }
 };
+
+export const deleteFileFromSupabase = async (filePath: string) => {
+  try {
+    const { error } = await supabase.storage.from("avatars").remove([filePath]);
+
+    if (error) {
+      console.error("Supbase error deleting file:", error.message);
+      return null;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error deleting file:", error);
+    throw error;
+  }
+};
+
+export const deleteUserRecord = async (user_id: string) => {
+  try {
+    const { data, error } = await supabase
+      .from("users")
+      .delete()
+      .eq("id", user_id)
+      .select("id, name, email, provider_id, avatar_url")
+      .single();
+
+    if (error) {
+      console.error("Supbase error deleting user record:", error.message);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error deleting user record:", error);
+    throw error;
+  }
+};

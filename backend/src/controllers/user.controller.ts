@@ -1,11 +1,14 @@
 import { Request, Response, NextFunction } from "express";
 import {
+  deleteFileFromSupabase,
+  deleteUserRecord,
   getUserProfile,
   updateUserProfile,
   uploadFile,
 } from "../services/user.service";
 import { getAllUserSessions } from "../services/assessment.service";
 import path from "path";
+import { deleteUser, getUserByAttribute } from "../services/auth.service";
 
 const ONBOARDING_ASSESSMENT_ID = "1";
 
@@ -133,6 +136,72 @@ export const updateAvatar = async (
       message: "Profile updated successfully",
       data: {
         user: updatedUserData,
+      },
+    });
+  } catch (error: any) {
+    return res
+      .status(error.statusCode || 500)
+      .json({ success: false, message: error.message || "Server Error" });
+  }
+};
+
+// Deletes User Account and all related data
+export const deleteAccount = async (
+  req: Request & { user?: string },
+  res: Response,
+): Promise<Response | void> => {
+  try {
+    const user_id = req.user;
+    const { password } = req.body;
+
+    if (!password) {
+      console.error("Password is required");
+      return res
+        .status(400)
+        .json({ success: false, message: "Password is required" });
+    }
+
+    const user = await getUserByAttribute("id", user_id as string);
+
+    if (!user || !user.password) {
+      console.error("User not found");
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    const isPasswordValid = await user.comparePassword(password, user.password);
+
+    if (!isPasswordValid) {
+      console.error("Invalid password");
+      return res.status(401).json({
+        success: false,
+        message: "Invalid password. Account deletion aborted.",
+      });
+    }
+
+    if (user.avatar_url && user.avatar_url.includes("avatars/")) {
+      const parts = user.avatar_url.split("avatars/");
+      if (parts.length > 1) {
+        const filePath = parts[1];
+        await deleteFileFromSupabase(filePath);
+      }
+    }
+
+    const deletedUserData = await deleteUserRecord(user_id as string);
+
+    if (!deletedUserData) {
+      console.error("Failed to delete user account");
+      return res
+        .status(500)
+        .json({ success: false, message: "Failed to delete account" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Account and all data deleted successfully",
+      data: {
+        user: deletedUserData,
       },
     });
   } catch (error: any) {
