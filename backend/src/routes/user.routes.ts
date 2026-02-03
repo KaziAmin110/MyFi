@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { authenticateUser } from "../middlewares/auth.middleware";
+import { changePassword } from "../controllers/auth.controller";
 import {
   getUserContext,
   updateAvatar,
@@ -18,5 +19,6 @@ userRouter.get(
 
 userRouter.put("/me/profile", authenticateUser, updateProfile);
 userRouter.put("/me/avatar", authenticateUser, updateAvatar);
+userRouter.put("/me/password", authenticateUser, changePassword);
 
 export default userRouter;

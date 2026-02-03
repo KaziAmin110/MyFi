@@ -45,7 +45,7 @@ const transporter = nodemailer.createTransport({
 // Allows for the Creation of a New User in the Supabase DB
 export const signUp = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<Response | void> => {
   try {
     const { name, email, password } = req.body;
@@ -59,7 +59,7 @@ export const signUp = async (
     // Check Wheter Email and Password Criterias are met
     if (!isValidEmailFormat(email)) {
       const error = new Error(
-        "Emai must be in the format <string@string.string>"
+        "Emai must be in the format <string@string.string>",
       );
       (error as any).statusCode = 400;
       throw error;
@@ -67,7 +67,7 @@ export const signUp = async (
 
     if (!isValidPassword(password)) {
       const error = new Error(
-        `Password must meet the following requirements: Atleast 8 characters : Atleast One Special Character : Atleast One Alphanumeric Character`
+        `Password must meet the following requirements: Atleast 8 characters : Atleast One Special Character : Atleast One Alphanumeric Character`,
       );
       (error as any).statusCode = 400;
       throw error;
@@ -127,7 +127,7 @@ export const signUp = async (
 export const signIn = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<Response | void> => {
   try {
     const { email, password } = req.body;
@@ -157,7 +157,7 @@ export const signIn = async (
     // Checking if the given password matches the hashed password
     const isPasswordValid = await user.comparePassword(
       password,
-      hashedPasswordFromDB
+      hashedPasswordFromDB,
     );
 
     if (!isPasswordValid) {
@@ -203,7 +203,7 @@ export const signIn = async (
 export const signOut = async (
   req: Request & { user?: any },
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<Response | void> => {
   try {
     // Deletes Refresh Token in DB associated with user_id
@@ -227,7 +227,7 @@ export const signOut = async (
 export const forgotPassword = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<Response | void> => {
   try {
     const { email } = req.body;
@@ -244,7 +244,7 @@ export const forgotPassword = async (
     if (user) {
       const reset_token = generateCode();
       const resetTokenExpires = new Date(
-        Date.now() + 60 * 60 * 1000
+        Date.now() + 60 * 60 * 1000,
       ).toISOString(); // 1 hour
 
       await upsertPasswordResetDB(email, reset_token, resetTokenExpires);
@@ -277,7 +277,7 @@ export const forgotPassword = async (
 export const verifyResetToken = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<Response | void> => {
   try {
     const { reset_token } = req.body;
@@ -318,7 +318,7 @@ export const verifyResetToken = async (
 export const resetPassword = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<Response | void> => {
   try {
     const { reset_token, new_password } = req.body;
@@ -337,7 +337,7 @@ export const resetPassword = async (
 
     if (!isValidPassword(new_password)) {
       const error = new Error(
-        "Password must meet the following requirements: 8 characters : Atleast One Special Character : Atleast One Alphanumeric Character"
+        "Password must meet the following requirements: 8 characters : Atleast One Special Character : Atleast One Alphanumeric Character",
       );
       (error as any).statusCode = 400;
       throw error;
@@ -375,7 +375,7 @@ export const resetPassword = async (
 export const refreshAccess = async (
   req: Request & { cookies?: any },
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<Response | void> => {
   try {
     // Get Refresh Token from Cookies
@@ -392,7 +392,7 @@ export const refreshAccess = async (
 
     if (!user) {
       const error = new Error(
-        "JWT refresh failed - Unable to Authenticate User"
+        "JWT refresh failed - Unable to Authenticate User",
       );
       (error as any).statusCode = 403;
       throw error;
@@ -403,14 +403,14 @@ export const refreshAccess = async (
       const payload = jwt.verify(refreshToken, REFRESH_SECRET as string) as any;
       if (!payload || user.id !== payload.id) {
         const error = new Error(
-          "JWT refresh failed - Unable to Authenticate User."
+          "JWT refresh failed - Unable to Authenticate User.",
         );
         (error as any).statusCode = 403;
         throw error;
       }
     } catch (verifyErr) {
       const error = new Error(
-        "JWT refresh failed - Unable to Authenticate User."
+        "JWT refresh failed - Unable to Authenticate User.",
       );
       (error as any).statusCode = 403;
       throw error;
@@ -422,6 +422,69 @@ export const refreshAccess = async (
       success: true,
       message: "JWT Refresh Successful",
       accessToken,
+    });
+  } catch (err: any) {
+    return res
+      .status(err.statusCode || 500)
+      .json({ success: false, message: err.message || "Server Error" });
+  }
+};
+
+// Change Password for Authenticated User
+export const changePassword = async (
+  req: Request & { user?: any },
+  res: Response,
+  next: NextFunction,
+): Promise<Response | void> => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+    const user_id = req.user;
+
+    if (!user_id) {
+      const error = new Error("User Not Found");
+      (error as any).statusCode = 404;
+      throw error;
+    }
+
+    if (!isValidPassword(newPassword)) {
+      const error = new Error(
+        "Password must meet the following requirements: 8 characters : Atleast One Special Character : Atleast One Alphanumeric Character",
+      );
+      (error as any).statusCode = 400;
+      throw error;
+    }
+
+    const user = await getUserByAttribute("id", user_id);
+
+    if (!user || !user.password) {
+      const error = new Error("User Not Found");
+      (error as any).statusCode = 404;
+      throw error;
+    }
+
+    const validPassword = await user.comparePassword(
+      oldPassword,
+      user.password,
+    );
+
+    if (!validPassword) {
+      const error = new Error("Invalid Password");
+      (error as any).statusCode = 401;
+      throw error;
+    }
+
+    const hashedPassword = await User.hashPassword(newPassword);
+    const updatedUser = await updateUserPassword("id", user_id, hashedPassword);
+
+    if (updatedUser.error) {
+      const error = new Error("Failed to Update Password");
+      (error as any).statusCode = 500;
+      throw error;
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Password Changed Successfully",
     });
   } catch (err: any) {
     return res

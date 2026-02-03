@@ -17,19 +17,22 @@ class User {
   email: string;
   provider_id: string | null;
   avatar_url: string | null;
+  password?: string;
 
   constructor(
     id: string,
     name: string,
     email: string,
     providerId: string | null = null,
-    avatarUrl: string | null = null
+    avatarUrl: string | null = null,
+    password?: string,
   ) {
     this.id = id;
     this.name = name;
     this.email = email;
     this.provider_id = providerId;
     this.avatar_url = avatarUrl;
+    this.password = password;
   }
 
   // Handles given user password hashing
@@ -41,7 +44,7 @@ class User {
   // Compares the given user password with the hashed password
   async comparePassword(
     plainPassword: string,
-    hashedPassword: string
+    hashedPassword: string,
   ): Promise<boolean> {
     return bcrypt.compare(plainPassword, hashedPassword);
   }
