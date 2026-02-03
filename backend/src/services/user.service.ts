@@ -21,11 +21,15 @@ export const getUserProfile = async (user_id: string) => {
 };
 
 // Updates User Profile Information for Text Data (Name)
-export const updateUserProfile = async (user_id: string, name: string) => {
+export const updateUserProfile = async (
+  user_id: string,
+  attribute: string,
+  value: string,
+) => {
   try {
     const { data, error } = await supabase
       .from("users")
-      .update({ name })
+      .update({ [attribute]: value })
       .eq("id", user_id)
       .select("id, name, email, provider_id, avatar_url")
       .single();
@@ -38,6 +42,36 @@ export const updateUserProfile = async (user_id: string, name: string) => {
     return data;
   } catch (error) {
     console.error("Error updating user profile:", error);
+    throw error;
+  }
+};
+
+export const uploadFile = async (
+  file: Express.Multer.File,
+  filePath: string,
+) => {
+  try {
+    const { data, error } = await supabase.storage
+      .from("avatars")
+      .upload(filePath, file.buffer);
+
+    if (error) {
+      console.error("Supbase error uploading file:", error.message);
+      return null;
+    }
+
+    const { data: urlData } = supabase.storage
+      .from("avatars")
+      .getPublicUrl(filePath);
+
+    if (!urlData) {
+      console.error("Supbase error getting public url");
+      return null;
+    }
+
+    return urlData.publicUrl;
+  } catch (error) {
+    console.error("Error uploading file:", error);
     throw error;
   }
 };

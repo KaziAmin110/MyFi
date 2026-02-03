@@ -1,6 +1,10 @@
 import { Router } from "express";
 import { authenticateUser } from "../middlewares/auth.middleware";
-import { getUserContext, updateProfile } from "../controllers/user.controller";
+import {
+  getUserContext,
+  updateAvatar,
+  updateProfile,
+} from "../controllers/user.controller";
 import { getAssessmentHistory } from "../controllers/assessment.controller";
 
 const userRouter = Router();
@@ -11,6 +15,8 @@ userRouter.get(
   authenticateUser,
   getAssessmentHistory,
 );
+
 userRouter.put("/me/profile", authenticateUser, updateProfile);
+userRouter.put("/me/avatar", authenticateUser, updateAvatar);
 
 export default userRouter;
