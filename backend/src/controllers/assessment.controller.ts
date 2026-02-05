@@ -188,9 +188,7 @@ export const getAssessmentResults = async (
 
     return res.status(200).json({
       success: true,
-      data: {
-        habitude_summary: results,
-      },
+      data: results,
     });
   } catch (error: any) {
     console.error("Get Results Error:", error);
