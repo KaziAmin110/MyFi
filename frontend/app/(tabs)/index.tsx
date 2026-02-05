@@ -1,10 +1,10 @@
 import { Link, router } from "expo-router";
-import {useState} from "react";
+import { useState } from "react";
 import { Text, View, Button, Image, StyleSheet, Pressable, Dimensions, FlatList, useWindowDimensions} from "react-native";
 
  const cards = [
     {
-      image: require("../../assets/images/brain.png"),
+      image: require("../../assets/images/MH_cards.png"),
       title: "Discover What Drives Your Money Decisions",
       subtext: 'Your Habits + Attitudes = Your Money Personality',
       imageSz: 200,
