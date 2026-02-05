@@ -135,9 +135,49 @@ body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI
 .controls { padding:12px 16px; border-top:1px solid rgba(255,255,255,0.06); display:flex; gap:8px; }
 .input { flex:1; background:#0e1116; color: var(--text); border:1px solid rgba(255,255,255,0.08); border-radius: 10px; padding:12px; outline:none; }
 .input::placeholder{ color:#5b6573; }
-.btn { background: var(--accent); border:none; color:white; border-radius:10px; padding:10px 14px; cursor:pointer; }
-.btn:disabled{ opacity:0.6; cursor:default; }
+.btn { background: var(--accent); border:none; color:white; border-radius:10px; padding:10px 14px; cursor:pointer; transition: all 0.2s; }
+.btn:hover:not(:disabled) { background: var(--accent-600); transform: translateY(-1px); }
+.btn:active:not(:disabled) { transform: translateY(0); }
+.btn:disabled{ opacity:0.5; cursor:not-allowed; filter: grayscale(50%); }
 .btn.secondary{ background: transparent; border:1px solid rgba(255,255,255,0.12); color: var(--text); }
+.btn.secondary:hover:not(:disabled) { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.2); }
+
+/* Typing Indicator */
+.typing-indicator {
+  display: flex;
+  flex-direction: column;
+}
+.typing-dots {
+  display: flex;
+  gap: 4px;
+  padding: 8px 0;
+}
+.typing-dots span {
+  width: 8px;
+  height: 8px;
+  background: rgba(255,255,255,0.5);
+  border-radius: 50%;
+  animation: typing 1.4s infinite ease-in-out;
+}
+.typing-dots span:nth-child(1) {
+  animation-delay: 0s;
+}
+.typing-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.typing-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+@keyframes typing {
+  0%, 60%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
 
 /* Summary Panel */
 .summary { 

@@ -120,7 +120,51 @@ export async function generatePersonaBackstory(profile: any): Promise<{name: str
   dominantHabitudes.push(habitudes[0].name, habitudes[1].name);
   lowHabitudes.push(habitudes[5].name, habitudes[4].name);
   
+  // Build intensity context for dominant and low habitudes
+  const intensityContext = habitudes.map(h => {
+    let intensity = '';
+    if (h.score >= 7) intensity = 'VERY STRONG/EXTREME';
+    else if (h.score >= 4) intensity = 'MODERATE';
+    else if (h.score >= 1) intensity = 'MILD';
+    else intensity = 'NOT PRESENT';
+    return `${h.name}: ${h.score}/9 (${intensity})`;
+  }).join('\n');
+  
+  const frameworkDefinitions = `
+MONEY HABITUDES FRAMEWORK (use these exact definitions):
+
+PLANNING: Money helps achieve goals. Using money INTENTIONALLY for goals (practical OR impractical - planning a vacation even when rent is short is still planning behavior). This is about financial goal-setting and intentional spending, NOT about being organized or making to-do lists.
+Examples: Budgeting apps, saving for specific purchases, investing for retirement, planning dream vacation even if financially risky
+
+SECURITY: Money = feeling safe and in control. EMOTIONAL financial safety in the moment. Financial vigilance and need to FEEL safe regardless of what facts say. May abandon logical plans if they don't FEEL safe emotionally.
+Examples: Emergency fund obsession, checking accounts daily, anxious about bills even when financially stable, needs cash on hand to feel secure
+
+SPONTANEOUS: Money = enjoy the moment. Acting impulsively when emotionally flooded. KNOWS better but does it anyway, then feels guilty after. Out of control with spending.
+Examples: Impulse purchases when stressed, online shopping when bored, buying things they regret, emotional spending they know is wrong
+
+CAREFREE: Money isn't a priority. GIVEN UP control (not out of control like Spontaneous). From past financial failures or never being given financial control. Lets life happen.
+Examples: Doesn't check account balance, avoids financial decisions, lets others manage money, "it'll work out" attitude from learned helplessness
+
+STATUS: Money = present positive image to others. Using money/items to fit in OR stand out. Impression on others matters. The focus returns to self - wants recognition.
+Examples: Designer clothes to impress, newest tech to keep up, expensive car for image, brand-name everything, social media flexing
+
+GIVING: Money = help others. ONLY outward-facing help. Genuine joy from giving with NO expectation of recognition. Focus stays on others, not self.
+Examples: Anonymous donations, helping family without mention, paying friend's bill quietly, tithing, genuine generosity without wanting credit
+
+INTENSITY MATTERS - Score Spectrum:
+- 7-9 "That's Me" cards = VERY STRONG/EXTREME pattern - this dominates their financial behavior, almost compulsive
+- 4-6 cards = MODERATE pattern - shows up regularly, significant but not overwhelming
+- 1-3 cards = MILD pattern - occasional, subtle, background influence
+- 0 cards = NOT PRESENT - this behavior doesn't describe them at all
+
+Scale the behaviors in the backstory to match intensity. A 9 in Spontaneous = serious impulse control issues. A 4 in Spontaneous = occasional impulse buys.`;
+
   const systemPrompt = `You are creating a realistic character profile for a coaching client. Generate their identity and financial backstory.
+
+${frameworkDefinitions}
+
+CURRENT PROFILE INTENSITY:
+${intensityContext}
 
 Format your response as JSON:
 {
@@ -131,10 +175,20 @@ Format your response as JSON:
 
 For the backstory paragraph, based on their Money Habitudes profile, include:
 - Current financial situation (income range realistic for ${profile.persona}, debt/savings status)
-- 2 specific money habits tied to dominant habitudes (${dominantHabitudes.join(', ')})
+- 2 specific MONEY BEHAVIORS tied to dominant habitudes (${dominantHabitudes.join(', ')}) - scale intensity to their scores
 - 1 blind spot or anxiety related to low habitudes (${lowHabitudes.join(', ')})
 
-CRITICAL: Be concise but specific. Make this feel like a real person with contradictory behaviors. Include 1-2 specific numbers/situations. Don't make them self-aware.`;
+CRITICAL - NATURAL HUMAN COMMUNICATION:
+- Use the EXACT Money Habitudes definitions - don't use general life behaviors
+- PLANNING = financial goal-setting, NOT life organization
+- SECURITY = emotional need to feel financially safe, NOT general safety
+- Scale behavior intensity to match scores (9 is extreme, 4 is moderate, 0 is absent)
+- Make them talk/think like a REAL PERSON with these patterns, not someone analyzing their patterns diplomatically
+- HIGH habitudes (7-9): They embody this naturally without hedging. High Spontaneous = justify impulses or feel guilty after, NOT "sometimes I wonder if it was wise"
+- LOW habitudes (0-2): They genuinely don't do this, period. 0 Planning = actually don't set financial goals, NOT "sometimes I try to plan"
+- Let them be definitive about some things, casual about others, unaware of blind spots - like actual humans
+- Don't make them overly self-aware, balanced, or diplomatic - they have real patterns and real blind spots
+- Be concise but specific. Include 1-2 specific numbers/situations.`;
 
   try {
     const result = await genAI.models.generateContent({

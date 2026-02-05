@@ -215,7 +215,9 @@ export default function Home() {
         <button className="btn secondary" onClick={newProfile} disabled={profileLoading}>
           {profileLoading ? 'Generating Profile...' : 'New Random Profile / Session'}
         </button>
-        <button className="btn secondary" onClick={generateSummary}>Generate AI Summary</button>
+        <button className="btn secondary" onClick={generateSummary} disabled={summaryLoading}>
+          {summaryLoading ? 'Generating Summary...' : 'Generate AI Summary'}
+        </button>
       </div>
 
       <div className="shell">
@@ -261,6 +263,18 @@ export default function Home() {
                   </div>
                 </div>
               ))}
+              {loading && (
+                <div className="row model">
+                  <div className="bubble typing-indicator">
+                    <div className="label">User</div>
+                    <div className="typing-dots">
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="controls">
               <input
@@ -333,7 +347,11 @@ export default function Home() {
                       </div>
                       <textarea
                         value={firstImpressions}
-                        onChange={(e) => setFirstImpressions(e.target.value)}
+                        onChange={(e) => {
+                          setFirstImpressions(e.target.value);
+                          e.target.style.height = 'auto';
+                          e.target.style.height = e.target.scrollHeight + 'px';
+                        }}
                         onBlur={saveFirstImpressions}
                         placeholder="Your first impressions after seeing their Money Habitudes profile..."
                         style={{
@@ -346,7 +364,8 @@ export default function Home() {
                           color: 'var(--text)',
                           fontSize: '13px',
                           fontFamily: 'inherit',
-                          resize: 'vertical'
+                          resize: 'vertical',
+                          overflow: 'hidden'
                         }}
                       />
                       {impressionsSaving && <div style={{fontSize: '11px', color: 'var(--muted)', marginTop: '4px'}}>Saving...</div>}
