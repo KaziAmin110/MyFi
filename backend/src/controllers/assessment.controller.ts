@@ -2,11 +2,11 @@ import { Request, Response } from "express";
 import {
   AnsweredQuestionData,
   createNewAssessmentSession,
-  getAndCalculateResults,
   getAssessmentQuestions,
   getAssessmentSessionData,
   getExistingSessionData,
   getPreviouslyAnsweredQuestions,
+  getSessionResults,
   getUserAssessmentHistory,
   isOngoingAssessment,
   markSessionAsCompleted,
@@ -19,7 +19,7 @@ const ONBOARDING_ASSESSMENT_ID = "1";
 // Initializes Onboarding Assessment
 export const initializeOnboardingAssessment = async (
   req: Request & { user?: string },
-  res: Response
+  res: Response,
 ): Promise<Response | void> => {
   try {
     const user_id = req.user as string;
@@ -43,11 +43,11 @@ export const initializeOnboardingAssessment = async (
     if (!finalSessionData) {
       finalSessionData = await createNewAssessmentSession(
         user_id as string,
-        ONBOARDING_ASSESSMENT_ID
+        ONBOARDING_ASSESSMENT_ID,
       );
     } else {
       previously_answered = await getPreviouslyAnsweredQuestions(
-        finalSessionData.session_id
+        finalSessionData.session_id,
       );
     }
 
@@ -73,7 +73,7 @@ export const initializeOnboardingAssessment = async (
 // Submits a response to an assessment question
 export const submitAnswer = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<Response | void> => {
   try {
     const { session_id } = req.params;
@@ -109,7 +109,7 @@ export const submitAnswer = async (
 // Submits an assessment for completion
 export const submitAssessment = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<Response | void> => {
   try {
     const { session_id } = req.params;
@@ -134,7 +134,7 @@ export const submitAssessment = async (
     // Checks to see if all questions have been answered
     const allQuestionsAnswered = await validateAllQuestionsAnswered(
       session_id,
-      sessionData.assessment_id
+      sessionData.assessment_id,
     );
 
     if (!allQuestionsAnswered) {
@@ -144,12 +144,15 @@ export const submitAssessment = async (
       });
     }
 
-    // Update session status to completed
-    await markSessionAsCompleted(session_id);
+    // Update session status to completed and get results
+    const results = await markSessionAsCompleted(session_id);
 
     return res.status(200).json({
       success: true,
       message: "Assessment submitted successfully",
+      data: {
+        habitude_summary: results,
+      },
     });
   } catch (error: any) {
     return res
@@ -161,7 +164,7 @@ export const submitAssessment = async (
 // Fetches Assessment Results
 export const getAssessmentResults = async (
   req: Request & { user?: string },
-  res: Response
+  res: Response,
 ): Promise<Response | void> => {
   try {
     const { session_id } = req.params;
@@ -174,7 +177,7 @@ export const getAssessmentResults = async (
       });
     }
     // Validate Session Ownership and Completion
-    const results = await getAndCalculateResults(session_id, user_id);
+    const results = await getSessionResults(session_id, user_id);
 
     if (!results) {
       return res.status(404).json({
@@ -200,7 +203,7 @@ export const getAssessmentResults = async (
 // Fetches Assessment History
 export const getAssessmentHistory = async (
   req: Request & { user?: string },
-  res: Response
+  res: Response,
 ): Promise<Response | void> => {
   try {
     const user_id = req.user as string;
@@ -221,7 +224,7 @@ export const getAssessmentHistory = async (
 // Creates a New Assessment Session
 export const createAssessmentSession = async (
   req: Request & { user?: string },
-  res: Response
+  res: Response,
 ): Promise<Response | void> => {
   try {
     const user_id = req.user as string;
@@ -236,7 +239,7 @@ export const createAssessmentSession = async (
 
     const isOngoingAssessmentSession = await isOngoingAssessment(
       user_id,
-      assessment_id
+      assessment_id,
     );
 
     if (isOngoingAssessmentSession) {
@@ -273,7 +276,7 @@ export const createAssessmentSession = async (
 // Continues an Existing Assessment Session
 export const continueAssessmentSession = async (
   req: Request & { user?: string },
-  res: Response
+  res: Response,
 ): Promise<Response | void> => {
   try {
     const user_id = req.user as string;

@@ -36,12 +36,14 @@ export type AssessmentDashboardResponse = {
   completed: AssessmentHistoryItem[];
 };
 
-export type AssessmentReport = Record<string, number>;
+export type AssessmentReport =
+  | Record<string, { thats_me: number; sometimes_me: number; not_me: number }>
+  | Record<string, number>;
 
 // Fetches the onboarding status for a given user and assessment
 export const getOnboardingCompletedStatus = async (
   user_id: string,
-  assessment_id: string
+  assessment_id: string,
 ): Promise<boolean> => {
   try {
     const { data, error } = await supabase
@@ -71,7 +73,7 @@ export const getOnboardingCompletedStatus = async (
 // Fetches the assessment session details for a given user and assessment
 export const getAssessmentSessionData = async (
   user_id: string,
-  assessment_id: string
+  assessment_id: string,
 ): Promise<SessionData | null> => {
   try {
     const { data, error } = await supabase
@@ -84,7 +86,7 @@ export const getAssessmentSessionData = async (
     if (error) {
       console.error(
         "Supbase error fetching assessment session data:",
-        error.message
+        error.message,
       );
       throw error;
     }
@@ -107,7 +109,7 @@ export const getAssessmentSessionData = async (
 
 // Fetches all active assessment session details for a given user
 export const getAllUserSessions = async (
-  user_id: string
+  user_id: string,
 ): Promise<SessionData[] | null> => {
   try {
     const { data, error } = await supabase
@@ -118,7 +120,7 @@ export const getAllUserSessions = async (
     if (error) {
       console.error(
         "Supbase error fetching active assessment session:",
-        error.message
+        error.message,
       );
       throw error;
     }
@@ -142,7 +144,7 @@ export const getAllUserSessions = async (
 // Creates a new assessment session
 export const createNewAssessmentSession = async (
   user_id: string,
-  assessment_id: string
+  assessment_id: string,
 ): Promise<SessionData> => {
   try {
     const { data, error } = await supabase
@@ -160,7 +162,7 @@ export const createNewAssessmentSession = async (
     if (error) {
       console.error(
         "Supbase error creating new assessment session:",
-        error.message
+        error.message,
       );
       throw error;
     }
@@ -183,7 +185,7 @@ export const createNewAssessmentSession = async (
 
 // Fetches the questions for a given assessment
 export const getAssessmentQuestions = async (
-  assessment_id: string
+  assessment_id: string,
 ): Promise<QuestionData[]> => {
   try {
     const { data, error } = await supabase
@@ -195,7 +197,7 @@ export const getAssessmentQuestions = async (
     if (error) {
       console.error(
         "Supbase error fetching assessment questions:",
-        error.message
+        error.message,
       );
       throw error;
     }
@@ -218,7 +220,7 @@ export const getAssessmentQuestions = async (
 
 // Fetches the previously answered questions for a given session
 export const getPreviouslyAnsweredQuestions = async (
-  session_id: string
+  session_id: string,
 ): Promise<AnsweredQuestionData[]> => {
   try {
     const { data, error } = await supabase
@@ -230,7 +232,7 @@ export const getPreviouslyAnsweredQuestions = async (
     if (error) {
       console.error(
         "Supbase error fetching previously answered questions:",
-        error.message
+        error.message,
       );
       throw error;
     }
@@ -254,7 +256,7 @@ export const getPreviouslyAnsweredQuestions = async (
 export const saveAssessmentAnswer = async (
   session_id: string,
   question_id: string,
-  answer_value: number | string
+  answer_value: number | string,
 ): Promise<void> => {
   try {
     const { error: answerError } = await supabase
@@ -266,7 +268,7 @@ export const saveAssessmentAnswer = async (
           answer_value,
           answered_at: new Date(),
         },
-        { onConflict: "session_id, question_id" }
+        { onConflict: "session_id, question_id" },
       );
 
     if (answerError) {
@@ -312,7 +314,7 @@ export const saveAssessmentAnswer = async (
 
 // Validates if a session is valid and in progress
 export const getExistingSessionData = async (
-  session_id: string
+  session_id: string,
 ): Promise<{
   id: string;
   assessment_id: string;
@@ -341,7 +343,7 @@ export const getExistingSessionData = async (
 // Validates if all questions have been answered in a session
 export const validateAllQuestionsAnswered = async (
   session_id: string,
-  assessment_id: string
+  assessment_id: string,
 ): Promise<boolean> => {
   try {
     const [questionsResult, answersResult] = await Promise.all([
@@ -375,17 +377,21 @@ export const validateAllQuestionsAnswered = async (
   }
 };
 
-// Marks session as completed
+// Marks session as completed and stores results, returning them
 export const markSessionAsCompleted = async (
-  session_id: string
-): Promise<void> => {
+  session_id: string,
+): Promise<AssessmentReport> => {
   try {
+    // Calculate results before completing
+    const results = await calculateSessionResults(session_id);
+
     const { error } = await supabase
       .from("assessment_sessions")
       .update({
         status: "completed",
         updated_at: new Date(),
         completed_at: new Date(),
+        results: results,
       })
       .eq("id", session_id)
       .eq("status", "in_progress");
@@ -393,86 +399,98 @@ export const markSessionAsCompleted = async (
     if (error) {
       console.error(
         "Supabase error marking session as completed:",
-        error.message
+        error.message,
       );
       throw error;
     }
+
+    return results;
   } catch (error) {
     console.error("Error marking session as completed:", error);
     throw error;
   }
 };
 
-// Fetches and calculates results for a given session
-export const getAndCalculateResults = async (
+// Internal helper to calculate results from responses
+const calculateSessionResults = async (
   session_id: string,
-  user_id: string
-): Promise<AssessmentReport | null> => {
+): Promise<AssessmentReport> => {
   try {
-    interface OptimizedResponse {
-      assessment_responses: {
-        answer_value: number;
-        questions: {
-          habitude_type: string;
-        };
-      }[];
-    }
-
-    const { data, error } = await supabase
-      .from("assessment_sessions")
+    const { data: responses, error } = await supabase
+      .from("assessment_responses")
       .select(
         `
-        id,
-        assessment_responses (
-          answer_value,
-          questions (
-            habitude_type
-          )
+        answer_value,
+        questions (
+          habitude_type
         )
-      `
+      `,
       )
+      .eq("session_id", session_id);
+
+    if (error) throw error;
+
+    const results: Record<
+      string,
+      { thats_me: number; sometimes_me: number; not_me: number }
+    > = {};
+
+    if (!responses) return results as unknown as AssessmentReport;
+
+    responses.forEach((r: any) => {
+      const habitudeType = r.questions?.habitude_type;
+      if (!habitudeType) return;
+
+      const typeKey = habitudeType.toLowerCase();
+
+      if (!results[typeKey]) {
+        results[typeKey] = { thats_me: 0, sometimes_me: 0, not_me: 0 };
+      }
+
+      const val = Number(r.answer_value);
+      if (val === 1) results[typeKey].thats_me += 1;
+      else if (val === 0) results[typeKey].sometimes_me += 1;
+      else if (val === -1) results[typeKey].not_me += 1;
+    });
+
+    return results as unknown as AssessmentReport;
+  } catch (error) {
+    console.error("Error calculating internal session results:", error);
+    throw error;
+  }
+};
+
+// Fetches results from the database
+export const getSessionResults = async (
+  session_id: string,
+  user_id: string,
+): Promise<AssessmentReport | null> => {
+  try {
+    const { data, error } = await supabase
+      .from("assessment_sessions")
+      .select("results, status")
       .eq("id", session_id)
       .eq("user_id", user_id)
       .eq("status", "completed")
       .maybeSingle();
 
     if (error) {
-      console.error(
-        "Supabase error fetching optimized results:",
-        error.message
-      );
+      console.error("Supabase error fetching results:", error.message);
       throw error;
     }
 
     if (!data) return null;
 
-    const sessionData = data as unknown as OptimizedResponse;
-    const responses = sessionData.assessment_responses;
-
-    if (!responses || responses.length === 0) return {};
-
-    const scoreMap: AssessmentReport = {};
-
-    responses.forEach((r) => {
-      const habitudeType = r.questions?.habitude_type;
-      const val = Number(r.answer_value) || 0;
-
-      if (habitudeType) {
-        const key = habitudeType.toLowerCase();
-        scoreMap[key] = (scoreMap[key] || 0) + val;
-      }
-    });
-
-    return scoreMap;
+    return data.results || null;
   } catch (error) {
-    console.error("Error calculating results:", error);
+    console.error("Error fetching results:", error);
     throw error;
   }
 };
 
 // Fetches history for a user, returs both completed and in-progress sessions
 export const getUserAssessmentHistory = async (
-  user_id: string
+  user_id: string,
 ): Promise<AssessmentDashboardResponse> => {
   try {
     const { data, error } = await supabase
@@ -488,8 +506,9 @@ export const getUserAssessmentHistory = async (
         assessments!inner (
           title,
           version
-        )
-      `
+        ),
+        results
+      `,
       )
       .eq("user_id", user_id)
       .order("updated_at", { ascending: false }); // Newest first
@@ -533,7 +552,7 @@ export const getUserAssessmentHistory = async (
 
 export const isOngoingAssessment = async (
   user_id: string,
-  assessment_id: string
+  assessment_id: string,
 ) => {
   try {
     const { data, error } = await supabase
@@ -546,7 +565,7 @@ export const isOngoingAssessment = async (
     if (error) {
       console.error(
         "Supabase error checking ongoing assessment:",
-        error.message
+        error.message,
       );
       throw error;
     }
