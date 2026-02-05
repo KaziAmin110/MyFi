@@ -437,7 +437,7 @@ export const changePassword = async (
   next: NextFunction,
 ): Promise<Response | void> => {
   try {
-    const { oldPassword, newPassword } = req.body;
+    const { old_password, new_password } = req.body;
     const user_id = req.user;
 
     if (!user_id) {
@@ -446,7 +446,7 @@ export const changePassword = async (
       throw error;
     }
 
-    if (!isValidPassword(newPassword)) {
+    if (!isValidPassword(new_password)) {
       const error = new Error(
         "Password must meet the following requirements: 8 characters : Atleast One Special Character : Atleast One Alphanumeric Character",
       );
@@ -463,7 +463,7 @@ export const changePassword = async (
     }
 
     const validPassword = await user.comparePassword(
-      oldPassword,
+      old_password,
       user.password,
     );
 
@@ -473,7 +473,7 @@ export const changePassword = async (
       throw error;
     }
 
-    const hashedPassword = await User.hashPassword(newPassword);
+    const hashedPassword = await User.hashPassword(new_password);
     const updatedUser = await updateUserPassword("id", user_id, hashedPassword);
 
     if (updatedUser.error) {

@@ -180,6 +180,7 @@ export const deleteAccount = async (
       });
     }
 
+    // Delete user avatar from Supabase
     if (user.avatar_url && user.avatar_url.includes("avatars/")) {
       const parts = user.avatar_url.split("avatars/");
       if (parts.length > 1) {
