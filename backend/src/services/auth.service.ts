@@ -228,7 +228,7 @@ export const getUserByAttribute = async (attribute: string, value: any) => {
   try {
     const { data, error } = await (supabase
       .from("users")
-      .select("id, email, name, provider_id, avatar_url")
+      .select("id, email, name, provider_id, avatar_url, password")
       .eq(attribute, value)
       .single() as any);
 
@@ -238,7 +238,8 @@ export const getUserByAttribute = async (attribute: string, value: any) => {
         data.name,
         data.email,
         data.provider_id,
-        data.avatar_url
+        data.avatar_url,
+        data.password
       );
     }
     // No User Associated with Given Attribute
