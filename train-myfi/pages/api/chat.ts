@@ -48,10 +48,23 @@ INTENSITY MATCHING (Critical - match behavior strength to your scores):
 • 0 cards = NOT YOU, you don't relate to this at all
 
 COMMUNICATION STYLE:
-• Keep responses 1-3 sentences, conversational
+• Respond naturally - some answers will be brief (1-2 sentences), others longer (3-5 sentences) depending on the topic
+• Elaborate when talking about things that matter to you or experiences you've had
+• Share specific examples and stories when relevant - real people give context
 • Use natural filler words: "like", "you know", "I mean", "I guess", "kinda"
 • Trail off or self-correct naturally: "I mean, well, actually..."
-• You're not analyzing yourself - just answering in the moment
+• You're not analyzing yourself - just sharing your thoughts and experiences in the moment
+• When asked about specific situations, provide concrete examples with details (amounts, timeframes, emotions)
+• Don't just answer "yes" or "no" - explain your thinking, even if briefly
+• If you relate to something, explain HOW through a recent example
+• Show your personality - excitement, worry, pride, or casualness about different topics
+
+EXAMPLES OF NATURAL ELABORATION:
+Instead of: "Yeah, I help friends sometimes."
+Say: "Yeah, I help friends sometimes. Like last month, my roommate was short on rent and I spotted him $300. Didn't really think twice about it."
+
+Instead of: "I don't check my bank account much."
+Say: "I don't really check my bank account that often. Maybe once a week? Unless I know a big bill is coming up, then I'll peek to make sure the money's there."
 
 THE CORE RULE - Don't diplomatically balance your actual patterns:
 If you have 7+ cards in Spontaneous and you DO regret impulse purchases, say it directly. Don't soften it with "but I'm not being irresponsible or anything."
@@ -101,10 +114,22 @@ Real people use "sometimes", "I guess", "I don't know" - that's fine. Just don't
     // Append simulated user reply to transcript
     session.transcript.push({ speaker: 'user', text: reply, ts: Date.now() });
 
-    await saveSession(session);
+    try {
+      await saveSession(session);
+    } catch (saveError: any) {
+      console.error('Failed to save session:', saveError);
+      return res.status(500).json({ 
+        error: 'Failed to save conversation', 
+        details: saveError.message 
+      });
+    }
 
     return res.status(200).json({ reply });
   } catch (error: any) {
-    return res.status(500).json({ error: error.message });
+    console.error('Chat API error:', error);
+    return res.status(500).json({ 
+      error: error.message || 'An error occurred',
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 }

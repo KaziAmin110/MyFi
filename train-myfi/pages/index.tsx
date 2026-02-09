@@ -101,7 +101,14 @@ export default function Home() {
         } catch {}
       }, 400);
     } catch (e) {
-      // no-op: optimistic UI remains; could show toast
+      console.error('Chat error:', e);
+      // Show error to user
+      alert('Failed to send message. Please try again.');
+      // Remove optimistically added message on error
+      setSession((prev:any) => prev ? ({
+        ...prev,
+        transcript: prev.transcript.slice(0, -1)
+      }) : prev);
     } finally {
       setLoading(false);
     }

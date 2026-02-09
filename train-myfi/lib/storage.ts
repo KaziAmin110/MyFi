@@ -3,6 +3,7 @@ import { summarizeConversation } from './genai';
 
 export async function saveSession(session: any) {
   // Upsert session + append new messages to Supabase
+  try {
     const p = session.profile || {};
     
     // Calculate dominant habitudes from that's_me counts
@@ -17,7 +18,7 @@ export async function saveSession(session: any) {
     habitudes.sort((a, b) => b.count - a.count);
     const dominant = habitudes.slice(0, 3).filter(h => h.count > 0).map(h => h.name);
 
-    await supa.from('sessions').upsert({
+    const { error: sessionError } = await supa.from('sessions').upsert({
       id: session.session_id,
       updated_at: new Date().toISOString(),
       
@@ -58,10 +59,20 @@ export async function saveSession(session: any) {
       status: session.status || 'active',
     });
 
-    const { count } = await supa
+    if (sessionError) {
+      console.error('Failed to save session:', sessionError);
+      throw new Error(`Failed to save session: ${sessionError.message}`);
+    }
+
+    const { count, error: countError } = await supa
       .from('session_messages')
       .select('id', { count: 'exact', head: true })
       .eq('session_id', session.session_id);
+
+    if (countError) {
+      console.error('Failed to count messages:', countError);
+      throw new Error(`Failed to count messages: ${countError.message}`);
+    }
 
     const existing = count || 0;
     const toInsert = (session.transcript || []).slice(existing).map((m: any, idx: number) => ({
@@ -71,9 +82,18 @@ export async function saveSession(session: any) {
       turn_number: existing + idx,
       created_at: new Date(m.ts || Date.now()).toISOString(),
     }));
+    
     if (toInsert.length) {
-      await supa.from('session_messages').insert(toInsert);
+      const { error: insertError } = await supa.from('session_messages').insert(toInsert);
+      if (insertError) {
+        console.error('Failed to insert messages:', insertError);
+        throw new Error(`Failed to insert messages: ${insertError.message}`);
+      }
     }
+  } catch (error: any) {
+    console.error('Error in saveSession:', error);
+    throw error;
+  }
 }
 
 export async function getSession(sessionId: string) {
