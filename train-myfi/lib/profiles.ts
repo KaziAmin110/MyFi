@@ -40,7 +40,7 @@ export function generateRandomProfile() {
     persona: samplePersonas[Math.floor(Math.random() * samplePersonas.length)],
     persona_backstory: '',
     name: '',
-    age: '',
+    age: 0,
     
     spontaneous_thats_me: spontaneous.thats_me,
     spontaneous_sometimes_me: spontaneous.sometimes_me,
