@@ -41,8 +41,6 @@ export default function Index() {
   const [currentIndex, setCurrentIndex] = useState(0);  
   const { width, height } = useWindowDimensions();
 
-  //const FootHeight = Math.max(170, Math.round(height * 0));
-
   const handleScroll = (event : any) => {
     const contentOffsetX = event.nativeEvent.contentOffset.x;
     const index = Math.round(contentOffsetX / (width ));
@@ -50,13 +48,10 @@ export default function Index() {
   };
 
   const showCard = ({ item }: any ) => {
-    //const imageSize = item.imageSz * (width / 375); 
     const scaleW = width / 375;
     const scaledByWidth = item.imageSz * scaleW;
     const maxHeight = height < 700 ? 0.65 : 0.62;
     const imageSize = Math.min(scaledByWidth, height * maxHeight);
-    //const cappedByHeight = Math.min(scaledByWidth, height * 0.62);
-    //const imageSize = Math.max(180, cappedByHeight);
 
     return (
     <View style={[styles.slide, { width}]}>
@@ -149,15 +144,12 @@ const styles = StyleSheet.create({
   },
   cardImage: {
     marginBottom: 18,
-    //backgroundColor:'black',
   },
   title: {
     fontSize: 30,
     fontWeight: "600",
     textAlign: 'center',
     fontFamily: 'Inter',
-    
-    //backgroundColor:'yellow',
 
   },
    subtext: {
@@ -167,9 +159,7 @@ const styles = StyleSheet.create({
     maxWidth: 380,
     fontFamily: 'Inter',
     fontSize: 16,
-    //fontWeight: "200",
-    //backgroundColor:'blue',
-    
+  
   },
 
   ellipseContainer: {
@@ -193,7 +183,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingBottom: 30,
     paddingTop: 10,
-    //backgroundColor:'red'
+   
   },
   primaryBtn:{
     backgroundColor: '#345995',
