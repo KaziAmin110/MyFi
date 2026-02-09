@@ -38,7 +38,7 @@ const ForgotPassword = () => {
             if(response.ok)
             {
                 alert("Check your email for the verification code.");
-                router.push("/forgot_code");
+                router.push("/email_token");
             }
 
             else
@@ -57,7 +57,7 @@ const ForgotPassword = () => {
             <Text className="text-[16px] text-[#8F8D8E] font-medium">We will send you a link to reset your password</Text>
             
             <View className="items-start">
-                <Text className="mt-10 px-4 text-left">Email:</Text>
+                <Text className="mb-1 font-medium text-black mt-10 px-4 text-left">Email:</Text>
                 <TextInput className="px-4 w-300 h-10 bg-[#D9D9D9] rounded-[90px]"
                 placeholder="Enter your email"
                 value={email}
