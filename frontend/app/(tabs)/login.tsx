@@ -89,7 +89,7 @@ const login = () => {
         className="px-4 py-3 mb-4 bg-light rounded-xl"
       />
       <Text className="mb-1 font-medium text-black">Password</Text>
-      <View className="flex-row items-center px-4 mb-4 bg-light rounded-xl">
+      <View className="flex-row items-center px-4 py-3 mb-4 bg-light rounded-xl">
         <TextInput
           secureTextEntry={!showPassword}
           value={password}
@@ -107,7 +107,7 @@ const login = () => {
                 ? require("../../assets/images/eye-off.png")
                 : require("../../assets/images/eye.png")
             }
-            className="w-5 h-5"
+            className="w-4 h-4"
             resizeMode="contain"
           />
         </TouchableOpacity>

@@ -96,7 +96,7 @@ const register = () => {
                 className="bg-light rounded-xl px-4 py-3 mb-4"
             />
             <Text className="mb-1 font-medium text-black">Password</Text>
-            <View className="bg-light rounded-xl px-4 mb-4 flex-row items-center">
+            <View className="bg-light rounded-xl px-4 py-3 mb-4 flex-row items-center">
                 <TextInput
                     secureTextEntry={!showPassword}
                     value={password}
@@ -114,7 +114,7 @@ const register = () => {
                             ? require("../../assets/images/eye-off.png")
                             : require("../../assets/images/eye.png")
                     }
-                    className="w-5 h-5"
+                    className="w-4 h-4"
                     resizeMode="contain"
                 />
                 </TouchableOpacity>
