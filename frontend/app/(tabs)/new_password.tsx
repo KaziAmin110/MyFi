@@ -1,144 +1,214 @@
-import {ScrollView, TextInput,TouchableOpacity, Text, View, Button } from "react-native";
+import {
+  TextInput,
+  TouchableOpacity,
+  Text,
+  View,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Image,
+  ActivityIndicator,
+} from "react-native";
 import { Link } from "expo-router";
-import React, { useState } from 'react'
-import { Image } from "react-native";
+import React, { useState } from "react";
 import { router } from "expo-router";
 import { useLocalSearchParams } from "expo-router";
-
+import { Feather } from "@expo/vector-icons";
 
 const NewPassword = () => {
-    const [password, setPassword] = useState("");
-    const[confirmPassword, setConfirmPassword] = useState("");
-    const [showPassword, setShowPassword] = useState(false); // Track password visibility
-    const[showConfirmPassword, setShowConfirmPassword] = useState(false); // Track confirmed passwoord visibility
-    
-    //Password must be at least 7 characters, including a number and special character
-    const checkNewPassword = (password: string) =>{
-        return(
-            password.length >= 7 &&
-            /\d/.test(password) &&
-            /[!@#$%^&*(),.?":{}|<>]/.test(password)
-        );
-    }
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-    const isPasswordValid = checkNewPassword(password);
+  //Password must be at least 7 characters, including a number and special character
+  const checkNewPassword = (password: string) => {
+    return (
+      password.length >= 7 &&
+      /\d/.test(password) &&
+      /[!@#$%^&*(),.?":{}|<>]/.test(password)
+    );
+  };
 
-    const doPasswordsMatch = 
-        password.length > 0 &&
-        confirmPassword.length > 0 &&
-        password === confirmPassword;
+  const isPasswordValid = checkNewPassword(password);
 
-    const { token } = useLocalSearchParams<{ token?: string }>();
-    
+  const doPasswordsMatch =
+    password.length > 0 &&
+    confirmPassword.length > 0 &&
+    password === confirmPassword;
 
-    const newPasswordRequest = async() => {
-        if(!isPasswordValid || !doPasswordsMatch)
-            return;
+  const { token } = useLocalSearchParams<{ token?: string }>();
 
-        console.log("Reset token:", token);
-        try{
-            const response = await fetch("http://localhost:5500/api/auth/reset-password", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ reset_token: token, new_password: password }),
-            });
+  const newPasswordRequest = async () => {
+    if (!isPasswordValid || !doPasswordsMatch) return;
 
-        const data = await response.json();
-
-        if(response.ok)
+    setIsLoading(true);
+    console.log("Reset token:", token);
+    try {
+      const response = await fetch(
+        "http://localhost:5500/api/auth/reset-password",
         {
-            alert("Password reset successful.");
-            router.push("/login");
-        }
-        else
-            alert(data.message || "Failed to reset password.");
-        }catch(error){
-            if(error instanceof Error)
-                alert("Error: " + error.message);
-            else
-                alert("An unknown error occurred.");
-        }
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reset_token: token, new_password: password }),
+        },
+      );
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert("Password reset successful.");
+        router.push("/login");
+      } else alert(data.message || "Failed to reset password.");
+    } catch (error) {
+      if (error instanceof Error) alert("Error: " + error.message);
+      else alert("An unknown error occurred.");
+    } finally {
+      setIsLoading(false);
     }
+  };
 
-    return(
-        <View className="flex-1 justify-center bg-[#F1F2F4] px-6">
-            <Text className="text-center #151414 text-3xl font-semibold mb-5">Create a new password</Text>
-            
-            <View className="mt-10"></View>
-            
-            <Text className="mb-1 font-medium text-black">New Password</Text>
-            <View className="flex-row items-center px-4 mb-4 bg-light rounded-xl">
-            <TextInput
-                secureTextEntry={!showPassword}
-                value={password}
-                onChangeText={setPassword}
-                autoCapitalize="none" // prevent capitalization of the first letter
-                placeholder="Enter new password"
-                placeholderTextColor="#BABABA"
-                className="flex-1"
-            />
-            {password.length > 0 && !isPasswordValid && (
-            <Text className="text-red-500 text-sm mt-2">
-                Password must be at least 7 characters and include a number and a special character
-            </Text>)}
-
-            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                <Image
-                    source={
-                        showPassword
-                            ? require("../../assets/images/eye-off.png")
-                            : require("../../assets/images/eye.png")
-                    }
-                    className="w-5 h-5"
-                    resizeMode="contain"
-                />
-            </TouchableOpacity>
-
+  return (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      className="flex-1 bg-white"
+    >
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View className="flex-1 px-6 justify-center">
+          <View className="items-center mb-8">
+            <View className="w-20 h-20 bg-blue-50 rounded-full items-center justify-center mb-6">
+              <Feather name="key" size={32} color="#345995" />
             </View>
-                    
-                <Text className="text-left mb-1 font-medium text-black">Confirm Password</Text>
-                <View className="flex-row items-center px-4 mb-4 bg-light rounded-xl">
+            <Text className="text-3xl font-bold text-gray-900 text-center mb-3">
+              Create New Password
+            </Text>
+            <Text className="text-base text-gray-500 text-center px-4">
+              Your new password must be unique from those previously used.
+            </Text>
+          </View>
+
+          <View className="flex flex-col gap-5 space-y-6">
+            <View>
+              <Text className="text-sm font-medium text-gray-700 mb-2 ml-1">
+                New Password
+              </Text>
+              <View className="flex-row items-center border border-gray-200 rounded-2xl bg-gray-50 px-4 h-14 focus:border-[#345995] focus:bg-white transition-all">
+                <Feather
+                  name="lock"
+                  size={20}
+                  color="#9CA3AF"
+                  className="mr-3"
+                />
                 <TextInput
-                    secureTextEntry={!showConfirmPassword}
-                    value={confirmPassword}
-                    onChangeText={setConfirmPassword}
-                    autoCapitalize="none" // prevent capitalization of the first letter
-                    placeholder="Confirm your password"
-                    placeholderTextColor="#BABABA"
-                    className="flex-1"
+                  className="flex-1 text-base text-gray-900 h-full"
+                  secureTextEntry={!showPassword}
+                  value={password}
+                  onChangeText={setPassword}
+                  autoCapitalize="none"
+                  placeholder="Enter new password"
+                  placeholderTextColor="#9CA3AF"
                 />
-                {confirmPassword.length > 0 && !doPasswordsMatch && (
-                <Text className="text-red-500 text-sm mt-2">
-                Password must match in both fields
-                </Text>)}
-                
-            
-                <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
-                    <Image
-                    source={
-                        showConfirmPassword
-                        ? require("../../assets/images/eye-off.png")
-                        : require("../../assets/images/eye.png")
-                    }
-                    className="w-5 h-5"
-                    resizeMode="contain"
-                    />
-                </TouchableOpacity>
-            </View>
-
-            <View className="flex-start items-center">
                 <TouchableOpacity
-                    disabled={!isPasswordValid && !doPasswordsMatch}
-                    className="mt-8 w-40 h-10 bg-[#2E4D80] p-4 rounded-[90px] justify-center items-center"
-                    onPress={newPasswordRequest}>
-                    <Text className="text-white text-[15px]">Confirm</Text>
+                  onPress={() => setShowPassword(!showPassword)}
+                >
+                  <Feather
+                    name={showPassword ? "eye" : "eye-off"}
+                    size={20}
+                    color="#9CA3AF"
+                  />
                 </TouchableOpacity>
-            
-                <Link href="/login">Return to Login</Link>
+              </View>
+              {password.length > 0 && !isPasswordValid && (
+                <View className="flex-row items-start mt-2 ml-1">
+                  <Feather
+                    name="alert-circle"
+                    size={14}
+                    color="#EF4444"
+                    style={{ marginTop: 2, marginRight: 4 }}
+                  />
+                  <Text className="text-red-500 text-xs flex-1">
+                    Must be at least 7 chars with a number & special char
+                  </Text>
+                </View>
+              )}
             </View>
-            
-        </View>
-    )
-}
 
-export default NewPassword
+            <View>
+              <Text className="text-sm font-medium text-gray-700 mb-2 ml-1">
+                Confirm Password
+              </Text>
+              <View className="flex-row items-center border border-gray-200 rounded-2xl bg-gray-50 px-4 h-14 focus:border-[#345995] focus:bg-white transition-all">
+                <Feather
+                  name="check-circle"
+                  size={20}
+                  color="#9CA3AF"
+                  className="mr-3"
+                />
+                <TextInput
+                  className="flex-1 text-base text-gray-900 h-full"
+                  secureTextEntry={!showConfirmPassword}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  autoCapitalize="none"
+                  placeholder="Confirm your password"
+                  placeholderTextColor="#9CA3AF"
+                />
+                <TouchableOpacity
+                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  <Feather
+                    name={showConfirmPassword ? "eye" : "eye-off"}
+                    size={20}
+                    color="#9CA3AF"
+                  />
+                </TouchableOpacity>
+              </View>
+              {confirmPassword.length > 0 && !doPasswordsMatch && (
+                <View className="flex-row items-center mt-2 ml-1">
+                  <Feather
+                    name="alert-circle"
+                    size={14}
+                    color="#EF4444"
+                    style={{ marginRight: 4 }}
+                  />
+                  <Text className="text-red-500 text-xs">
+                    Passwords must match
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            <TouchableOpacity
+              disabled={!isPasswordValid || !doPasswordsMatch || isLoading}
+              className={`h-14 rounded-full items-center justify-center shadow-sm ${!isPasswordValid || !doPasswordsMatch || isLoading ? "bg-gray-300" : "bg-[#345995] shadow-blue-200"}`}
+              onPress={newPasswordRequest}
+              activeOpacity={0.8}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text className="text-white text-lg font-semibold">
+                  Reset Password
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          <View className="mt-8 items-center">
+            <Link href="/login" asChild>
+              <TouchableOpacity>
+                <Text className="text-gray-400 text-sm">Back to Login</Text>
+              </TouchableOpacity>
+            </Link>
+          </View>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+};
+
+export default NewPassword;
