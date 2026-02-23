@@ -32,7 +32,6 @@ export default function Splash()
                     resizeMode="contain">
                     </Image>
                  </View>
-                <Text style={styles.title}></Text>
             </View>
 
             <View style={{flex: 1}}/>
@@ -69,12 +68,6 @@ const styles = StyleSheet.create({
         width: 290,
         height: 290,
         marginRight: 12,
-
-    },
-    title:{
-        fontSize: 90,
-        fontWeight: "700",
-        color: "#FFFFFF",
 
     },
     bottomInfo:{
