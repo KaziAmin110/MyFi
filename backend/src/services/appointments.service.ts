@@ -14,9 +14,11 @@ export const createAppointmentDB = async (appointmentData: any) => {
 
 // Batch inserts appointment reminders
 export const createRemindersDB = async (reminders: any[]) => {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("appointment_reminders")
     .insert(reminders);
+
+  console.log(data);
 
   if (error) throw new Error(error.message);
 };

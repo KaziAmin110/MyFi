@@ -16,6 +16,25 @@ import {
   getAllActiveAppointmentsDB,
 } from "../services/appointments.service";
 
+// Maps day name strings → JS getDay() numbers (0=Sun … 6=Sat)
+const DAY_NAME_TO_NUMBER: Record<string, number> = {
+  sunday: 0,
+  monday: 1,
+  tuesday: 2,
+  wednesday: 3,
+  thursday: 4,
+  friday: 5,
+  saturday: 6,
+};
+
+/** Accepts both string names ("Monday") and raw numbers (1) and returns numbers. */
+const normalizeDaysOfWeek = (days: (string | number)[]): number[] =>
+  days
+    .map((d) =>
+      typeof d === "number" ? d : (DAY_NAME_TO_NUMBER[d.toLowerCase()] ?? -1),
+    )
+    .filter((n) => n >= 0);
+
 // Creates a new appointment and schedules initial reminders if enabled
 export const createAppointment = async (req: AuthRequest, res: Response) => {
   try {
@@ -64,15 +83,20 @@ export const createAppointment = async (req: AuthRequest, res: Response) => {
       }
     }
 
+    // Normalize day names → numbers so expandRecurrences can match via getDay()
+    const normalizedDays = days_of_week
+      ? normalizeDaysOfWeek(days_of_week)
+      : [];
+
     const appointment = await createAppointmentDB({
       user_id: userId,
-      title,
+      title: title || `Week of ${startDate.toDateString()}`,
       start_date,
       end_date,
-      days_of_week,
+      days_of_week: normalizedDays,
       is_recurring,
-      recurrence_frequency,
-      max_occurences,
+      recurrence_frequency: recurrence_frequency || "weekly",
+      max_occurences: max_occurences || 1,
       reminder_enabled,
       is_active: true,
     });
@@ -102,6 +126,8 @@ export const createAppointment = async (req: AuthRequest, res: Response) => {
             is_sent: false,
           };
         });
+
+        console.log(reminders);
 
         await createRemindersDB(reminders);
       }
@@ -251,7 +277,12 @@ export const updateAppointment = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user;
     const { appointmentId } = req.params;
-    const updates = req.body;
+    const updates = { ...req.body };
+
+    // Normalize day names → numbers (consistent with createAppointment)
+    if (updates.days_of_week) {
+      updates.days_of_week = normalizeDaysOfWeek(updates.days_of_week);
+    }
 
     const existing = await getAppointmentByIdDB(
       appointmentId,
