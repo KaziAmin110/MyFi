@@ -8,6 +8,7 @@ import {
   getPastAppointmentsWithCheckInsDB,
   getAppointmentByIdDB,
   getCheckInsByAppointmentIdDB,
+  getCheckInsByAppointmentIdsDB,
   updateAppointmentDB,
   deleteUnsentRemindersDB,
   softDeleteAppointmentDB,
@@ -170,10 +171,73 @@ export const getAppointments = async (req: AuthRequest, res: Response) => {
       const future = new Date();
       future.setFullYear(future.getFullYear() + 2);
 
-      const upcomingAppointments = appointments.filter((app: any) => {
-        const occurrences = expandRecurrences(app, now, future);
-        return occurrences.length > 0;
-      });
+      // Single bulk query — fetch all check-ins for every appointment at once
+      const appointmentIds = appointments.map((app: any) => String(app.id));
+      const allCheckIns = await getCheckInsByAppointmentIdsDB(appointmentIds);
+
+      // Group check-ins by appointment_id for O(1) lookup per appointment
+      const checkInsByAppId = allCheckIns.reduce(
+        (acc: Record<string, any[]>, ci: any) => {
+          const key = String(ci.appointment_id);
+          if (!acc[key]) acc[key] = [];
+          acc[key].push(ci);
+          return acc;
+        },
+        {},
+      );
+
+      const upcomingAppointments = appointments
+        .map((app: any) => {
+          const futureOccurrences = expandRecurrences(app, now, future);
+          if (futureOccurrences.length === 0) return null;
+
+          const appCheckIns: any[] = checkInsByAppId[String(app.id)] ?? [];
+          const completedDates = new Set(
+            appCheckIns
+              .filter((ci) => ci.status === "completed")
+              .map((ci) => ci.scheduled_date), // stored as 'YYYY-MM-DD'
+          );
+
+          // How many scheduled occurrences remain (including future)
+          // max_occurences is the series cap; subtract all completed check-ins
+          const occurrence_count_remaining =
+            app.max_occurences != null
+              ? Math.max(0, app.max_occurences - completedDates.size)
+              : null; // null = no cap defined, open-ended series
+
+          // Streak: consecutive completed occurrences going backwards from today
+          const appStart = new Date(app.start_date);
+          const pastOccurrences = expandRecurrences(app, appStart, now).sort(
+            (a, b) => b.getTime() - a.getTime(),
+          ); // most recent first
+
+          let streak = 0;
+          for (const date of pastOccurrences) {
+            const dateStr = date.toISOString().split("T")[0];
+            if (completedDates.has(dateStr)) {
+              streak++;
+            } else {
+              break; // gap found — streak resets
+            }
+          }
+
+          return {
+            ...app,
+            // ISO string of the very next upcoming occurrence
+            next_occurrence: futureOccurrences[0].toISOString(),
+            // Remaining occurrences before the series cap is reached (null = unlimited)
+            occurrence_count_remaining,
+            // Number of consecutive completed check-ins counting back from most recent
+            streak,
+          };
+        })
+        .filter(Boolean)
+        // Sort soonest-first so the frontend can render the list directly
+        .sort(
+          (a: any, b: any) =>
+            new Date(a.next_occurrence).getTime() -
+            new Date(b.next_occurrence).getTime(),
+        );
 
       return res
         .status(200)

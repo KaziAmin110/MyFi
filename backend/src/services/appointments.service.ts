@@ -89,6 +89,22 @@ export const getCheckInsByAppointmentIdDB = async (appointmentId: string) => {
   return data;
 };
 
+// Bulk-fetches check-ins for multiple appointments in a single query (avoids N+1)
+export const getCheckInsByAppointmentIdsDB = async (
+  appointmentIds: string[],
+) => {
+  if (appointmentIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from("appointment_check_ins")
+    .select("*")
+    .in("appointment_id", appointmentIds)
+    .order("scheduled_date", { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return data;
+};
+
 // Updates details of an existing appointment
 export const updateAppointmentDB = async (
   appointmentId: string,
