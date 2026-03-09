@@ -16,6 +16,7 @@ export const {
   REFRESH_SECRET,
   ACCESS_EXPIRES_IN,
   REFRESH_EXPIRES_IN,
+  GEMINI_API_KEY,
 } = process.env as {
   PORT?: string;
   NODE_ENV?: string;
@@ -28,4 +29,5 @@ export const {
   REFRESH_SECRET?: string;
   ACCESS_EXPIRES_IN?: string;
   REFRESH_EXPIRES_IN?: string;
+  GEMINI_API_KEY?: string;
 };
