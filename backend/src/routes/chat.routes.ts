@@ -7,11 +7,11 @@ import {
   handleSendMessage,
 } from "../controllers/chat.controller";
 
-const router = Router();
+const chatRouter = Router();
 
-router.get("/sessions", authenticateUser, handleGetSessions);
-router.get("/sessions/:sessionId/messages", authenticateUser, handleGetMessages);
-router.post("/sessions", authenticateUser, handleCreateSession);
-router.post("/messages", authenticateUser, handleSendMessage);
+chatRouter.get("/sessions", authenticateUser, handleGetSessions);
+chatRouter.get("/sessions/:sessionId/messages", authenticateUser, handleGetMessages);
+chatRouter.post("/sessions", authenticateUser, handleCreateSession);
+chatRouter.post("/messages", authenticateUser, handleSendMessage);
 
-export default router;
+export default chatRouter;

@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Response } from "express";
 import { AuthRequest } from "../middlewares/auth.middleware";
 import * as chatService from "../services/chat.service";
 import {
@@ -25,7 +25,7 @@ export const handleGetSessions = async (req: AuthRequest, res: Response) => {
     if (error) {
       return res.status(500).json({ 
         success: false,
-        message: error.message 
+        message: error 
       });
     }
 
@@ -58,7 +58,7 @@ export const handleGetMessages = async (req: AuthRequest, res: Response) => {
     if (error) {
       return res.status(500).json({ 
         success: false,
-        message: error.message 
+        message: error 
       });
     }
 
@@ -91,7 +91,7 @@ export const handleCreateSession = async (req: AuthRequest, res: Response) => {
     if (error) {
       return res.status(500).json({ 
         success: false,
-        message: error.message 
+        message: error 
       });
     }
 
@@ -143,6 +143,13 @@ export const handleSendMessage = async (req: AuthRequest, res: Response) => {
     );
 
     if (error) {
+      if (error === "ASSESSMENT_REQUIRED") {
+        return res.status(422).json({
+          success: false,
+          message: "Assessment required before starting a coaching chat",
+          code: "ASSESSMENT_REQUIRED",
+        });
+      }
       if (error === "Session not found") {
         return res.status(404).json({ 
           success: false,

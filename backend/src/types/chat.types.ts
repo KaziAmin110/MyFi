@@ -10,6 +10,8 @@ export interface ChatSession {
   status: 'active' | 'completed' | 'archived';
   is_read_only: boolean;
   is_empty: boolean;
+  rolling_summary: string | null;
+  rolling_summary_msg_count: number;
   created_at: string;
   updated_at: string;
 }
@@ -38,11 +40,6 @@ export interface CoachingKnowledge {
   embedding?: number[];
   similarity?: number;
   created_at: string;
-}
-
-export interface CreateSessionRequest {
-  weekStartDate: string;
-  weekEndDate: string;
 }
 
 export interface CreateSessionResponse {

@@ -27,7 +27,7 @@ export const generateEmbedding = async (
       contents: text,
       config: {
         taskType: taskType,
-        outputDimensionality: 768, // Match our database VECTOR(768) column
+        outputDimensionality: 768,
       },
     });
 
