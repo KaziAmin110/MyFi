@@ -171,11 +171,9 @@ export const getAppointments = async (req: AuthRequest, res: Response) => {
       const future = new Date();
       future.setFullYear(future.getFullYear() + 2);
 
-      // Single bulk query — fetch all check-ins for every appointment at once
       const appointmentIds = appointments.map((app: any) => String(app.id));
       const allCheckIns = await getCheckInsByAppointmentIdsDB(appointmentIds);
 
-      // Group check-ins by appointment_id for O(1) lookup per appointment
       const checkInsByAppId = allCheckIns.reduce(
         (acc: Record<string, any[]>, ci: any) => {
           const key = String(ci.appointment_id);
@@ -199,7 +197,6 @@ export const getAppointments = async (req: AuthRequest, res: Response) => {
           );
 
           // How many scheduled occurrences remain (including future)
-          // max_occurences is the series cap; subtract all completed check-ins
           const occurrence_count_remaining =
             app.max_occurences != null
               ? Math.max(0, app.max_occurences - completedDates.size)
