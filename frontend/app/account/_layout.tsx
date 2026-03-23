@@ -69,6 +69,14 @@ const AccountLayout = () => {
           ),
         }}
       />
+       <Tabs.Screen
+        name="assessmentResult"
+        options={{
+          href:null,
+          headerShown:false,
+        }}
+      />
+
     </Tabs>
   );
 };
