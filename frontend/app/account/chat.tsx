@@ -249,11 +249,27 @@ const Chat = () => {
     setSending(true);
     setSuggestedPrompts([]);
 
+    // Optimistically show user message immediately
+    const optimisticMessage: ChatMessage = {
+      id: `optimistic-${Date.now()}`,
+      role: "user",
+      content: messageText,
+      createdAt: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, optimisticMessage]);
+
     try {
       const response = await sendMessage(currentSession.id, messageText);
-      setMessages([...messages, response.userMessage, response.assistantMessage]);
+      setMessages((prev) => [
+        ...prev.filter((m) => m.id !== optimisticMessage.id),
+        response.userMessage,
+        response.assistantMessage,
+      ]);
     } catch (error: any) {
       console.error("Error sending message:", error);
+
+      // Remove the optimistic message on failure
+      setMessages((prev) => prev.filter((m) => m.id !== optimisticMessage.id));
 
       if (error.code === "ASSESSMENT_REQUIRED") {
         setAssessmentRequired(true);
