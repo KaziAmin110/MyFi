@@ -100,23 +100,19 @@ const Chat = () => {
     loadSessions();
   }, []);
 
-  // Scroll to bottom when messages change
   useEffect(() => {
     scrollViewRef.current?.scrollToEnd({ animated: true });
   }, [messages]);
 
-  // Hide tab bar on chat screen, show when sidebar opens
   useEffect(() => {
     setTabBarVisible(showSessions);
   }, [showSessions]);
 
-  // Hide tab bar when entering chat
   useEffect(() => {
     setTabBarVisible(false);
     return () => setTabBarVisible(true);
   }, []);
 
-  // Animate sidebar with spring for smoother feel
   useEffect(() => {
     Animated.spring(sidebarAnim, {
       toValue: showSessions ? 0 : -SIDEBAR_WIDTH,
@@ -126,7 +122,6 @@ const Chat = () => {
     }).start();
   }, [showSessions]);
 
-  // Swipe gesture to open/close sidebar
   const panResponder = useMemo(
     () =>
       PanResponder.create({
@@ -151,7 +146,6 @@ const Chat = () => {
     [showSessions]
   );
 
-  // Filter sessions by search query
   const filteredSessions = useMemo(() => {
     if (!searchQuery.trim()) return sessions;
     const q = searchQuery.toLowerCase();
@@ -199,7 +193,7 @@ const Chat = () => {
       setInputText("");
       const data = await getSessionMessages(session.id);
 
-      // New session with only the AI opening message — show fake thinking animation
+      // New session — show thinking animation before revealing the opening message
       if (data.messages.length === 1 && data.messages[0].role === "assistant") {
         setMessages([]);
         setShowThinking(true);
@@ -249,7 +243,6 @@ const Chat = () => {
     setSending(true);
     setSuggestedPrompts([]);
 
-    // Optimistically show user message immediately
     const optimisticMessage: ChatMessage = {
       id: `optimistic-${Date.now()}`,
       role: "user",
@@ -268,13 +261,11 @@ const Chat = () => {
     } catch (error: any) {
       console.error("Error sending message:", error);
 
-      // Remove the optimistic message on failure
       setMessages((prev) => prev.filter((m) => m.id !== optimisticMessage.id));
 
       if (error.code === "ASSESSMENT_REQUIRED") {
         setAssessmentRequired(true);
       } else {
-        // Re-add message to input if send fails
         setInputText(messageText);
       }
     } finally {
