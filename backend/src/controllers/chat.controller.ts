@@ -53,7 +53,8 @@ export const handleGetMessages = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const { data, error } = await chatService.getMessages(sessionId);
+    const userId = req.user as string;
+    const { data, error } = await chatService.getMessages(sessionId, userId);
 
     if (error) {
       return res.status(500).json({ 

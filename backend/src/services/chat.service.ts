@@ -81,6 +81,13 @@ export const createSession = async (
   const { error: summaryErr } = await summarizePreviousSessionsIfNeeded(userId);
   if (summaryErr) console.warn("[SUMMARIZATION FAILED] Previous sessions not summarized:", summaryErr);
 
+  // Mark all previous sessions for this user as completed and read-only
+  await supabase
+    .from("chat_sessions")
+    .update({ status: "completed", is_read_only: true })
+    .eq("user_id", userId)
+    .eq("status", "active");
+
   // Get latest session number for this user
   const { data: latestSession } = await supabase
     .from("chat_sessions")
@@ -114,6 +121,10 @@ export const createSession = async (
 
   if (error) return { data: null, error: error.message };
 
+  // Generate the AI's opening message and 3 conversation-route prompts
+  // This runs at session creation so it's ready when the user opens the session
+  await generateOpeningMessage(data.id, userId);
+
   // Transform to API response format
   const session = {
     id: data.id,
@@ -127,8 +138,79 @@ export const createSession = async (
   return { data: session, error: null };
 };
 
+// Generate the AI's opening message + 3 conversation-route prompts for a new session.
+// Called once at session creation. The message is saved to chat_messages,
+// and the prompts are stored on chat_sessions.suggested_prompts.
+const generateOpeningMessage = async (sessionId: string, userId: string): Promise<void> => {
+  try {
+    const { data: brief } = await buildCoachingBrief(userId);
+    if (!brief?.hasAssessment) return; // No assessment yet — skip silently
+
+    const coachingBriefContext = formatBriefForPrompt(brief);
+
+    let userProfileContext = "";
+    const { data: profile } = await getUserCoachingProfile(userId);
+    if (profile) userProfileContext = profile;
+
+    const systemPrompt = `You are MyFi, a Money Habitudes coaching assistant. Generate a warm opening message for a new coaching session.
+
+## THIS USER'S ASSESSMENT RESULTS
+${coachingBriefContext}
+
+${userProfileContext ? `## YOUR HISTORY WITH THIS USER\nWhat you know from previous sessions:\n${userProfileContext}\n\nBuild on previous insights. Reference something specific from past sessions.\n` : ""}
+
+## INSTRUCTIONS
+Write a brief, warm opening message (2-3 sentences). If this is a returning user, reference something from their previous sessions. If this is their first session, welcome them and reference one interesting thing from their assessment results.
+
+Keep your tone casual and direct — like a sharp friend who knows about money psychology. Use contractions. No therapy-speak.
+
+After your greeting, on a new line write exactly:
+PROMPTS:
+prompt1|prompt2|prompt3
+
+Each prompt is a SHORT reply the user might say back to you (6-12 words, under 50 chars). These are written in the USER's voice — first person, conversational. When the user taps one, it gets sent as their message in the chat, so it must read naturally as something a real person would type.
+
+Examples of good prompts:
+- "I want to talk about my overspending habits"
+- "Let's dig into that exercise from last week"
+- "Tell me more about my status patterns"
+- "I've been thinking about how I save money"
+
+Make them specific to this user's assessment results and history, and make sure they connect to your opening message.`;
+
+    const aiResponse = await callAI(systemPrompt, "Generate opening message", []);
+
+    // Parse message and prompts
+    const parts = aiResponse.split("PROMPTS:");
+    const messageContent = parts[0].trim();
+    let prompts = [
+      "I want to explore my dominant habitudes",
+      "Tell me about a recent money decision I made",
+      "What's been on my mind financially",
+    ];
+
+    if (parts[1]) {
+      const parsed = parts[1].trim().split("|").map((p: string) => p.trim()).filter(Boolean);
+      if (parsed.length >= 3) prompts = parsed.slice(0, 3);
+    }
+
+    // Save the opening message as a regular assistant message
+    await saveMessage(sessionId, messageContent, "assistant");
+
+    // Store the prompts on the session
+    await supabase
+      .from("chat_sessions")
+      .update({ suggested_prompts: prompts })
+      .eq("id", sessionId);
+  } catch (err: any) {
+    // Non-fatal — session still works, user just won't see an opening message
+    console.warn("[OPENING MESSAGE]", err.message);
+  }
+};
+
 export const getMessages = async (
-  sessionId: string
+  sessionId: string,
+  userId?: string
 ): Promise<{ data: GetMessagesResponse | null; error: string | null }> => {
   // Run all three queries in parallel — ~3x faster than sequential
   const [sessionResult, messagesResult, summaryResult] = await Promise.all([
@@ -155,7 +237,26 @@ export const getMessages = async (
   if (messagesResult.error) return { data: null, error: messagesResult.error.message };
 
   const session = sessionResult.data;
-  const messages = messagesResult.data;
+  let messages = messagesResult.data;
+
+  // Fallback: if session has no messages, generate the opening message now
+  if (messages.length === 0 && userId) {
+    await generateOpeningMessage(sessionId, userId);
+    const { data: refreshed } = await supabase
+      .from("chat_messages")
+      .select("*")
+      .eq("session_id", sessionId)
+      .order("created_at", { ascending: true });
+    if (refreshed) messages = refreshed;
+
+    // Re-fetch session to get updated suggested_prompts
+    const { data: updatedSession } = await supabase
+      .from("chat_sessions")
+      .select("*")
+      .eq("id", sessionId)
+      .single();
+    if (updatedSession) Object.assign(session, updatedSession);
+  }
 
   // Transform to API response format
   const response: GetMessagesResponse = {
@@ -173,6 +274,7 @@ export const getMessages = async (
       createdAt: msg.created_at,
     })),
     summary: summaryResult.data?.summary_text || null,
+    suggestedPrompts: session.suggested_prompts || [],
   };
 
   return { data: response, error: null };
