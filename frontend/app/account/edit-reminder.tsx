@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { Calendar } from "react-native-calendars";
 import DateTimePicker from "@react-native-community/datetimepicker";
 
@@ -27,15 +27,36 @@ const FREQUENCY_OPTIONS = [
   "Monthly on the first Tuesday",
 ];
 
-const CreateReminderScreen = () => {
+const EditReminderScreen = () => {
   const router = useRouter();
-  const [selectedDate, setSelectedDate] = useState(
-    new Date().toISOString().split("T")[0],
+  const params = useLocalSearchParams();
+
+  // Parse pre-filled data from params
+  const initialDate = params.date
+    ? String(params.date)
+    : new Date().toISOString().split("T")[0];
+  const initialTimeStr = params.time ? String(params.time) : "8:00 AM";
+
+  // Helper to convert "8:00 AM" to Date object
+  const parseTimeStr = (timeStr: string) => {
+    const [time, modifier] = timeStr.split(" ");
+    let [hours, minutes] = time.split(":").map(Number);
+    if (modifier === "PM" && hours < 12) hours += 12;
+    if (modifier === "AM" && hours === 12) hours = 0;
+    const d = new Date();
+    d.setHours(hours, minutes, 0, 0);
+    return d;
+  };
+
+  const [selectedDate, setSelectedDate] = useState(initialDate);
+  const [selectedTime, setSelectedTime] = useState(
+    parseTimeStr(initialTimeStr),
   );
-  const [selectedTime, setSelectedTime] = useState(new Date());
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [showFrequencyPicker, setShowFrequencyPicker] = useState(false);
-  const [selectedFrequency, setSelectedFrequency] = useState("Does not repeat");
+  const [selectedFrequency, setSelectedFrequency] = useState(
+    params.frequency ? String(params.frequency) : "Does not repeat",
+  );
 
   const onTimeChange = (event: any, selected: Date | undefined) => {
     if (selected) {
@@ -74,9 +95,9 @@ const CreateReminderScreen = () => {
             <Ionicons name="chevron-back" size={28} color="#333" />
           </TouchableOpacity>
           <View style={styles.titleContainer}>
-            <Text style={styles.headerTitle}>Create a reminder</Text>
+            <Text style={styles.headerTitle}>Edit reminder</Text>
             <Text style={styles.headerSubtitle}>
-              Reminders help you stay on schedule
+              Update your reminder settings
             </Text>
           </View>
         </View>
@@ -156,7 +177,7 @@ const CreateReminderScreen = () => {
               style={styles.createButton}
               onPress={() => router.back()}
             >
-              <Text style={styles.createButtonText}>Create reminder</Text>
+              <Text style={styles.createButtonText}>Update reminder</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -381,4 +402,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CreateReminderScreen;
+export default EditReminderScreen;

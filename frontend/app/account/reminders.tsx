@@ -19,33 +19,51 @@ const RemindersScreen = () => {
   const reminders = [
     {
       id: 1,
-      time: "7:00pm - 7:30pm",
+      time: "7:00 PM",
       title: "Week of January 2",
       description: "Your appointment is ready to begin. Join when ready.",
       month: "JAN",
       day: "4",
+      date: "2026-01-04",
       type: "Upcoming",
       active: true,
+      frequency: "Weekly on Tuesday",
     },
     {
       id: 2,
-      time: "2:30pm - 4:00pm",
+      time: "2:30 PM",
       title: "Week of December 26",
       month: "DEC",
       day: "26",
+      date: "2025-12-26",
       type: "Past",
       active: false,
+      frequency: "Does not repeat",
     },
     {
       id: 3,
-      time: "12:00pm - 12:30pm",
+      time: "12:00 PM",
       title: "Week of December 19",
       month: "DEC",
       day: "24",
+      date: "2025-12-24",
       type: "Past",
       active: false,
+      frequency: "Does not repeat",
     },
   ];
+
+  const handleEdit = (reminder: any) => {
+    router.push({
+      pathname: "/account/edit-reminder",
+      params: {
+        id: reminder.id,
+        date: reminder.date,
+        time: reminder.time,
+        frequency: reminder.frequency,
+      },
+    });
+  };
 
   const filteredReminders = reminders.filter((r) => {
     if (activeTab === "All") return true;
@@ -141,7 +159,10 @@ const RemindersScreen = () => {
                   <TouchableOpacity style={styles.cancelButton}>
                     <Text style={styles.cancelText}>Cancel</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.editButton}>
+                  <TouchableOpacity
+                    style={styles.editButton}
+                    onPress={() => handleEdit(reminder)}
+                  >
                     <Text style={styles.editText}>Edit</Text>
                   </TouchableOpacity>
                 </View>

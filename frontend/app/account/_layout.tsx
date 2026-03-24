@@ -66,6 +66,13 @@ const AccountLayout = () => {
         }}
       />
       <Tabs.Screen
+        name="edit-reminder"
+        options={{
+          href: null,
+          tabBarStyle: { display: "none" },
+        }}
+      />
+      <Tabs.Screen
         name="assessment"
         options={{
           title: "Assessment",
