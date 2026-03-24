@@ -31,7 +31,7 @@ import {
 } from "../../services/chat.service";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const SIDEBAR_WIDTH = 289;
+const SIDEBAR_WIDTH = Math.round(SCREEN_WIDTH * 0.78);
 
 // Animated bouncing dots for thinking/typing states
 const BouncingDots = () => {
@@ -724,7 +724,7 @@ const styles = StyleSheet.create({
   },
   emptyGradient: {
     position: "absolute",
-    width: 375,
+    width: SCREEN_WIDTH,
     height: 124,
     top: -33,
     left: -8,
@@ -777,7 +777,7 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   promptButton: {
-    width: 151,
+    width: (SCREEN_WIDTH - 64 - 14) / 2,
     height: 43,
     borderWidth: 2,
     borderColor: "#345995",
@@ -787,7 +787,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   promptButtonCentered: {
-    width: 163,
+    width: (SCREEN_WIDTH - 64 - 14) / 2 + 12,
   },
   promptText: {
     fontSize: 12,
@@ -849,17 +849,17 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
   },
   messageText: {
-    fontSize: 13,
+    fontSize: 15,
     color: "#0D0D0D",
-    letterSpacing: -0.39,
-    lineHeight: 20,
+    letterSpacing: -0.3,
+    lineHeight: 22,
     fontWeight: "400",
   },
   assistantText: {
-    fontSize: 13,
+    fontSize: 15,
     color: "#0D0D0D",
-    letterSpacing: -0.39,
-    lineHeight: 20,
+    letterSpacing: -0.3,
+    lineHeight: 22,
     fontWeight: "400",
   },
   messageActions: {
@@ -911,9 +911,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#FFFFFF",
     borderRadius: 50,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    fontSize: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    fontSize: 16,
     maxHeight: 120,
     marginRight: 8,
     letterSpacing: -0.3,
@@ -921,9 +921,9 @@ const styles = StyleSheet.create({
   },
   sendButton: {
     backgroundColor: "#3059AD",
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
     shadowColor: "#3059AD",
@@ -1034,7 +1034,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   sidebarSessionTitle: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "600",
     color: "#2C2C2C",
     marginBottom: 3,
