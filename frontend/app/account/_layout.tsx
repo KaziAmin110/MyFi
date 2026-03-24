@@ -1,39 +1,84 @@
-import { Text, View } from "react-native";
-import React from 'react'
+import React from "react";
+import { Platform } from "react-native";
 import { Tabs } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 
-const _Layout = () => {
-    return (
-        <Tabs>
-            <Tabs.Screen
-                name="dashboard"
-                options={{ 
-                    title: "Home",
-                    headerShown: false
-                }}
-            />
-            <Tabs.Screen
-                name="chat"
-                options={{ 
-                    title: "Chat",
-                    headerShown: false
-                }}
-            />
-            <Tabs.Screen
-                name="assessment"
-                options={{ 
-                    title: "Assessment",
-                    headerShown: false
-                }}
-            />
-            <Tabs.Screen
-                name="profile"
-                options={{
-                    title: "Profile",
-                    headerShown: false
-                }}
-            />
-        </Tabs>
-    )
-}
-export default _Layout
+const AccountLayout = () => {
+  return (
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: "#06BE00",
+        tabBarInactiveTintColor: "#9CA3AF",
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: "600",
+        },
+        tabBarItemStyle: {
+          paddingVertical: 4,
+        },
+        tabBarStyle: {
+          height: Platform.OS === "ios" ? 84 : 64,
+          backgroundColor: "#FFFFFF",
+          borderTopWidth: 0,
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
+          paddingBottom: Platform.OS === "ios" ? 20 : 6,
+          paddingTop: 6,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: -3 },
+          shadowOpacity: 0.08,
+          shadowRadius: 8,
+          elevation: 10,
+        },
+      }}
+    >
+      <Tabs.Screen
+        name="dashboard"
+        options={{
+          title: "Home",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="chat"
+        options={{
+          title: "Chat",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="chatbubble-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="assessment"
+        options={{
+          title: "Assessment",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="documents-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "Profile",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person-outline" size={size} color={color} />
+          ),
+        }}
+      />
+       <Tabs.Screen
+        name="assessmentResult"
+        options={{
+          href:null,
+          headerShown:false,
+        }}
+      />
+
+    </Tabs>
+  );
+};
+
+export default AccountLayout;

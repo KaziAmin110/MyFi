@@ -5,6 +5,7 @@ import authRouter from "./routes/auth.routes";
 import userRouter from "./routes/user.routes";
 import assessmentRouter from "./routes/assessment.routes";
 import appointmentsRouter from "./routes/appointments.routes";
+import chatRouter from "./routes/chat.routes";
 
 const app = express();
 
@@ -20,14 +21,15 @@ app.use(
   }),
 );
 
+app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // Routes
-app.use(express.json());
 app.use("/api/auth", authRouter);
 app.use("/api/users", userRouter);
 app.use("/api/assessments", assessmentRouter);
 app.use("/api/appointments", appointmentsRouter);
+app.use("/api/chat", chatRouter);
 
 app.listen(PORT, async () => {
   console.log(`Server is running on http://localhost:${PORT}`);
