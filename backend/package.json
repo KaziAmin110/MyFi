@@ -21,10 +21,12 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^4.19.2",
+    "get-tsconfig": "^4.13.7",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
     "node-fetch": "^2.7.0",
-    "nodemailer": "^7.0.10"
+    "nodemailer": "^7.0.10",
+    "resolve-pkg-maps": "^1.0.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { appointmentsApi } from "../../utils/api";
 
 const RemindersScreen = () => {
@@ -22,9 +22,11 @@ const RemindersScreen = () => {
   const [upcomingReminders, setUpcomingReminders] = useState<any[]>([]);
   const [pastReminders, setPastReminders] = useState<any[]>([]);
 
-  useEffect(() => {
-    fetchReminders();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchReminders();
+    }, []),
+  );
 
   const fetchReminders = async () => {
     setLoading(true);

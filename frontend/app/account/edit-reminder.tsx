@@ -8,7 +8,6 @@ import {
   Platform,
   Dimensions,
   Modal,
-  Alert,
   ActivityIndicator,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -16,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Calendar } from "react-native-calendars";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import Toast from "react-native-toast-message";
 import { appointmentsApi } from "../../utils/api";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -110,13 +110,20 @@ const EditReminderScreen = () => {
         payload,
       );
       if (res.success) {
-        Alert.alert("Success", "Reminder updated successfully", [
-          { text: "OK", onPress: () => router.push("/account/reminders") },
-        ]);
+        Toast.show({
+          type: "success",
+          text1: "Success",
+          text2: "Reminder updated successfully!",
+        });
+        router.replace("/account/reminders");
       }
     } catch (error: any) {
       console.error("Update Appointment Error:", error);
-      Alert.alert("Error", error.message || "Failed to update reminder");
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: error.message || "Failed to update reminder",
+      });
     } finally {
       setLoading(false);
     }

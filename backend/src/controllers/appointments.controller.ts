@@ -187,15 +187,50 @@ export const getAppointments = async (req: AuthRequest, res: Response) => {
 
       const upcomingAppointments = appointments
         .map((app: any) => {
-          const futureOccurrences = expandRecurrences(app, now, future);
-          if (futureOccurrences.length === 0) return null;
+          // Determine the window to search for the next occurrence
+          // For recurring apps, we start from the appointment start_date to correctly count occurrences
+          const appStart = new Date(app.start_date);
+          const searchStart = appStart > now ? appStart : now;
+          const futureOccurrences = expandRecurrences(app, searchStart, future);
+
+          if (futureOccurrences.length === 0) {
+            // One-time appointment that is already in the past, or no future occurrences
+            if (!app.is_recurring) {
+              const nowCheck = new Date();
+              // If it's in the future relative to exact 'now', include it
+              if (appStart > nowCheck) {
+                return {
+                  ...app,
+                  next_occurrence: appStart.toISOString(),
+                  occurrence_count_remaining: 1,
+                  streak: 0,
+                };
+              }
+            }
+            return null;
+          }
 
           const appCheckIns: any[] = checkInsByAppId[String(app.id)] ?? [];
           const completedDates = new Set(
             appCheckIns
               .filter((ci) => ci.status === "completed")
-              .map((ci) => ci.scheduled_date), // stored as 'YYYY-MM-DD'
+              .map((ci) => ci.scheduled_date),
           );
+
+          // For one-time appointments, we check if they are already completed
+          if (!app.is_recurring) {
+            const dateStr = appStart.toISOString().split("T")[0];
+            if (completedDates.has(dateStr)) {
+              return null; // Don't show completed one-time appointments in "Upcoming"
+            }
+
+            return {
+              ...app,
+              next_occurrence: appStart.toISOString(),
+              occurrence_count_remaining: 1,
+              streak: 0,
+            };
+          }
 
           // How many scheduled occurrences remain (including future)
           const occurrence_count_remaining =
@@ -204,7 +239,6 @@ export const getAppointments = async (req: AuthRequest, res: Response) => {
               : null; // null = no cap defined, open-ended series
 
           // Streak: consecutive completed occurrences going backwards from today
-          const appStart = new Date(app.start_date);
           const pastOccurrences = expandRecurrences(app, appStart, now).sort(
             (a, b) => b.getTime() - a.getTime(),
           ); // most recent first
