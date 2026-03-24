@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,51 +7,86 @@ import {
   ScrollView,
   SafeAreaView,
   Platform,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { appointmentsApi } from "../../utils/api";
 
 const RemindersScreen = () => {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("All");
+  const [loading, setLoading] = useState(true);
+  const [upcomingReminders, setUpcomingReminders] = useState<any[]>([]);
+  const [pastReminders, setPastReminders] = useState<any[]>([]);
 
-  const reminders = [
-    {
-      id: 1,
-      time: "7:00 PM",
-      title: "Week of January 2",
-      description: "Your appointment is ready to begin. Join when ready.",
-      month: "JAN",
-      day: "4",
-      date: "2026-01-04",
-      type: "Upcoming",
-      active: true,
-      frequency: "Weekly on Tuesday",
-    },
-    {
-      id: 2,
-      time: "2:30 PM",
-      title: "Week of December 26",
-      month: "DEC",
-      day: "26",
-      date: "2025-12-26",
-      type: "Past",
-      active: false,
-      frequency: "Does not repeat",
-    },
-    {
-      id: 3,
-      time: "12:00 PM",
-      title: "Week of December 19",
-      month: "DEC",
-      day: "24",
-      date: "2025-12-24",
-      type: "Past",
-      active: false,
-      frequency: "Does not repeat",
-    },
-  ];
+  useEffect(() => {
+    fetchReminders();
+  }, []);
+
+  const fetchReminders = async () => {
+    setLoading(true);
+    try {
+      const [upcomingRes, pastRes] = await Promise.all([
+        appointmentsApi.getAppointments("upcoming"),
+        appointmentsApi.getAppointments("past"),
+      ]);
+
+      if (upcomingRes.success) {
+        setUpcomingReminders(
+          upcomingRes.data.map((app: any) => ({
+            id: app.id,
+            time: new Date(app.start_date).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+            }),
+            title: app.title,
+            description: "Your appointment is ready to begin. Join when ready.",
+            month: new Date(app.next_occurrence)
+              .toLocaleString("default", { month: "short" })
+              .toUpperCase(),
+            day: new Date(app.next_occurrence).getDate().toString(),
+            date: app.next_occurrence.split("T")[0],
+            type: "Upcoming",
+            active: true,
+            frequency: app.is_recurring ? `Weekly` : "Does not repeat",
+            fullData: app,
+          })),
+        );
+      }
+
+      if (pastRes.success) {
+        setPastReminders(
+          pastRes.data.map((app: any) => ({
+            id: app.id,
+            time: new Date(app.start_date).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+            }),
+            title: app.title,
+            month: new Date(app.start_date)
+              .toLocaleString("default", { month: "short" })
+              .toUpperCase(),
+            day: new Date(app.start_date).getDate().toString(),
+            date: app.start_date.split("T")[0],
+            type: "Past",
+            active: false,
+            frequency: app.is_recurring ? `Weekly` : "Does not repeat",
+            fullData: app,
+          })),
+        );
+      }
+    } catch (error: any) {
+      console.error("Fetch Reminders Error:", error);
+      Alert.alert("Error", "Failed to load reminders");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleEdit = (reminder: any) => {
     router.push({
@@ -65,10 +100,35 @@ const RemindersScreen = () => {
     });
   };
 
-  const filteredReminders = reminders.filter((r) => {
-    if (activeTab === "All") return true;
-    return r.type === activeTab;
-  });
+  const handleDelete = async (id: string) => {
+    Alert.alert("Delete Reminder", "Are you sure you want to delete this?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await appointmentsApi.deleteAppointment(id);
+            fetchReminders();
+          } catch (error) {
+            Alert.alert(
+              "Error",
+              error instanceof Error
+                ? error.message
+                : "Failed to delete reminder",
+            );
+          }
+        },
+      },
+    ]);
+  };
+
+  const filteredReminders = [...upcomingReminders, ...pastReminders].filter(
+    (r) => {
+      if (activeTab === "All") return true;
+      return r.type === activeTab;
+    },
+  );
 
   return (
     <LinearGradient colors={["#D5E6FF", "#F5F5F5"]} style={styles.container}>
@@ -107,69 +167,80 @@ const RemindersScreen = () => {
           ))}
         </View>
 
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-          {filteredReminders.map((reminder) => (
-            <View
-              key={reminder.id}
-              style={[
-                styles.reminderCard,
-                !reminder.active && styles.inactiveCard,
-              ]}
-            >
-              <View style={styles.cardHeader}>
-                <View style={styles.timeInfo}>
-                  <Text style={styles.timeText}>{reminder.time}</Text>
-                  <Text
-                    style={[
-                      styles.reminderTitle,
-                      reminder.active
-                        ? styles.activeTitle
-                        : styles.inactiveTitle,
-                    ]}
-                  >
-                    {reminder.title}
-                  </Text>
-                  {reminder.description && (
-                    <Text style={styles.descriptionText}>
-                      {reminder.description}
+        {loading ? (
+          <View
+            style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+          >
+            <ActivityIndicator size="large" color="#3B66C5" />
+          </View>
+        ) : (
+          <ScrollView contentContainerStyle={styles.scrollContent}>
+            {filteredReminders.map((reminder) => (
+              <View
+                key={`${reminder.type}-${reminder.id}`}
+                style={[
+                  styles.reminderCard,
+                  !reminder.active && styles.inactiveCard,
+                ]}
+              >
+                <View style={styles.cardHeader}>
+                  <View style={styles.timeInfo}>
+                    <Text style={styles.timeText}>{reminder.time}</Text>
+                    <Text
+                      style={[
+                        styles.reminderTitle,
+                        reminder.active
+                          ? styles.activeTitle
+                          : styles.inactiveTitle,
+                      ]}
+                    >
+                      {reminder.title}
                     </Text>
-                  )}
-                </View>
+                    {reminder.description && (
+                      <Text style={styles.descriptionText}>
+                        {reminder.description}
+                      </Text>
+                    )}
+                  </View>
 
-                <View
-                  style={[
-                    styles.calendarBadge,
-                    !reminder.active && styles.inactiveBadge,
-                  ]}
-                >
                   <View
                     style={[
-                      styles.monthStrip,
-                      !reminder.active && styles.inactiveMonthStrip,
+                      styles.calendarBadge,
+                      !reminder.active && styles.inactiveBadge,
                     ]}
                   >
-                    <Text style={styles.monthText}>{reminder.month}</Text>
+                    <View
+                      style={[
+                        styles.monthStrip,
+                        !reminder.active && styles.inactiveMonthStrip,
+                      ]}
+                    >
+                      <Text style={styles.monthText}>{reminder.month}</Text>
+                    </View>
+                    <Text style={styles.dayText}>{reminder.day}</Text>
                   </View>
-                  <Text style={styles.dayText}>{reminder.day}</Text>
                 </View>
-              </View>
 
-              {reminder.active && (
-                <View style={styles.cardFooter}>
-                  <TouchableOpacity style={styles.cancelButton}>
-                    <Text style={styles.cancelText}>Cancel</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.editButton}
-                    onPress={() => handleEdit(reminder)}
-                  >
-                    <Text style={styles.editText}>Edit</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </View>
-          ))}
-        </ScrollView>
+                {reminder.active && (
+                  <View style={styles.cardFooter}>
+                    <TouchableOpacity
+                      style={styles.cancelButton}
+                      onPress={() => handleDelete(reminder.id)}
+                    >
+                      <Text style={styles.cancelText}>Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.editButton}
+                      onPress={() => handleEdit(reminder)}
+                    >
+                      <Text style={styles.editText}>Edit</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            ))}
+          </ScrollView>
+        )}
 
         <TouchableOpacity
           style={styles.addButton}

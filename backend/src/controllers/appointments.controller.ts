@@ -66,7 +66,8 @@ export const createAppointment = async (req: AuthRequest, res: Response) => {
 
     if (startDate < new Date()) {
       const now = new Date();
-      if (startDate.getTime() < now.getTime() - 60000) {
+      // Allow for a 1-hour grace period to handle local vs server clock drift or same-hour scheduling
+      if (startDate.getTime() < now.getTime() - 3600000) {
         return res.status(400).json({
           success: false,
           message: "start_date cannot be in the past",

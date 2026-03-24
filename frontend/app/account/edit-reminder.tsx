@@ -8,12 +8,15 @@ import {
   Platform,
   Dimensions,
   Modal,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Calendar } from "react-native-calendars";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { appointmentsApi } from "../../utils/api";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -22,9 +25,13 @@ const scale = (size: number) => (SCREEN_WIDTH / 375) * size;
 
 const FREQUENCY_OPTIONS = [
   "Does not repeat",
+  "Weekly on Monday",
   "Weekly on Tuesday",
-  "Every other Tuesday",
-  "Monthly on the first Tuesday",
+  "Weekly on Wednesday",
+  "Weekly on Thursday",
+  "Weekly on Friday",
+  "Weekly on Saturday",
+  "Weekly on Sunday",
 ];
 
 const EditReminderScreen = () => {
@@ -57,6 +64,7 @@ const EditReminderScreen = () => {
   const [selectedFrequency, setSelectedFrequency] = useState(
     params.frequency ? String(params.frequency) : "Does not repeat",
   );
+  const [loading, setLoading] = useState(false);
 
   const onTimeChange = (event: any, selected: Date | undefined) => {
     if (selected) {
@@ -64,6 +72,53 @@ const EditReminderScreen = () => {
     }
     if (Platform.OS === "android") {
       setShowTimePicker(false);
+    }
+  };
+
+  const handleUpdate = async () => {
+    setLoading(true);
+    try {
+      // Create date by splitting YYYY-MM-DD to avoid timezone shifting
+      const [year, month, day] = selectedDate.split("-").map(Number);
+      const combinedDateTime = new Date(year, month - 1, day);
+      combinedDateTime.setHours(selectedTime.getHours());
+      combinedDateTime.setMinutes(selectedTime.getMinutes());
+      combinedDateTime.setSeconds(0);
+      combinedDateTime.setMilliseconds(0);
+
+      const isRecurring = selectedFrequency !== "Does not repeat";
+      let daysOfWeek: string[] = [];
+      if (isRecurring) {
+        const dayName = selectedFrequency.split(" on ")[1];
+        if (dayName) {
+          daysOfWeek = [dayName.toLowerCase()];
+        }
+      }
+
+      const payload = {
+        title: `Financial Check-in`,
+        start_date: combinedDateTime.toISOString(),
+        is_recurring: isRecurring,
+        days_of_week: daysOfWeek,
+        recurrence_frequency: isRecurring ? "weekly" : null,
+        reminder_enabled: true,
+        max_occurences: isRecurring ? 12 : 1,
+      };
+
+      const res = await appointmentsApi.updateAppointment(
+        params.id as string,
+        payload,
+      );
+      if (res.success) {
+        Alert.alert("Success", "Reminder updated successfully", [
+          { text: "OK", onPress: () => router.push("/account/reminders") },
+        ]);
+      }
+    } catch (error: any) {
+      console.error("Update Appointment Error:", error);
+      Alert.alert("Error", error.message || "Failed to update reminder");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -76,7 +131,9 @@ const EditReminderScreen = () => {
   };
 
   const formatDateReadable = (dateStr: string) => {
-    const date = new Date(dateStr);
+    // Append T00:00:00 to treat as local date rather than UTC
+    const date = new Date(dateStr + "T00:00:00");
+    if (isNaN(date.getTime())) return "Invalid Date";
     return date.toLocaleDateString("en-US", {
       month: "long",
       day: "numeric",
@@ -174,10 +231,15 @@ const EditReminderScreen = () => {
         {!showTimePicker && !showFrequencyPicker && (
           <View style={styles.footer}>
             <TouchableOpacity
-              style={styles.createButton}
-              onPress={() => router.push("/account/reminders")}
+              style={[styles.createButton, loading && { opacity: 0.7 }]}
+              onPress={handleUpdate}
+              disabled={loading}
             >
-              <Text style={styles.createButtonText}>Update reminder</Text>
+              {loading ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text style={styles.createButtonText}>Update reminder</Text>
+              )}
             </TouchableOpacity>
           </View>
         )}
