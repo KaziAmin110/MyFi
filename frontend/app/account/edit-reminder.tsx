@@ -89,7 +89,7 @@ const EditReminderScreen = () => {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
           <TouchableOpacity
-            onPress={() => router.back()}
+            onPress={() => router.push("/account/reminders")}
             style={styles.backButton}
           >
             <Ionicons name="chevron-back" size={28} color="#333" />
@@ -175,7 +175,7 @@ const EditReminderScreen = () => {
           <View style={styles.footer}>
             <TouchableOpacity
               style={styles.createButton}
-              onPress={() => router.back()}
+              onPress={() => router.push("/account/reminders")}
             >
               <Text style={styles.createButtonText}>Update reminder</Text>
             </TouchableOpacity>
