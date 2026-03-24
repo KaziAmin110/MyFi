@@ -298,12 +298,6 @@ export default function AssessmentScreen() {
           {...panResponder.panHandlers}
         >
           {/* Swipe hint overlays */}
-          <Animated.View style={[styles.swipeOverlay, styles.swipeOverlayLeft,  { opacity: leftOpacity }]}>
-            <Text style={styles.swipeOverlayText}>Not me!</Text>
-          </Animated.View>
-          <Animated.View style={[styles.swipeOverlay, styles.swipeOverlayRight, { opacity: rightOpacity }]}>
-            <Text style={styles.swipeOverlayText}>That's me!</Text>
-          </Animated.View>
 
           <LogoBadge style={styles.logoTopLeft} />
           <View
