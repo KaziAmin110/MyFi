@@ -82,6 +82,7 @@ export interface GetMessagesResponse {
     createdAt: string;
   }[];
   summary?: string | null;
+  suggestedPrompts?: string[];
 }
 
 export interface SendMessageRequest {
