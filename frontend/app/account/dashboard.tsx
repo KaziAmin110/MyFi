@@ -13,8 +13,10 @@ import * as SecureStore from "expo-secure-store";
 import MaskedView from "@react-native-masked-view/masked-view";
 import { LinearGradient } from "expo-linear-gradient";
 import HabitCard from "../components/HabitCard";
+import { useRouter } from "expo-router";
 
 const Dashboard = () => {
+  const router = useRouter();
   const [mood, setMood] = useState(60);
   const [firstName, setFirstName] = useState("");
   const dayLabel = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -144,19 +146,22 @@ const Dashboard = () => {
           </View>
 
           {/* Set up an appointment*/}
-          <View style={styles.appointmentDisplay}>
+          <Pressable
+            style={styles.appointmentDisplay}
+            onPress={() => router.push("/account/reminders")}
+          >
             <Image
               source={require("../../assets/images/calendarPic.png")}
               style={styles.calPic}
               resizeMode="contain"
             />
             <View style={styles.appointmentText}>
-              <Text style={styles.appointmentTitle}>Set up an appointment</Text>
+              <Text style={styles.appointmentTitle}>Set up a reminder</Text>
               <Text style={styles.appointmentSubTitle}>
                 Schedule a weekly meeting with your AI Coach
               </Text>
             </View>
-          </View>
+          </Pressable>
         </View>
 
         {/*Habitude Card info — fixed height, sits at bottom */}

@@ -52,6 +52,20 @@ const AccountLayout = () => {
         }}
       />
       <Tabs.Screen
+        name="reminders"
+        options={{
+          href: null,
+          tabBarStyle: { display: "none" },
+        }}
+      />
+      <Tabs.Screen
+        name="create-reminder"
+        options={{
+          href: null,
+          tabBarStyle: { display: "none" },
+        }}
+      />
+      <Tabs.Screen
         name="assessment"
         options={{
           title: "Assessment",
@@ -69,14 +83,13 @@ const AccountLayout = () => {
           ),
         }}
       />
-       <Tabs.Screen
+      <Tabs.Screen
         name="assessmentResult"
         options={{
-          href:null,
-          headerShown:false,
+          href: null,
+          headerShown: false,
         }}
       />
-
     </Tabs>
   );
 };
