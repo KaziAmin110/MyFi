@@ -13,6 +13,7 @@ import {
   Pressable,
   PanResponder,
   Image,
+  AppState,
 } from "react-native";
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { LinearGradient } from "expo-linear-gradient";
@@ -98,6 +99,14 @@ const Chat = () => {
   // Load sessions on mount
   useEffect(() => {
     loadSessions();
+  }, []);
+
+  // Refresh sessions when app returns from background (picks up cron-rotated sessions)
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active") loadSessions();
+    });
+    return () => sub.remove();
   }, []);
 
   useEffect(() => {

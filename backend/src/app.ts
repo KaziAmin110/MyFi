@@ -5,6 +5,7 @@ import authRouter from "./routes/auth.routes";
 import userRouter from "./routes/user.routes";
 import assessmentRouter from "./routes/assessment.routes";
 import chatRouter from "./routes/chat.routes";
+import { startSessionRotationJob } from "./jobs/rotate-sessions";
 
 const app = express();
 
@@ -31,6 +32,7 @@ app.use("/api/chat", chatRouter);
 
 app.listen(PORT, async () => {
   console.log(`Server is running on http://localhost:${PORT}`);
+  startSessionRotationJob();
 });
 
 export default app;

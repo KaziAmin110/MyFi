@@ -23,6 +23,7 @@ import {
 export const getUserSessions = async (
   userId: string
 ): Promise<{ data: GetSessionsResponse["sessions"] | null; error: string | null }> => {
+
   // Get sessions with their messages
   const { data, error } = await supabase
     .from("chat_sessions")
@@ -73,22 +74,16 @@ export const getSessionById = async (
   return { data: data as ChatSession, error: null };
 };
 
-export const createSession = async (
+// DB-only session creation — no AI calls. Used by the cron job.
+export const createSessionRecord = async (
   userId: string
 ): Promise<{ data: CreateSessionResponse["session"] | null; error: string | null }> => {
-  // Summarize previous sessions that haven't been summarized yet
-  // This is lazy evaluation — only runs when a new session is created
-  const { error: summaryErr } = await summarizePreviousSessionsIfNeeded(userId);
-  if (summaryErr) console.warn("[SUMMARIZATION FAILED] Previous sessions not summarized:", summaryErr);
-
-  // Mark all previous sessions for this user as completed and read-only
   await supabase
     .from("chat_sessions")
     .update({ status: "completed", is_read_only: true })
     .eq("user_id", userId)
     .eq("status", "active");
 
-  // Get latest session number for this user
   const { data: latestSession } = await supabase
     .from("chat_sessions")
     .select("session_number")
@@ -99,7 +94,6 @@ export const createSession = async (
 
   const nextSessionNumber = latestSession ? latestSession.session_number + 1 : 1;
 
-  // Calculate week dates
   const now = new Date();
   const weekStart = new Date(now);
   weekStart.setDate(now.getDate() - now.getDay());
@@ -121,21 +115,32 @@ export const createSession = async (
 
   if (error) return { data: null, error: error.message };
 
-  // Generate the AI's opening message and 3 conversation-route prompts
-  // This runs at session creation so it's ready when the user opens the session
-  await generateOpeningMessage(data.id, userId);
-
-  // Transform to API response format
-  const session = {
-    id: data.id,
-    title: data.title,
-    weekStartDate: data.week_start_date,
-    weekEndDate: data.week_end_date,
-    status: data.status,
-    isReadOnly: data.is_read_only,
+  return {
+    data: {
+      id: data.id,
+      title: data.title,
+      weekStartDate: data.week_start_date,
+      weekEndDate: data.week_end_date,
+      status: data.status,
+      isReadOnly: data.is_read_only,
+    },
+    error: null,
   };
+};
 
-  return { data: session, error: null };
+// Full session creation — summarizes previous sessions + generates opening message.
+// Used for first session (assessment completion) and manual "New Session" button.
+export const createSession = async (
+  userId: string
+): Promise<{ data: CreateSessionResponse["session"] | null; error: string | null }> => {
+  const { error: summaryErr } = await summarizePreviousSessionsIfNeeded(userId);
+  if (summaryErr) console.warn("[SUMMARIZATION FAILED]", summaryErr);
+
+  const result = await createSessionRecord(userId);
+  if (result.error || !result.data) return result;
+
+  await generateOpeningMessage(result.data.id, userId);
+  return result;
 };
 
 // Generate the AI's opening message + 3 conversation-route prompts for a new session.

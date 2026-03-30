@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { AuthRequest } from "../middlewares/auth.middleware";
 import {
   AnsweredQuestionData,
   createNewAssessmentSession,
@@ -13,6 +14,7 @@ import {
   saveAssessmentAnswer,
   validateAllQuestionsAnswered,
 } from "../services/assessment.service";
+import * as chatService from "../services/chat.service";
 
 const ONBOARDING_ASSESSMENT_ID = "1";
 
@@ -108,11 +110,12 @@ export const submitAnswer = async (
 
 // Submits an assessment for completion
 export const submitAssessment = async (
-  req: Request,
+  req: AuthRequest,
   res: Response,
 ): Promise<Response | void> => {
   try {
     const { session_id } = req.params;
+    const userId = req.user as string;
 
     if (!session_id) {
       return res.status(400).json({
@@ -146,6 +149,11 @@ export const submitAssessment = async (
 
     // Update session status to completed and get results
     const results = await markSessionAsCompleted(session_id);
+
+    const { data: existingSessions } = await chatService.getUserSessions(userId);
+    if (!existingSessions?.length) {
+      await chatService.createSession(userId);
+    }
 
     return res.status(200).json({
       success: true,
