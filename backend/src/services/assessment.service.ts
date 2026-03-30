@@ -51,7 +51,8 @@ export const getOnboardingCompletedStatus = async (
       .select("status")
       .eq("user_id", user_id)
       .eq("assessment_id", assessment_id)
-      .maybeSingle();
+      .order("updated_at", { ascending: false })
+      .limit(1);
 
     if (error) {
       console.error("Supbase error fetching onboarding status:", error.message);
@@ -59,11 +60,11 @@ export const getOnboardingCompletedStatus = async (
     }
 
     // If no data found, onboarding is not completed
-    if (!data) {
+    if (!data || data.length === 0) {
       return false;
     }
 
-    return data.status === "completed";
+    return data[0].status === "completed";
   } catch (error) {
     console.error("Error fetching onboarding status:", error);
     throw error;
@@ -81,7 +82,8 @@ export const getAssessmentSessionData = async (
       .select("id, assessment_id, current_question_index, status")
       .eq("user_id", user_id)
       .eq("assessment_id", assessment_id)
-      .maybeSingle();
+      .order("updated_at", { ascending: false })
+      .limit(1);
 
     if (error) {
       console.error(
@@ -91,15 +93,17 @@ export const getAssessmentSessionData = async (
       throw error;
     }
 
-    if (!data) {
+    if (!data || data.length === 0) {
       return null;
     }
 
+    const row = data[0];
+
     return {
-      session_id: data.id,
-      assessment_id: data.assessment_id,
-      current_question_index: data.current_question_index,
-      status: data.status,
+      session_id: row.id,
+      assessment_id: row.assessment_id,
+      current_question_index: row.current_question_index,
+      status: row.status,
     };
   } catch (error) {
     console.error("Error fetching assessment session data:", error);
@@ -272,6 +276,8 @@ export const saveAssessmentAnswer = async (
       );
 
     if (answerError) {
+      console.error("Supabase upsert error:", answerError);
+      console.error("Values sent:", { session_id, question_id, answer_value, types: { session_id: typeof session_id, question_id: typeof question_id, answer_value: typeof answer_value } });
       throw new Error("Invalid Session or Question id");
     }
 

@@ -12,9 +12,14 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import {
+  initializeOnboardingAssessment,
+  submitAnswer as submitAnswerAPI,
+  submitAssessment as submitAssessmentAPI,
+} from "../../services/assessment.service";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// QUESTION SERVICE
+// TYPES
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface Question {
@@ -23,22 +28,12 @@ export interface Question {
   category?: string;
 }
 
-export async function fetchQuestions(): Promise<Question[]> {
-  return PLACEHOLDER_QUESTIONS;
-}
+type Answer = "not_me" | "sometimes" | "thats_me";
 
-const PLACEHOLDER_QUESTIONS: Question[] = [
-  { id: "1", text: "I plan for emergencies so I'm not caught off guard." },
-  { id: "2", text: "Financial setbacks make me doubt my ability to recover." },
-  { id: "3", text: "I think people will only like me if I am giving." },
-  { id: "4", text: "I feel uneasy unless my money is completely secure." },
-  { id: "5", text: "I spend a lot on others but I don't spend on myself." },
-  { id: "6", text: "I avoid checking my bank balance when I'm stressed." },
-  { id: "7", text: "I feel guilty spending money on myself." },
-  { id: "8", text: "I believe I will always have enough money." },
-  { id: "9", text: "I tend to overspend when I'm feeling emotional." },
-  { id: "10", text: "I feel more confident when I have a financial cushion." },
-];
+interface CardAnswer {
+  questionId: string;
+  answer: Answer;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CONSTANTS
@@ -47,13 +42,9 @@ const PLACEHOLDER_QUESTIONS: Question[] = [
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const SWIPE_THRESHOLD = 100;
 
-// Figma spec: 336×443 — keep this ratio
 const CARD_WIDTH = SCREEN_WIDTH * 0.88;
-const CARD_HEIGHT = CARD_WIDTH * (443 / 336); // ~1.318 aspect ratio
+const CARD_HEIGHT = CARD_WIDTH * (443 / 336);
 
-// Border colors per card slot: front, middle, back
-// Figma shows: green (active "That's me" state), blue (middle), red (back)
-// At rest the front card uses the CARD_BORDER_COLORS cycling array
 const CARD_BORDER_COLORS = [
   "#43A047",
   "#1E88E5",
@@ -62,11 +53,16 @@ const CARD_BORDER_COLORS = [
   "#8E24AA",
 ];
 
-type Answer = "not_me" | "sometimes" | "thats_me";
-
-interface CardAnswer {
-  questionId: string;
-  answer: Answer;
+// Maps a swipe answer to the numeric value the backend expects
+function answerToValue(answer: Answer): number {
+  switch (answer) {
+    case "not_me":
+      return -1;
+    case "sometimes":
+      return 0;
+    case "thats_me":
+      return 1;
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -88,11 +84,15 @@ export default function AssessmentScreen() {
   const router = useRouter();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [, setAnswers] = useState<CardAnswer[]>([]);
+  const [submitting, setSubmitting] = useState(false);
 
-  // Fresh position per card — when currentIndex changes, the Animated.View
-  // gets a new key so React fully unmounts it, and positionMap always starts at 0,0
+  // Session ID returned by the backend
+  const sessionIdRef = useRef<number | null>(null);
+
+  // Fresh position per card
   const positionMap = useRef<Record<number, Animated.ValueXY>>({});
   if (!positionMap.current[currentIndex]) {
     positionMap.current[currentIndex] = new Animated.ValueXY();
@@ -101,23 +101,22 @@ export default function AssessmentScreen() {
   const positionRef = useRef(position);
   positionRef.current = position;
 
-  // Refs that always hold the latest values so the panResponder (created once,
-  // never recreated) never reads stale state from its closure.
+  // Refs for latest values so panResponder never reads stale state
   const currentIndexRef = useRef(currentIndex);
   const questionsRef = useRef(questions);
   const totalQuestionsRef = useRef(questions.length);
+
   useEffect(() => {
     currentIndexRef.current = currentIndex;
-    // Reset position here — this fires after React has fully committed the
-    // new card content to screen, so the old card is guaranteed gone
     position.setValue({ x: 0, y: 0 });
   }, [currentIndex, position]);
+
   useEffect(() => {
     questionsRef.current = questions;
     totalQuestionsRef.current = questions.length;
   }, [questions]);
 
-  // Derived swipe colors shown on the card overlay as you drag
+  // Derived swipe colors
   const leftOpacity = positionRef.current.x.interpolate({
     inputRange: [-SWIPE_THRESHOLD, 0],
     outputRange: [1, 0],
@@ -128,15 +127,13 @@ export default function AssessmentScreen() {
     outputRange: [0, 1],
     extrapolate: "clamp",
   });
-
-  // Upward drag — shows white question mark as card moves up
   const upOpacity = positionRef.current.y.interpolate({
     inputRange: [-SWIPE_THRESHOLD, 0],
     outputRange: [1, 0],
     extrapolate: "clamp",
   });
 
-  // Button background colors that react to drag direction
+  // Button scales that react to drag direction
   const btnNotMeScale = position.x.interpolate({
     inputRange: [-SWIPE_THRESHOLD, 0],
     outputRange: [1.25, 1],
@@ -153,11 +150,52 @@ export default function AssessmentScreen() {
     extrapolate: "clamp",
   });
 
+  // ── Load from backend ──────────────────────────────────────────────────
+
   useEffect(() => {
-    fetchQuestions()
-      .then((q) => setQuestions(q))
-      .catch((err) => console.error("Failed to load questions:", err))
-      .finally(() => setLoading(false));
+    const loadAssessment = async () => {
+      try {
+        const data = await initializeOnboardingAssessment();
+
+        sessionIdRef.current = data.session_id;
+
+        // Map backend questions to our Question shape
+        const mappedQuestions: Question[] = data.questions.map((q) => ({
+          id: String(q.question_id),
+          text: q.text,
+          category: q.habitude_type,
+        }));
+
+        setQuestions(mappedQuestions);
+
+        // If resuming, figure out where we left off
+        if (data.previously_answered && data.previously_answered.length > 0) {
+          const resumeIndex = data.previously_answered.length;
+          setCurrentIndex(resumeIndex);
+
+          // Rebuild local answers for tracking
+          const resumedAnswers: CardAnswer[] = data.previously_answered.map(
+            (pa) => ({
+              questionId: String(pa.question_id),
+              answer:
+                pa.answer_value === -1
+                  ? "not_me"
+                  : pa.answer_value === 0
+                  ? "sometimes"
+                  : "thats_me",
+            })
+          );
+          setAnswers(resumedAnswers);
+        }
+      } catch (err: any) {
+        console.error("Failed to load onboarding assessment:", err);
+        setLoadError(err.message || "Failed to load assessment");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadAssessment();
   }, []);
 
   const totalQuestions = questions.length;
@@ -168,8 +206,8 @@ export default function AssessmentScreen() {
     extrapolate: "clamp",
   });
 
-  // Mutable refs so panResponder can always call the latest version of these
-  // functions without being recreated itself.
+  // ── Answer & submission logic ──────────────────────────────────────────
+
   const recordAnswerRef = useRef<(answer: Answer) => void>(undefined);
   const swipeCardRef =
     useRef<(answer: Answer, toX: number, toY: number) => void>(undefined);
@@ -181,24 +219,40 @@ export default function AssessmentScreen() {
     const question = qs[idx];
     if (!question) return;
 
+    const sessionId = sessionIdRef.current;
+    if (!sessionId) {
+      console.error("No session ID available");
+      return;
+    }
+
+    // Submit answer to backend (fire-and-forget for UX speed)
+    submitAnswerAPI(sessionId, question.id, answerToValue(answer)).catch(
+      (err) => console.error("Failed to submit answer:", err)
+    );
+
     setAnswers((prev) => {
       const newAnswers = [...prev, { questionId: question.id, answer }];
-      if (idx + 1 >= total) {
-        setTimeout(
-          () =>
-            alert(
-              "Assessment complete! " +
-                newAnswers.length +
-                " answers recorded.",
-            ),
-          0,
-        );
-      }
       return newAnswers;
     });
 
     if (idx + 1 < total) {
       setCurrentIndex(idx + 1);
+    } else {
+      // All questions answered — submit the assessment
+      handleSubmitAssessment(sessionId);
+    }
+  };
+
+  const handleSubmitAssessment = async (sessionId: number) => {
+    setSubmitting(true);
+    try {
+      await submitAssessmentAPI(sessionId);
+      // Navigate to results or dashboard
+      router.replace("/account/dashboard");
+    } catch (err: any) {
+      console.error("Failed to submit assessment:", err);
+      // Still navigate — the answers are saved, submission can be retried
+      router.replace("/account/dashboard");
     }
   };
 
@@ -243,6 +297,8 @@ export default function AssessmentScreen() {
     if (answer === "sometimes") swipeCard(answer, 0, -SCREEN_HEIGHT);
   };
 
+  // ── Loading & Error states ─────────────────────────────────────────────
+
   if (loading) {
     return (
       <SafeAreaView style={[styles.container, { justifyContent: "center" }]}>
@@ -253,6 +309,35 @@ export default function AssessmentScreen() {
       </SafeAreaView>
     );
   }
+
+  if (loadError) {
+    return (
+      <SafeAreaView style={[styles.container, { justifyContent: "center" }]}>
+        <Text style={{ color: "#E53935", fontSize: 16, textAlign: "center", paddingHorizontal: 32 }}>
+          {loadError}
+        </Text>
+        <TouchableOpacity
+          style={{ marginTop: 20, paddingHorizontal: 28, paddingVertical: 12, backgroundColor: "#1E88E5", borderRadius: 10 }}
+          onPress={() => router.replace("/account/dashboard")}
+        >
+          <Text style={{ color: "#FFF", fontWeight: "600" }}>Go to Dashboard</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
+
+  if (submitting) {
+    return (
+      <SafeAreaView style={[styles.container, { justifyContent: "center" }]}>
+        <ActivityIndicator size="large" color="#43A047" />
+        <Text style={{ marginTop: 12, color: "#888" }}>
+          Submitting your assessment...
+        </Text>
+      </SafeAreaView>
+    );
+  }
+
+  // ── Render ─────────────────────────────────────────────────────────────
 
   const progressPercent =
     totalQuestions > 0 ? (currentIndex / totalQuestions) * 100 : 0;
@@ -267,9 +352,7 @@ export default function AssessmentScreen() {
     <SafeAreaView style={styles.container}>
       {/* ── Header ── */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={styles.backArrow}>←</Text>
-        </TouchableOpacity>
+        <View style={styles.backBtn} />
         <Text style={styles.questionCount}>
           Question {currentIndex + 1} of {totalQuestions}
         </Text>
@@ -287,7 +370,7 @@ export default function AssessmentScreen() {
 
       {/* ── Card Stack ── */}
       <View style={styles.cardContainer}>
-        {/* Back card — furthest behind, shows question after next */}
+        {/* Back card */}
         {currentIndex + 2 < totalQuestions && (
           <View
             style={[
@@ -306,7 +389,7 @@ export default function AssessmentScreen() {
           </View>
         )}
 
-        {/* Middle card — next question fully rendered and waiting */}
+        {/* Middle card */}
         {currentIndex + 1 < totalQuestions && (
           <View
             style={[
@@ -325,7 +408,7 @@ export default function AssessmentScreen() {
           </View>
         )}
 
-        {/* Front / active card — key forces full remount per card so position is always fresh */}
+        {/* Front / active card */}
         <Animated.View
           key={currentIndex}
           style={[
@@ -342,8 +425,6 @@ export default function AssessmentScreen() {
           ]}
           {...panResponder.panHandlers}
         >
-          {/* Swipe hint overlays */}
-
           <LogoBadge style={styles.logoTopLeft} />
           <View style={styles.cardTextContainer}>
             <Text style={styles.cardText}>{questions[currentIndex]?.text}</Text>
@@ -554,7 +635,6 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     borderWidth: 20,
     position: "absolute",
-    // Shadow for depth
     shadowColor: "#000",
     shadowOpacity: 0.1,
     shadowRadius: 12,
@@ -567,14 +647,6 @@ const styles = StyleSheet.create({
     top: 24,
   },
 
-  // FIX: Stack offsets now match the Figma visual (offset up-left, slightly
-  //      smaller, slightly transparent) — was translateX: -10/-20 before.
-  //      Figma stacks shift cards UP and slightly to the right.
-  // Use `top` instead of translateY so the card's internal coordinate system
-  // doesn't shift — translateY moves the whole card including its origin,
-  // which means the text appears higher on back cards than front cards.
-  // `top` just adjusts where the absolute-positioned card is painted without
-  // affecting anything inside it.
   cardBack1: {
     zIndex: 5,
     top: -2,
@@ -588,13 +660,8 @@ const styles = StyleSheet.create({
     height: CARD_HEIGHT * 0.74,
   },
 
-  // FIX: Figma card text is large, bold, centered — 28px / weight 800
-  // Absolutely fills the card so text is always centred at the exact same
-  // position regardless of sibling count (overlays on front card, none on back)
   cardTextContainer: {
     position: "absolute",
-    // Fixed width matching the front card so text wraps identically
-    // on back cards even though those cards are physically smaller
     width: CARD_WIDTH - 80,
     alignSelf: "center",
     top: 0,
@@ -610,8 +677,6 @@ const styles = StyleSheet.create({
     lineHeight: 38,
   },
 
-  // FIX: Logos are absolutely positioned in both corners — was missing
-  //      bottom-right in some versions, and size was too small
   logoBadge: {
     width: 38,
     height: 38,
@@ -726,7 +791,6 @@ const styles = StyleSheet.create({
     height: 90,
   },
 
-  // FIX: Buttons are now 52×52 (closer to Figma's ~50dp circles)
   actionBtn: {
     width: 52,
     height: 52,

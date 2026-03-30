@@ -9,6 +9,7 @@ import {
 import React, { useState } from "react";
 import { Link, router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
+import { getUserContext } from "../../services/user.service";
 
 export const API_URL = "http://localhost:5500/api/auth";
 
@@ -54,7 +55,19 @@ const login = () => {
         await SecureStore.setItemAsync("user", JSON.stringify(user));
       }
 
-      router.replace("../account/dashboard"); // Go to the home dashboard page
+      // Check onboarding status before navigating
+      try {
+        const context = await getUserContext();
+        if (!context.user.onboarding_completed) {
+          router.replace("/account/takeAssessment");
+        } else {
+          router.replace("/account/dashboard");
+        }
+      } catch (contextErr) {
+        // Fallback — if context call fails, go to dashboard
+        console.error("Failed to fetch user context:", contextErr);
+        router.replace("/account/dashboard");
+      }
     } catch(err: any) {
       setError(err.message);
     } finally {
