@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -30,11 +30,6 @@ export interface Question {
 
 type Answer = "not_me" | "sometimes" | "thats_me";
 
-interface CardAnswer {
-  questionId: string;
-  answer: Answer;
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // CONSTANTS
 // ─────────────────────────────────────────────────────────────────────────────
@@ -43,7 +38,7 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const SWIPE_THRESHOLD = 100;
 
 const CARD_WIDTH = SCREEN_WIDTH * 0.85;
-const CARD_HEIGHT = CARD_WIDTH * (420 / 336);
+const CARD_HEIGHT = CARD_WIDTH * (400 / 336);
 
 const CARD_BORDER_COLORS = [
   "#43A047",
@@ -62,6 +57,12 @@ function answerToValue(answer: Answer): number {
     case "thats_me":
       return 1;
   }
+}
+
+function valueToAnswer(val: number): Answer {
+  if (val === -1) return "not_me";
+  if (val === 0) return "sometimes";
+  return "thats_me";
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -85,22 +86,23 @@ export default function AssessmentScreen() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [, setAnswers] = useState<CardAnswer[]>([]);
   const [submitting, setSubmitting] = useState(false);
+
+  // Track answers by question index — allows going back and reviewing
+  const [answersMap, setAnswersMap] = useState<Record<number, Answer>>({});
+  // Track the furthest question reached (for progress bar)
+  const [furthestIndex, setFurthestIndex] = useState(0);
 
   const sessionIdRef = useRef<number | null>(null);
 
-  const positionMap = useRef<Record<number, Animated.ValueXY>>({});
-  if (!positionMap.current[currentIndex]) {
-    positionMap.current[currentIndex] = new Animated.ValueXY();
-  }
-  const position = positionMap.current[currentIndex];
-  const positionRef = useRef(position);
-  positionRef.current = position;
+  // Animation position for current card
+  const position = useRef(new Animated.ValueXY()).current;
 
+  // Refs for latest values so panResponder doesn't read stale state
   const currentIndexRef = useRef(currentIndex);
   const questionsRef = useRef(questions);
   const totalQuestionsRef = useRef(questions.length);
+  const answersMapRef = useRef(answersMap);
 
   useEffect(() => {
     currentIndexRef.current = currentIndex;
@@ -112,18 +114,22 @@ export default function AssessmentScreen() {
     totalQuestionsRef.current = questions.length;
   }, [questions]);
 
+  useEffect(() => {
+    answersMapRef.current = answersMap;
+  }, [answersMap]);
+
   // Swipe opacities
-  const leftOpacity = positionRef.current.x.interpolate({
+  const leftOpacity = position.x.interpolate({
     inputRange: [-SWIPE_THRESHOLD, 0],
     outputRange: [1, 0],
     extrapolate: "clamp",
   });
-  const rightOpacity = positionRef.current.x.interpolate({
+  const rightOpacity = position.x.interpolate({
     inputRange: [0, SWIPE_THRESHOLD],
     outputRange: [0, 1],
     extrapolate: "clamp",
   });
-  const upOpacity = positionRef.current.y.interpolate({
+  const upOpacity = position.y.interpolate({
     inputRange: [-SWIPE_THRESHOLD, 0],
     outputRange: [1, 0],
     extrapolate: "clamp",
@@ -140,7 +146,7 @@ export default function AssessmentScreen() {
     outputRange: [1, 1.25],
     extrapolate: "clamp",
   });
-  const btnSometimesScale = positionRef.current.y.interpolate({
+  const btnSometimesScale = position.y.interpolate({
     inputRange: [-SWIPE_THRESHOLD, 0],
     outputRange: [1.25, 1],
     extrapolate: "clamp",
@@ -165,19 +171,14 @@ export default function AssessmentScreen() {
         if (data.previously_answered && data.previously_answered.length > 0) {
           const resumeIndex = data.previously_answered.length;
           setCurrentIndex(resumeIndex);
+          setFurthestIndex(resumeIndex);
 
-          const resumedAnswers: CardAnswer[] = data.previously_answered.map(
-            (pa) => ({
-              questionId: String(pa.question_id),
-              answer:
-                pa.answer_value === -1
-                  ? "not_me"
-                  : pa.answer_value === 0
-                    ? "sometimes"
-                    : "thats_me",
-            }),
-          );
-          setAnswers(resumedAnswers);
+          // Rebuild answers map from previously answered
+          const restored: Record<number, Answer> = {};
+          data.previously_answered.forEach((pa, idx) => {
+            restored[idx] = valueToAnswer(pa.answer_value);
+          });
+          setAnswersMap(restored);
         }
       } catch (err: any) {
         console.error("Failed to load onboarding assessment:", err);
@@ -198,75 +199,100 @@ export default function AssessmentScreen() {
     extrapolate: "clamp",
   });
 
-  // ── Answer & submission logic ──────────────────────────────────────────
+  const handleSubmitAssessment = useCallback(
+    async (sessionId: number) => {
+      setSubmitting(true);
+      try {
+        await submitAssessmentAPI(sessionId);
+        router.replace("/account/dashboard");
+      } catch (err: any) {
+        console.error("Failed to submit assessment:", err);
+        router.replace("/account/dashboard");
+      }
+    },
+    [router],
+  );
 
-  const recordAnswerRef = useRef<(answer: Answer) => void>(undefined);
-  const swipeCardRef =
-    useRef<(answer: Answer, toX: number, toY: number) => void>(undefined);
+  const recordAnswer = useCallback(
+    (answer: Answer) => {
+      const idx = currentIndexRef.current;
+      const qs = questionsRef.current;
+      const total = totalQuestionsRef.current;
+      const question = qs[idx];
+      if (!question) return;
 
-  recordAnswerRef.current = (answer: Answer) => {
-    const idx = currentIndexRef.current;
-    const qs = questionsRef.current;
-    const total = totalQuestionsRef.current;
-    const question = qs[idx];
-    if (!question) return;
+      const sessionId = sessionIdRef.current;
+      if (!sessionId) {
+        console.error("No session ID available");
+        return;
+      }
 
-    const sessionId = sessionIdRef.current;
-    if (!sessionId) {
-      console.error("No session ID available");
-      return;
+      // Submit answer to backend (fire-and-forget for UX speed)
+      submitAnswerAPI(sessionId, question.id, answerToValue(answer)).catch(
+        (err) => console.error("Failed to submit answer:", err),
+      );
+
+      // Save answer locally
+      setAnswersMap((prev) => ({ ...prev, [idx]: answer }));
+
+      if (idx + 1 < total) {
+        const nextIdx = idx + 1;
+        setCurrentIndex(nextIdx);
+        setFurthestIndex((prev) => Math.max(prev, nextIdx));
+      } else {
+        // All questions answered
+        handleSubmitAssessment(sessionId);
+      }
+    },
+    [handleSubmitAssessment],
+  );
+
+  const goBack = useCallback(() => {
+    if (currentIndexRef.current > 0) {
+      setCurrentIndex((prev) => prev - 1);
     }
+  }, []);
 
-    submitAnswerAPI(sessionId, question.id, answerToValue(answer)).catch(
-      (err) => console.error("Failed to submit answer:", err),
-    );
+  // ── Swipe mechanics ───────────────────────────────────────────────────
 
-    setAnswers((prev) => {
-      const newAnswers = [...prev, { questionId: question.id, answer }];
-      return newAnswers;
-    });
-
-    if (idx + 1 < total) {
-      setCurrentIndex(idx + 1);
-    } else {
-      handleSubmitAssessment(sessionId);
-    }
-  };
-
-  const handleSubmitAssessment = async (sessionId: number) => {
-    setSubmitting(true);
-    try {
-      await submitAssessmentAPI(sessionId);
-      router.replace("/account/dashboard");
-    } catch (err: any) {
-      console.error("Failed to submit assessment:", err);
-      router.replace("/account/dashboard");
-    }
-  };
-
-  swipeCardRef.current = (answer: Answer, toX: number, toY: number) => {
-    Animated.timing(positionRef.current, {
-      toValue: { x: toX, y: toY },
-      duration: 250,
-      useNativeDriver: false,
-    }).start(() => recordAnswerRef.current?.(answer));
-  };
+  const swipeCard = useCallback(
+    (answer: Answer, toX: number, toY: number) => {
+      Animated.timing(position, {
+        toValue: { x: toX, y: toY },
+        duration: 250,
+        useNativeDriver: false,
+      }).start(() => recordAnswer(answer));
+    },
+    [position, recordAnswer],
+  );
 
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onPanResponderMove: (_, gesture) => {
-        positionRef.current.setValue({ x: gesture.dx, y: gesture.dy });
+        position.setValue({ x: gesture.dx, y: gesture.dy });
       },
       onPanResponderRelease: (_, gesture) => {
         if (gesture.dx < -SWIPE_THRESHOLD) {
-          swipeCardRef.current?.("not_me", -SCREEN_WIDTH * 1.5, 0);
+          Animated.timing(position, {
+            toValue: { x: -SCREEN_WIDTH * 1.5, y: 0 },
+            duration: 250,
+            useNativeDriver: false,
+          }).start(() => recordAnswer("not_me"));
         } else if (gesture.dx > SWIPE_THRESHOLD) {
-          swipeCardRef.current?.("thats_me", SCREEN_WIDTH * 1.5, 0);
+          Animated.timing(position, {
+            toValue: { x: SCREEN_WIDTH * 1.5, y: 0 },
+            duration: 250,
+            useNativeDriver: false,
+          }).start(() => recordAnswer("thats_me"));
         } else if (gesture.dy < -SWIPE_THRESHOLD) {
-          swipeCardRef.current?.("sometimes", 0, -SCREEN_HEIGHT);
+          Animated.timing(position, {
+            toValue: { x: 0, y: -SCREEN_HEIGHT },
+            duration: 250,
+            useNativeDriver: false,
+          }).start(() => recordAnswer("sometimes"));
         } else {
-          Animated.spring(positionRef.current, {
+          Animated.spring(position, {
             toValue: { x: 0, y: 0 },
             useNativeDriver: false,
           }).start();
@@ -275,14 +301,15 @@ export default function AssessmentScreen() {
     }),
   ).current;
 
-  const swipeCard = (answer: Answer, toX: number, toY: number) =>
-    swipeCardRef.current?.(answer, toX, toY);
-
   const handleButton = (answer: Answer) => {
     if (answer === "not_me") swipeCard(answer, -SCREEN_WIDTH * 1.5, 0);
     if (answer === "thats_me") swipeCard(answer, SCREEN_WIDTH * 1.5, 0);
     if (answer === "sometimes") swipeCard(answer, 0, -SCREEN_HEIGHT);
   };
+
+  // Currently selected answer for this question (if revisiting)
+  const currentAnswer = answersMap[currentIndex] ?? null;
+  const isRevisiting = currentAnswer !== null;
 
   // ── Loading & Error states ─────────────────────────────────────────────
 
@@ -321,7 +348,9 @@ export default function AssessmentScreen() {
   // ── Render ─────────────────────────────────────────────────────────────
 
   const progressPercent =
-    totalQuestions > 0 ? (currentIndex / totalQuestions) * 100 : 0;
+    totalQuestions > 0
+      ? (Math.max(furthestIndex, currentIndex) / totalQuestions) * 100
+      : 0;
   const frontBorderColor =
     CARD_BORDER_COLORS[currentIndex % CARD_BORDER_COLORS.length];
   const middleBorderColor =
@@ -333,7 +362,17 @@ export default function AssessmentScreen() {
     <SafeAreaView style={styles.container}>
       {/* ── Header ── */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Money Habitudes Assessment</Text>
+        <TouchableOpacity
+          style={styles.backBtn}
+          onPress={goBack}
+          disabled={currentIndex === 0}
+        >
+          {currentIndex > 0 && (
+            <Text style={styles.backArrow}>‹</Text>
+          )}
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Money Habitudes</Text>
+        <View style={styles.backBtn} />
       </View>
 
       {/* ── Progress Bar ── */}
@@ -418,6 +457,13 @@ export default function AssessmentScreen() {
             <Text style={styles.swipeHintTextYellow}>?</Text>
           </Animated.View>
 
+          {/* Revisiting badge */}
+          {isRevisiting && (
+            <View style={styles.revisitBadge}>
+              <Text style={styles.revisitBadgeText}>Previously Answered</Text>
+            </View>
+          )}
+
           <LogoBadge style={styles.logoTopLeft} />
           <View style={styles.cardTextContainer}>
             <Text style={styles.cardText}>{questions[currentIndex]?.text}</Text>
@@ -436,13 +482,18 @@ export default function AssessmentScreen() {
           <Animated.View
             style={[
               styles.actionBtn,
-              styles.btnNotMe,
+              currentAnswer === "not_me"
+                ? styles.btnNotMeActive
+                : styles.btnNotMe,
               {
                 transform: [{ scale: btnNotMeScale }],
-                backgroundColor: leftOpacity.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: ["#FFFFFF", "#E53935"],
-                }),
+                backgroundColor:
+                  currentAnswer === "not_me"
+                    ? "#E53935"
+                    : leftOpacity.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: ["#FFFFFF", "#E53935"],
+                      }),
               },
             ]}
           >
@@ -450,7 +501,12 @@ export default function AssessmentScreen() {
               source={require("../assets/images/X_Mark_Red.png")}
               style={[
                 styles.btnImg,
-                { opacity: Animated.subtract(1, leftOpacity) },
+                {
+                  opacity:
+                    currentAnswer === "not_me"
+                      ? 0
+                      : Animated.subtract(1, leftOpacity),
+                },
               ]}
             />
             <Animated.Image
@@ -458,11 +514,23 @@ export default function AssessmentScreen() {
               style={[
                 styles.btnImg,
                 styles.btnImgOverlay,
-                { opacity: leftOpacity },
+                {
+                  opacity: currentAnswer === "not_me" ? 1 : leftOpacity,
+                },
               ]}
             />
           </Animated.View>
-          <Text style={[styles.btnLabel, { color: "#E53935" }]}>Not Me</Text>
+          <Text
+            style={[
+              styles.btnLabel,
+              {
+                color: currentAnswer === "not_me" ? "#E53935" : "#AAB2C0",
+                fontWeight: currentAnswer === "not_me" ? "800" : "600",
+              },
+            ]}
+          >
+            Not Me
+          </Text>
         </TouchableOpacity>
 
         {/* Sometimes */}
@@ -473,13 +541,18 @@ export default function AssessmentScreen() {
           <Animated.View
             style={[
               styles.actionBtn,
-              styles.btnSometimes,
+              currentAnswer === "sometimes"
+                ? styles.btnSometimesActive
+                : styles.btnSometimes,
               {
                 transform: [{ scale: btnSometimesScale }],
-                backgroundColor: upOpacity.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: ["#FFFFFF", "#F5A623"],
-                }),
+                backgroundColor:
+                  currentAnswer === "sometimes"
+                    ? "#F5A623"
+                    : upOpacity.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: ["#FFFFFF", "#F5A623"],
+                      }),
               },
             ]}
           >
@@ -487,7 +560,12 @@ export default function AssessmentScreen() {
               source={require("../assets/images/Qeustion_Mark_Yellow.png")}
               style={[
                 styles.btnImg,
-                { opacity: Animated.subtract(1, upOpacity) },
+                {
+                  opacity:
+                    currentAnswer === "sometimes"
+                      ? 0
+                      : Animated.subtract(1, upOpacity),
+                },
               ]}
             />
             <Animated.Image
@@ -495,11 +573,23 @@ export default function AssessmentScreen() {
               style={[
                 styles.btnImg,
                 styles.btnImgOverlay,
-                { opacity: upOpacity },
+                {
+                  opacity: currentAnswer === "sometimes" ? 1 : upOpacity,
+                },
               ]}
             />
           </Animated.View>
-          <Text style={[styles.btnLabel, { color: "#F5A623" }]}>Sometimes</Text>
+          <Text
+            style={[
+              styles.btnLabel,
+              {
+                color: currentAnswer === "sometimes" ? "#F5A623" : "#AAB2C0",
+                fontWeight: currentAnswer === "sometimes" ? "800" : "600",
+              },
+            ]}
+          >
+            Sometimes
+          </Text>
         </TouchableOpacity>
 
         {/* That's Me */}
@@ -510,13 +600,18 @@ export default function AssessmentScreen() {
           <Animated.View
             style={[
               styles.actionBtn,
-              styles.btnThatsMe,
+              currentAnswer === "thats_me"
+                ? styles.btnThatsMeActive
+                : styles.btnThatsMe,
               {
                 transform: [{ scale: btnThatsMeScale }],
-                backgroundColor: rightOpacity.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: ["#FFFFFF", "#43A047"],
-                }),
+                backgroundColor:
+                  currentAnswer === "thats_me"
+                    ? "#43A047"
+                    : rightOpacity.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: ["#FFFFFF", "#43A047"],
+                      }),
               },
             ]}
           >
@@ -524,7 +619,12 @@ export default function AssessmentScreen() {
               source={require("../assets/images/Check_Mark_Green.png")}
               style={[
                 styles.btnImg,
-                { opacity: Animated.subtract(1, rightOpacity) },
+                {
+                  opacity:
+                    currentAnswer === "thats_me"
+                      ? 0
+                      : Animated.subtract(1, rightOpacity),
+                },
               ]}
             />
             <Animated.Image
@@ -532,11 +632,21 @@ export default function AssessmentScreen() {
               style={[
                 styles.btnImg,
                 styles.btnImgOverlay,
-                { opacity: rightOpacity },
+                {
+                  opacity: currentAnswer === "thats_me" ? 1 : rightOpacity,
+                },
               ]}
             />
           </Animated.View>
-          <Text style={[styles.btnLabel, { color: "#43A047" }]}>
+          <Text
+            style={[
+              styles.btnLabel,
+              {
+                color: currentAnswer === "thats_me" ? "#43A047" : "#AAB2C0",
+                fontWeight: currentAnswer === "thats_me" ? "800" : "600",
+              },
+            ]}
+          >
             That&apos;s Me
           </Text>
         </TouchableOpacity>
@@ -560,25 +670,31 @@ const styles = StyleSheet.create({
 
   // ── Header ──────────────────────────────────────────────────────────────
   header: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "space-between",
     width: "100%",
-    paddingHorizontal: 24,
-    paddingTop: 8,
-    paddingBottom: 12,
+    paddingHorizontal: 20,
+    paddingTop: 4,
+    paddingBottom: 8,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 19,
     fontWeight: "700",
     color: "#1A2E50",
     letterSpacing: -0.3,
   },
-  questionCount: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#8E99AE",
-    marginTop: 8,
-    marginBottom: 6,
+  backBtn: {
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  backArrow: {
+    fontSize: 32,
+    color: "#3059AD",
+    fontWeight: "300",
+    marginTop: -2,
   },
 
   // ── Progress Bar ─────────────────────────────────────────────────────────
@@ -593,11 +709,18 @@ const styles = StyleSheet.create({
     backgroundColor: "#43A047",
     borderRadius: 3,
   },
+  questionCount: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#8E99AE",
+    marginTop: 6,
+    marginBottom: 4,
+  },
 
   subtitle: {
     fontSize: 15,
     color: "#7A869A",
-    marginBottom: 8,
+    marginBottom: 6,
     fontWeight: "500",
     letterSpacing: 0.1,
   },
@@ -607,8 +730,8 @@ const styles = StyleSheet.create({
     flex: 1,
     width: "100%",
     alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 4,
+    justifyContent: "flex-start",
+    paddingTop: 28,
   },
 
   card: {
@@ -627,26 +750,27 @@ const styles = StyleSheet.create({
 
   cardFront: {
     zIndex: 10,
+    top: 24,
   },
 
   cardBack1: {
     zIndex: 5,
-    top: -14,
+    top: 12,
     width: CARD_WIDTH * 0.92,
     height: CARD_HEIGHT * 0.92,
-    opacity: 0.7,
+    opacity: 0.6,
   },
   cardBack2: {
     zIndex: 1,
-    top: -26,
+    top: 2,
     width: CARD_WIDTH * 0.84,
     height: CARD_HEIGHT * 0.84,
-    opacity: 0.4,
+    opacity: 0.3,
   },
 
   cardTextContainer: {
     position: "absolute",
-    width: CARD_WIDTH - 60,
+    width: CARD_WIDTH - 56,
     alignSelf: "center",
     top: 0,
     bottom: 0,
@@ -663,60 +787,78 @@ const styles = StyleSheet.create({
   },
 
   logoBadge: {
-    width: 32,
-    height: 32,
+    width: 30,
+    height: 30,
     resizeMode: "contain",
-    opacity: 0.6,
+    opacity: 0.5,
   },
   logoTopLeft: {
     position: "absolute",
-    top: 14,
-    left: 14,
+    top: 12,
+    left: 12,
   },
   logoBottomRight: {
     position: "absolute",
-    bottom: 14,
-    right: 14,
+    bottom: 12,
+    right: 12,
+  },
+
+  // ── Revisiting badge ──────────────────────────────────────────────────
+  revisitBadge: {
+    position: "absolute",
+    top: -14,
+    alignSelf: "center",
+    backgroundColor: "#3059AD",
+    paddingHorizontal: 14,
+    paddingVertical: 4,
+    borderRadius: 12,
+    zIndex: 30,
+  },
+  revisitBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.3,
   },
 
   // ── Swipe hint overlays on card ────────────────────────────────────────
   swipeHint: {
     position: "absolute",
     zIndex: 20,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: "center",
     alignItems: "center",
   },
   swipeHintLeft: {
-    top: 16,
-    left: 16,
+    top: 14,
+    left: 14,
     backgroundColor: "rgba(229, 57, 53, 0.15)",
   },
   swipeHintRight: {
-    top: 16,
-    right: 16,
+    top: 14,
+    right: 14,
     backgroundColor: "rgba(67, 160, 71, 0.15)",
   },
   swipeHintUp: {
-    top: 16,
+    top: 14,
     alignSelf: "center",
-    left: CARD_WIDTH / 2 - 27, // center on card (minus border and half width)
+    left: CARD_WIDTH / 2 - 25,
     backgroundColor: "rgba(245, 166, 35, 0.15)",
   },
   swipeHintTextRed: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: "800",
     color: "#E53935",
   },
   swipeHintTextGreen: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: "800",
     color: "#43A047",
   },
   swipeHintTextYellow: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: "800",
     color: "#F5A623",
   },
@@ -726,8 +868,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-around",
     alignItems: "center",
-    width: "80%",
-    paddingVertical: 12,
+    width: "82%",
+    paddingVertical: 10,
   },
 
   actionBtn: {
@@ -746,30 +888,43 @@ const styles = StyleSheet.create({
   },
   btnNotMe: {
     backgroundColor: "#FFFFFF",
-    borderColor: "#FCDCDC",
+    borderColor: "#F0D0D0",
+  },
+  btnNotMeActive: {
+    backgroundColor: "#E53935",
+    borderColor: "#E53935",
   },
   btnSometimes: {
     backgroundColor: "#FFFFFF",
-    borderColor: "#FDE8C4",
+    borderColor: "#F5E0B8",
+  },
+  btnSometimesActive: {
+    backgroundColor: "#F5A623",
+    borderColor: "#F5A623",
   },
   btnThatsMe: {
     backgroundColor: "#FFFFFF",
-    borderColor: "#D4EDDA",
+    borderColor: "#C8E6C9",
+  },
+  btnThatsMeActive: {
+    backgroundColor: "#43A047",
+    borderColor: "#43A047",
   },
   btnImg: { width: 26, height: 26, resizeMode: "contain" },
   btnImgOverlay: { position: "absolute" },
   btnLabel: {
     fontSize: 11,
-    fontWeight: "700",
+    fontWeight: "600",
     textAlign: "center",
     marginTop: 6,
     letterSpacing: 0.2,
+    color: "#AAB2C0",
   },
 
   hint: {
     fontSize: 12,
     color: "#B0B8C9",
-    marginBottom: 16,
+    marginBottom: 14,
     fontWeight: "500",
   },
 
