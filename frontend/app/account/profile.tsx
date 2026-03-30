@@ -1,13 +1,66 @@
+import { useState, useEffect } from "react";
+import * as SecureStore from "expo-secure-store";
 import MaskedView from "@react-native-masked-view/masked-view";
 import { LinearGradient } from "expo-linear-gradient";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { useRouter } from "expo-router";
+import { router } from "expo-router";
 
-export default function ProfileScreen() {
-  const router = useRouter();
+export const API_URL = "http://localhost:5500/api/auth";
 
-  // Replace with real user data later
-  const userName = "William Davis";
+export const signOut = async () => {
+  const token = await SecureStore.getItemAsync("token");
+
+  const response = await fetch(`${API_URL}/auth/sign-out`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || "Logout failed");
+  }
+
+  return data;
+};
+
+const handleLogout = async () => {
+  try {
+    // Invalidate refresh token
+    await signOut();
+
+  } catch (error) {
+    console.log("Backend logout failed:", error);
+  }
+
+  // Clear local token
+  await SecureStore.deleteItemAsync("token");
+
+  // Redirect to landing/login
+  router.replace("/(tabs)");
+};
+
+const Profile = () => {
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+
+  useEffect(() => {
+      const getUser = async () => {
+        const stored = await SecureStore.getItemAsync("user");
+        if (stored) {
+          const user = JSON.parse(stored);
+          setFirstName(user.name.split(" ")[0] || "User");
+          setLastName(user.name.split(" ")[1] || "User");
+        }
+      };
+      getUser();
+    }, []);
+
+    // Define the username
+    const userName = {firstName} + " " + {lastName};
 
   return (
     <View style={styles.container}>
@@ -36,9 +89,7 @@ export default function ProfileScreen() {
 
       <ProfileItem
         label="Log Out"
-        onPress={() => {
-          router.replace("/(tabs)"); // Apply logout logic later
-        }}
+        onPress={handleLogout}
       />
     </View>
   </View>
