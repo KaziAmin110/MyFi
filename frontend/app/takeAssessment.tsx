@@ -169,16 +169,28 @@ export default function AssessmentScreen() {
         setQuestions(mappedQuestions);
 
         if (data.previously_answered && data.previously_answered.length > 0) {
-          const resumeIndex = data.previously_answered.length;
-          setCurrentIndex(resumeIndex);
-          setFurthestIndex(resumeIndex);
-
-          // Rebuild answers map from previously answered
-          const restored: Record<number, Answer> = {};
-          data.previously_answered.forEach((pa, idx) => {
-            restored[idx] = valueToAnswer(pa.answer_value);
+          // Build a set of answered question_ids for fast lookup
+          const answeredMap = new Map<string, number>();
+          data.previously_answered.forEach((pa) => {
+            answeredMap.set(String(pa.question_id), pa.answer_value);
           });
+
+          // Map answers to their correct index in the questions array
+          const restored: Record<number, Answer> = {};
+          let firstUnanswered = mappedQuestions.length; // default: all answered
+
+          mappedQuestions.forEach((q, idx) => {
+            const val = answeredMap.get(q.id);
+            if (val !== undefined) {
+              restored[idx] = valueToAnswer(val);
+            } else if (idx < firstUnanswered) {
+              firstUnanswered = idx; // first gap
+            }
+          });
+
           setAnswersMap(restored);
+          setCurrentIndex(firstUnanswered);
+          setFurthestIndex(Math.max(firstUnanswered, data.previously_answered.length));
         }
       } catch (err: any) {
         console.error("Failed to load onboarding assessment:", err);

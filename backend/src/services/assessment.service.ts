@@ -294,18 +294,18 @@ export const saveAssessmentAnswer = async (
         .eq("id", session_id)
         .single();
 
-      // Moves to next question if the answered question is the current index
+      // Always advance current_question_index to the furthest point
       if (sessionData) {
-        const isCurrentQuestion =
-          sessionData.current_question_index === questionData.order_index;
+        const newIndex = Math.max(
+          sessionData.current_question_index,
+          questionData.order_index + 1,
+        );
 
-        if (isCurrentQuestion) {
-          const nextIndex = sessionData.current_question_index + 1;
-
+        if (newIndex > sessionData.current_question_index) {
           await supabase
             .from("assessment_sessions")
             .update({
-              current_question_index: nextIndex,
+              current_question_index: newIndex,
               updated_at: new Date(),
             })
             .eq("id", session_id);
