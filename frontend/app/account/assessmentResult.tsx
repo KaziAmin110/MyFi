@@ -1,137 +1,88 @@
-import { Text, View, StyleSheet, ScrollView, Touchable, TouchableOpacity} from "react-native";
+import { Text, View, StyleSheet, ScrollView, TouchableOpacity} from "react-native";
 import {scale, verticalScale, moderateScale} from "../../utils/scale";
 import MultiRing from "../components/MultiRing";
+import { HABITUDES } from "../../constants/habitudes";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect } from "expo-router";
 import React, {useState, useCallback} from 'react';
 
-const habitudes = [
-    {
-        id: "Spontaneous",
-        description: "Money encourages you to enjoy the moment.",
-        score: 5, 
-        percent: 29,
-        color: "#E31422",
-        secondaryColor: "#AF0C17"
-    },
-    {
-        id: "Giving",
-        description: "Money helps you feel good by giving to others.",
-        score: 1, 
-        percent: 9,
-        color: "#60B334",
-        secondaryColor: "#468724"
-    },
-     {
-        id: "Planning",
-        description: "Money helps you achieve your goals.",
-        score: 1, 
-        percent: 14,
-        color: "#21428F",
-        secondaryColor: "#1C3778"
-        
-    },
-    {
-        id: "Carefree",
-        description: "Money isn't a priority. You just let life happen.",
-        score: 3, 
-        percent: 17,
-        color: "#FFDE0D",
-        secondaryColor: "#D6BA0A"
-    },
-    {
-        id: "Security",
-        description: "Money helps you feel safe and in control.",
-        score: 4, 
-        percent: 22,
-        color: "#787878",
-        secondaryColor: "#616060"
-    },
-    {
-        id: "Status",
-        description: "Money helps you present a positive image.",
-        score: 4, 
-        percent: 22,
-        color: "#9E3C8E",
-        secondaryColor: "#6C175E"
-    }
-    
-]
 
-const AssessmentResult = () => {
-    const sortedHabitudes = [...habitudes].sort(
-    (a, b) => b.percent - a.percent
-  );
-  const[animatekey, setAnimateKey] = useState(0);
+const AssessmentResult = ({resultData}: any ) => {
+    const habitudes = HABITUDES.map(h => {
+        const key = h.id.toLowerCase();
+        const score = resultData?.[key]?.thats_me ?? 0;
+        const percent = Math.round((score / 54) * 100);
+        return { ...h, score, percent };
+    });
+    const [animatekey, setAnimateKey] = useState(0);
+    const sortedHabitudes = [...habitudes].sort((a, b) => b.percent - a.percent);
 
-  useFocusEffect(
-    useCallback(() => {
-      setAnimateKey(Date.now());
-    }, [])
-  );
+    useFocusEffect(
+        useCallback(() => {
+            setAnimateKey(Date.now());
+        }, [])
+    );
+
     return (
         <View style={styles.container}>
-             <View style={styles.gradient}>
+            <View style={styles.gradient}>
                 <LinearGradient
                     colors={["#BCD1F0", 'rgba(255,255,255,0)']}
                     start={{ x: 0.5, y: 0 }}
                     end={{ x: 0.5, y: 1 }}
                     style={styles.gradient}
                 />
-             </View>
-             
-          
-            <Text style={styles.heading}adjustsFontSizeToFit numberOfLines={1}>Habitude Results</Text>
-            <Text style={styles.subheading}>Your results at a glance</Text>
-          
-            <MultiRing
-                animatedKey={animatekey}
-                segments={habitudes.map((item) => ({
-                    value: item.percent,
-                    color: item.color,
-                }))}
-                
-            />
+            </View>
+
+            <View style={styles.topSection}>
+                <Text style={styles.heading} adjustsFontSizeToFit numberOfLines={1}>Habitude Results</Text>
+                <Text style={styles.subheading}>Your results at a glance</Text>
+                <MultiRing
+                    animatedKey={animatekey}
+                    segments={habitudes.map((item) => ({
+                        value: item.percent,
+                        color: item.color,
+                    }))}
+                />
+            </View>
 
             <ScrollView
                 style={styles.habitudeSection}
                 showsVerticalScrollIndicator={false}
-                >
+                contentContainerStyle={{ paddingBottom: verticalScale(20) }} 
+            >
                 {sortedHabitudes.map((item, index) => (
-                <View key={item.id}>
-                    <View style={styles.row}>
-                    <View style={styles.left}>
-                        <View
-                        style={[styles.colorBox, { backgroundColor: item.color }]}
-                        />
+                    <View key={item.id}>
+                        <View style={styles.row}>
+                            <View style={styles.left}>
+                                <View style={[styles.colorBox, { backgroundColor: item.color }]} />
+                                <Text style={styles.score}>{item.score}</Text>
+                                <Text style={styles.percent}>{item.percent}%</Text>
+                                <Text style={styles.label}>{item.id}</Text>
+                            </View>
 
-                        <Text style={styles.score}>{item.score}</Text>
-                        <Text style={styles.percent}>{item.percent}%</Text>
-                        <Text style={styles.label}>{item.id}</Text>
+                            <TouchableOpacity onPress={() => router.push({
+                                pathname: "/components/HabitudeReport",
+                                params: {
+                                    id: item.id,
+                                    score: String(item.score),
+                                    percent: String(item.percent),
+                                    color: item.color,
+                                    darkerColor: item.secondaryColor,
+                                    notMe: String(resultData?.[item.id.toLowerCase()]?.not_me ?? 0),
+                                    sometimesMe: String(resultData?.[item.id.toLowerCase()]?.sometimes_me ?? 0),
+                                },
+                            })}>
+                                <Text style={styles.arrow}>›</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        {index !== sortedHabitudes.length - 1 && <View style={styles.divider} />}
                     </View>
-
-                    <TouchableOpacity onPress={() => router.push({
-                        pathname: '/components/HabitudeReport',
-                        params: { 
-                            id: item.id ,
-                            description: item.description,
-                            score: String(item.score),
-                            percent: String(item.percent),
-                            color: item.color,
-                            darkerColor: item.secondaryColor
-                        }
-                    })}>
-                        <Text style={styles.arrow}>›</Text>
-                    </TouchableOpacity>
-                </View>
-
-                    {index !== habitudes.length - 1 && <View style={styles.divider} />}
-                </View>
                 ))}
             </ScrollView>
-      
-    </View>
-  );
+        </View>
+    );
 };
 
 export default AssessmentResult;
@@ -141,24 +92,30 @@ const styles = StyleSheet.create({
     {
         flex:1,
         alignItems: "center",
-        justifyContent: "center",
         paddingTop: verticalScale(30),
+        paddingBottom: verticalScale(30),
     
+    },
+    topSection:
+    {
+        alignItems:"center",
+        flexShrink: 1,
+        paddingHorizontal: scale(20),
     },
     heading:
     {
-        fontSize: moderateScale(32),
+        fontSize: moderateScale(28),
         fontWeight:"600",
-        marginBottom: verticalScale(5),
+        marginBottom: verticalScale(4),
         textAlign: "center",
         width: scale(200),
   
     },
     subheading:
     {
-        fontSize: moderateScale(15),
+        fontSize: moderateScale(13),
         color: "#484848",
-        marginBottom: verticalScale(8),
+        marginBottom: verticalScale(10),
 
     },
     gradient:
@@ -173,15 +130,16 @@ const styles = StyleSheet.create({
     },
     habitudeSection:
     {
-     
+        flex:1,
         width: "100%",
         paddingHorizontal: scale(20),
         marginTop: verticalScale(8),
-
+        marginBottom: verticalScale(10),
+        
     },
    row: 
    {
-    minHeight: verticalScale(12),
+    minHeight: verticalScale(18),
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -231,7 +189,7 @@ const styles = StyleSheet.create({
   {
   height: 1,
   backgroundColor: "#D3D3D3",
-  marginVertical: verticalScale(8),
+  marginVertical: verticalScale(5),
   opacity: 0.6,
 },
 });

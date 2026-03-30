@@ -1,6 +1,7 @@
 import { Text, View, StyleSheet, Animated, Easing} from "react-native";
 import Svg, {Circle, G} from 'react-native-svg';
 import React, {useEffect, useRef, useState} from 'react';
+import {scale, verticalScale, moderateScale} from "../../utils/scale";
 
 const GAP = 3;
 type Segment = {
@@ -15,8 +16,8 @@ type RingProps={
 };
 
 const Ring = ({
-    size = 260, 
-    strokeWidth = 28,
+    size = moderateScale(240), 
+    strokeWidth = moderateScale(28),
     segments = [] ,
     animatedKey = 0,
 }: RingProps) => {
@@ -97,6 +98,7 @@ const styles = StyleSheet.create({
     {
         justifyContent: "center",
         alignItems: "center",
+
     },
 
 });
