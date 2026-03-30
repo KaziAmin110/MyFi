@@ -23,7 +23,7 @@ export default function Splash() {
 
         if (!context.user.onboarding_completed) {
           // Onboarding not done — go straight to assessment
-          setTimeout(() => router.replace("/account/takeAssessment"), 1200);
+          setTimeout(() => router.replace("/takeAssessment"), 1200);
         } else {
           // Onboarding done — go to dashboard
           setTimeout(() => router.replace("/account/dashboard"), 1200);

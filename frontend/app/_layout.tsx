@@ -15,6 +15,11 @@ export default function RootLayout() {
         />
 
         <Stack.Screen
+          name="takeAssessment"
+          options={{ headerShown: false, gestureEnabled: false }}
+        />
+
+        <Stack.Screen
           name="account"
           options={{ headerShown: false}}
         />
