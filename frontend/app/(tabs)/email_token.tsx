@@ -1,4 +1,5 @@
 import {
+  Image,
   TextInput,
   TouchableOpacity,
   Text,
@@ -70,9 +71,11 @@ const EmailToken = () => {
         keyboardShouldPersistTaps="handled"
       >
         <View className="flex-1 px-6 justify-center items-center">
-          <View className="w-20 h-20 bg-blue-50 rounded-full items-center justify-center mb-6">
-            <Feather name="shield" size={32} color="#345995" />
-          </View>
+          <Image
+            source={require("../../assets/images/MH_cards.png")}
+            className="w-20 h-20 mb-6"
+            resizeMode="contain"
+          />
 
           <Text className="text-3xl font-bold text-gray-900 text-center mb-3">
             OTP Verification
