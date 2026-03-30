@@ -11,7 +11,7 @@ export interface AuthRequest extends Request {
 export const authenticateUser = (
   req: AuthRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const authHeader = req.headers.authorization;
@@ -38,6 +38,14 @@ export const authenticateUser = (
 
     return next();
   } catch (error) {
+    if (error instanceof jwt.TokenExpiredError) {
+      console.error("Token Expired:", error.message);
+      return res.status(401).json({
+        success: false,
+        message: "Token expired",
+        code: "TOKEN_EXPIRED",
+      });
+    }
     console.error("Authentication Error:", error);
     return res
       .status(403)
@@ -48,7 +56,7 @@ export const authenticateUser = (
 export const verifyOAuthRequest = (
   req: AuthRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const secret = req.headers["x-oauth-secret"];
   if (!secret || secret !== process.env.OAUTH_SECRET) {

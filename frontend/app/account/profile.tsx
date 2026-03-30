@@ -10,7 +10,7 @@ export const API_URL = "http://localhost:5500/api/auth";
 export const signOut = async () => {
   const token = await SecureStore.getItemAsync("token");
 
-  const response = await fetch(`${API_URL}/auth/sign-out`, {
+  const response = await fetch(`${API_URL}/sign-out`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -36,6 +36,7 @@ const handleLogout = async () => {
 
   // Clear local token
   await SecureStore.deleteItemAsync("token");
+  await SecureStore.deleteItemAsync("user");
 
   // Redirect to landing/login
   router.replace("/(tabs)");
