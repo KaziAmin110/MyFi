@@ -1,141 +1,122 @@
 import { useLocalSearchParams, Stack, router } from "expo-router";
-import { View ,Text, StyleSheet, ScrollView, TouchableOpacity, Image} from "react-native";
-import React, {useState} from "react";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from "react-native";
+import React, { useState } from "react";
 import SingleRing from "../components/SingleRing";
 import CardStack from "../components/CardStack";
-import {scale, verticalScale, moderateScale} from "../../utils/scale";
+import { scale, verticalScale, moderateScale } from "../../utils/scale";
+import { HABITUDES, getScoreTier } from "../../constants/habitudes";
 
 const HabitudeReport = () => {
-    const { id, description, score, percent, color, darkerColor } = useLocalSearchParams();
+    const { id, score, percent, color, darkerColor, notMe, sometimesMe } = useLocalSearchParams();
     const parsedScore = Number(Array.isArray(score) ? score[0] : score);
     const parsedPercent = Number(Array.isArray(percent) ? percent[0] : percent);
     const parsedColor = Array.isArray(color) ? color[0] : color;
     const parsedDarkColor = Array.isArray(darkerColor) ? darkerColor[0] : darkerColor;
+    const parsedNotMe = Number(Array.isArray(notMe) ? notMe[0] : notMe);
+    const parsedSometimesMe = Number(Array.isArray(sometimesMe) ? sometimesMe[0] : sometimesMe);
     const [expanded, setExpanded] = useState(false);
 
-    const advantages = 
-    [
-        "Make intentional financial decisions based on values and desired long-term outcomes.",
-        "Have money reserved to pay for the unexpected.",
-        "Set and accomplish goals.",
-        "Buy items you really want that will retain value.",
-        "Have a sense of well-being and control.",
-    ];
-    const disadvantages = 
-    [
-        "Feel pressured by others to spend money on things that do not fit your budget or values.",
-        "Expected to help others who did not plan",
-        "Have difficulty responding to new opportunities if it means changing orabandoning your plan.",
-        "Intolerant or impatient when others do not meet your standards or have different values.",
-        "Hide or withhold information from significant others to stay in control of the money."
-    ];
-    
+    const parsedId = Array.isArray(id) ? id[0] : id;
+    const habitude = HABITUDES.find(h => h.id === parsedId);
+    const tier = getScoreTier(parsedScore);
+    const content = habitude?.scoreContent[tier];
+
+    if (!habitude || !content) return null;
+
     return (
         <>
         <Stack.Screen options={{ headerShown: false }} />    
         <ScrollView
-        contentContainerStyle={styles.container}
-        showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.container}
+            showsVerticalScrollIndicator={false}
         >
-
             <View style={styles.headerContainer}>
                 <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                     <Image
-                    source={require("../../assets/images/resultDisplay/backArrow.png")} 
-                    style={styles.backArrow}
-                    resizeMode="contain"
-                />
+                        source={require("../../assets/images/resultDisplay/backArrow.png")} 
+                        style={styles.backArrow}
+                        resizeMode="contain"
+                    />
                 </TouchableOpacity>
-                <Text style={styles.heading}>{id}</Text>
+                <Text style={styles.heading}>{habitude.id}</Text>
                 <View style={styles.backArrow} />
             </View> 
 
-            <Text style={styles.description}>{description}</Text>
+            <Text style={styles.description}>{habitude.description}</Text>
+
             <View style={styles.ringRow}>
                 <SingleRing
                     percent={parsedPercent}
                     color={parsedColor}
                 />
                 <View style={styles.forYou}>
-                    <Text style={styles.forYouText}>
-                        For you, Spontaneous is a dominant Habitude. That means your first
-                        thought when you get money will be to use it to let you enjoy the 
-                    moment.</Text>
+                    <Text style={styles.forYouText}>{content.forYou}</Text>
                 </View>
             </View>
 
-    
             <View style={styles.cardStackWrapper}>
                 <Text style={styles.cardHeader}>Your Personal Combination</Text>
                 <View style={styles.cardStackRow}>
-                    <View style={styles.cardColumn}>
-                        <Text style={[styles.cardLabel, {color:parsedColor}]}>NOT ME</Text>
-                        <CardStack count={1} color={parsedColor} secondaryColor={parsedDarkColor} num={1} />
+                <View style={styles.cardColumn}>
+                    <Text style={[styles.cardLabel, { color: parsedColor }]}>NOT ME</Text>
+                    <CardStack count={parsedNotMe} color={parsedColor} secondaryColor={parsedDarkColor} num={parsedNotMe} />
                     </View>
                     <View style={styles.cardColumn}>
-                        <Text style={[styles.cardLabel, {color:parsedColor}]}>SOMETIMES</Text>
-                        <CardStack count={2} color={parsedColor} secondaryColor={parsedDarkColor} num={3} />
+                    <Text style={[styles.cardLabel, { color: parsedColor }]}>SOMETIMES</Text>
+                    <CardStack count={parsedSometimesMe} color={parsedColor} secondaryColor={parsedDarkColor} num={parsedSometimesMe} />
                     </View>
                     <View style={styles.cardColumn}>
-                        <Text style={[styles.cardLabel, {color:parsedColor}]}>THAT'S ME</Text>
-                        <CardStack count={2} color={parsedColor} secondaryColor={parsedDarkColor} num={parsedScore} />
+                    <Text style={[styles.cardLabel, { color: parsedColor }]}>THAT'S ME</Text>
+                    <CardStack count={parsedScore} color={parsedColor} secondaryColor={parsedDarkColor} num={parsedScore} />
                     </View>
                 </View>
             </View>
 
-            <View style={styles.yourHabitsInfo}>
-                <Text style={styles.habitsHeader}>Your Habits and Attitudes</Text>
-                <Text style={styles.cardBody} numberOfLines={expanded ? undefined : 4}>
-                    Typically, when you have money, your first thought is about how it could be used to reach your goals or
-                    accomplish something you've been planning. That may mean:
-                    Putting it toward saving for a house, car, or future event.
-                    Paying a bill.
-                    Giving it to a person or organization you plan to help.
-                    Investing in yourself.
-                    Making a financial investment.
-                    Whatever you choose to do with money, it fits into a plan.
-                    It may be formal like a financial plan, a budget, or written goals.
-                    It may also be informal and something you've thought about but haven't written down.
-                </Text>
-                <TouchableOpacity onPress={() => setExpanded(!expanded)} style={styles.expand}>
-                    <Image
-                        source={require("../../assets/images/resultDisplay/expandBtn.png")}
-                        style={[styles.expand, { transform: [{ rotate: expanded ? "180deg" : "0deg" }] }]}
-                        resizeMode="contain"
-                    />
-                </TouchableOpacity>
-            </View>
-
+            {content.cardBody ? (
+                <View style={styles.yourHabitsInfo}>
+                    <Text style={styles.habitsHeader}>Your Habits and Attitudes</Text>
+                    <Text style={styles.cardBody} numberOfLines={expanded ? undefined : 4}>
+                        {content.cardBody}
+                    </Text>
+                    <TouchableOpacity onPress={() => setExpanded(!expanded)} style={styles.expand}>
+                        <Image
+                            source={require("../../assets/images/resultDisplay/expandBtn.png")}
+                            style={[styles.expand, { transform: [{ rotate: expanded ? "180deg" : "0deg" }] }]}
+                            resizeMode="contain"
+                        />
+                    </TouchableOpacity>
+                </View>
+            ) : null}
 
             <View style={styles.yourHabitsInfo}>
                 <Text style={styles.infoHeader}>Advantages</Text>
                 <View style={styles.bulletContainer}>
-                    {advantages.map((item, index) => (
+                    {habitude.advantages.map((item, index) => (
                         <View key={index} style={styles.bulletRow}>
                             <Text style={styles.bullet}>•</Text>
                             <Text style={styles.bulletText}>{item}</Text>
                         </View>
                     ))}
                 </View>
-                
             </View>
+
             <View style={styles.yourHabitsInfo}>
                 <Text style={styles.infoHeader}>Disadvantages</Text>
-                    <View style={styles.bulletContainer}>
-                        {disadvantages.map((item, index) => (
-                            <View key={index} style={styles.bulletRow}>
-                                <Text style={styles.bullet}>•</Text>
-                                <Text style={styles.bulletText}>{item}</Text>
-                            </View>
-                        ))}
-                    </View>
+                <View style={styles.bulletContainer}>
+                    {habitude.disadvantages.map((item, index) => (
+                        <View key={index} style={styles.bulletRow}>
+                            <Text style={styles.bullet}>•</Text>
+                            <Text style={styles.bulletText}>{item}</Text>
+                        </View>
+                    ))}
+                </View>
             </View>
-                
-    
+
         </ScrollView>
         </>
-    )
-}
+    );
+};
+
 export default HabitudeReport;
 
 const styles = StyleSheet.create({
@@ -153,15 +134,12 @@ const styles = StyleSheet.create({
         justifyContent:"space-between",
         width: "100%",
         marginTop: verticalScale(35),
-    
     },
-
     backArrow: 
     {
         width: scale(10),
         alignItems:"center",
         justifyContent:"center",
-
     },
     heading:
     {
@@ -173,7 +151,6 @@ const styles = StyleSheet.create({
         fontSize: moderateScale(12),
         textAlign: "center",
         marginTop: verticalScale(5),
-
     },
     ringRow: 
     {
@@ -190,7 +167,6 @@ const styles = StyleSheet.create({
         paddingVertical: 25,
         paddingHorizontal: 20,
         flex:1,
-
     },
     forYouText:
     {
@@ -198,7 +174,6 @@ const styles = StyleSheet.create({
         color: "#3D3D3D",
         lineHeight: moderateScale(22),
         fontWeight: "500",
-
     },
     cardStackWrapper: 
     {
@@ -210,7 +185,8 @@ const styles = StyleSheet.create({
         alignItems: "center",
         marginBottom: verticalScale(10),
     },
-    cardHeader: {
+    cardHeader: 
+    {
         fontSize: moderateScale(15),
         fontWeight: "600",
         marginBottom: verticalScale(10),
@@ -227,12 +203,10 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         justifyContent: "space-between",
         width: "100%",
-        
     },
     cardColumn:
     {
         alignItems:"center",
-        
     },
     yourHabitsInfo:
     {
@@ -241,9 +215,9 @@ const styles = StyleSheet.create({
         padding: verticalScale(12),
         marginBottom: verticalScale(10),
         width: "100%",
-    
     },
-    habitsHeader: {
+    habitsHeader: 
+    {
         fontSize: moderateScale(15),
         fontWeight: "600",
         marginBottom: verticalScale(5),
@@ -259,9 +233,9 @@ const styles = StyleSheet.create({
     {
         alignItems: "center",
         marginTop: verticalScale(5),
-        
     },
-    infoHeader: {
+    infoHeader: 
+    {
         fontSize: moderateScale(15),
         fontWeight: "600",
         textAlign:"center"
@@ -270,29 +244,22 @@ const styles = StyleSheet.create({
     {
         marginTop: verticalScale(4),
     },
-      
     bulletRow: 
     {
         flexDirection: "row",
         alignItems: "flex-start",
         marginBottom: verticalScale(3),
     },
-      
     bullet: 
     {
         fontSize: moderateScale(14),
         marginRight: scale(8),
         lineHeight: moderateScale(22),
     },
-      
     bulletText: 
-   {
+    {
         fontSize: moderateScale(13),
         color: "#3D3D3D",
         lineHeight: moderateScale(22),
     },
-
-
-
-
-})
+});
