@@ -1,6 +1,8 @@
 import { ScrollView, Text, TextInput, TouchableOpacity, View, Image } from "react-native";
 import React, { useState } from 'react'
 import { Link, router } from "expo-router";
+import * as SecureStore from "expo-secure-store";
+import { signIn } from "./login";
 
 export const API_URL = "http://localhost:5500/api/auth";
 
@@ -22,7 +24,7 @@ export async function signUp(data: {
   return json;
 }
 
-const register = () => {
+const Register = () => {
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
     const [email, setEmail] = useState("");
@@ -47,7 +49,19 @@ const register = () => {
                 email,
                 password
             });
-            router.replace("/login"); // go to login after register
+
+            // Auto-login after registration
+            const loginData = await signIn({ email, password });
+            const token = loginData.token ?? loginData.accessToken ?? loginData.jwt;
+            const user = loginData.user;
+
+            await SecureStore.setItemAsync("token", String(token));
+            if (user) {
+              await SecureStore.setItemAsync("user", JSON.stringify(user));
+            }
+
+            // New user — always needs onboarding
+            router.replace("/takeAssessment");
         } catch(err: any) {
             setError(err.message);
         } finally {
@@ -163,4 +177,4 @@ const register = () => {
         </ScrollView>
     )
 }
-export default register
+export default Register

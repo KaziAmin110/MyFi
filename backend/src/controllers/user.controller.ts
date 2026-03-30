@@ -25,11 +25,17 @@ export const getUserContext = async (
       getAllUserSessions(user_id as string),
     ]);
 
-    const onboardingSession = allSessions?.find(
+    const onboardingSessions = allSessions?.filter(
       (session) => session.assessment_id == ONBOARDING_ASSESSMENT_ID,
     );
 
-    const isOnboardingCompleted = onboardingSession?.status === "completed";
+    const isOnboardingCompleted = onboardingSessions?.some(
+      (session) => session.status === "completed",
+    ) ?? false;
+
+    const activeOnboardingSession = onboardingSessions?.find(
+      (session) => session.status === "in_progress",
+    );
 
     const activeSessions = allSessions?.filter(
       (session) => session.status === "in_progress",
@@ -41,7 +47,7 @@ export const getUserContext = async (
         user: {
           ...userData,
           onboarding_completed: isOnboardingCompleted,
-          onboarding_session_id: onboardingSession?.session_id || null,
+          onboarding_session_id: activeOnboardingSession?.session_id || null,
         },
         active_sessions: activeSessions || null,
       },

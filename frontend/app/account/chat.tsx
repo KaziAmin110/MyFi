@@ -14,18 +14,17 @@ import {
   PanResponder,
   Image,
   AppState,
+  SafeAreaView,
 } from "react-native";
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { LinearGradient } from "expo-linear-gradient";
-import { SafeAreaView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
-import { useTabBar } from "../components/TabBarContext";
+import { useTabBar } from "../../components/TabBarContext";
 import {
   getSessions,
   getSessionMessages,
-  createSession,
   sendMessage,
   ChatSession,
   ChatMessage,
@@ -54,7 +53,7 @@ const BouncingDots = () => {
     const a3 = animate(dot3, 300);
     a1.start(); a2.start(); a3.start();
     return () => { a1.stop(); a2.stop(); a3.stop(); };
-  }, []);
+  }, [dot1, dot2, dot3]);
 
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 4 }}>
@@ -97,9 +96,6 @@ const Chat = () => {
   const sendButtonScale = useRef(new Animated.Value(1)).current;
 
   // Load sessions on mount
-  useEffect(() => {
-    loadSessions();
-  }, []);
 
   // Refresh sessions when app returns from background (picks up cron-rotated sessions)
   useEffect(() => {
@@ -115,12 +111,12 @@ const Chat = () => {
 
   useEffect(() => {
     setTabBarVisible(showSessions);
-  }, [showSessions]);
+  }, [showSessions, setTabBarVisible]);
 
   useEffect(() => {
     setTabBarVisible(false);
     return () => setTabBarVisible(true);
-  }, []);
+  }, [setTabBarVisible]);
 
   useEffect(() => {
     Animated.spring(sidebarAnim, {
@@ -129,7 +125,60 @@ const Chat = () => {
       damping: 20,
       stiffness: 200,
     }).start();
-  }, [showSessions]);
+  }, [showSessions, sidebarAnim]);
+
+  const loadSessionMessages = React.useCallback(async (session: ChatSession) => {
+    try {
+      setLoading(true);
+      setCurrentSession(session);
+      setSuggestedPrompts([]);
+      setInputText("");
+      const data = await getSessionMessages(session.id);
+
+      // New session — show thinking animation before revealing the opening message
+      if (data.messages.length === 1 && data.messages[0].role === "assistant") {
+        setMessages([]);
+        setShowThinking(true);
+        setLoading(false);
+        setTimeout(() => {
+          setMessages(data.messages);
+          setSuggestedPrompts(data.suggestedPrompts || []);
+          setShowThinking(false);
+        }, 1500);
+        return;
+      }
+
+      setMessages(data.messages);
+    } catch (error: any) {
+      console.error("Error loading messages:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const loadSessions = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      const fetchedSessions = await getSessions();
+      setSessions(fetchedSessions);
+
+      // Auto-select most recent active session
+      const activeSession = fetchedSessions.find(
+        (s) => s.status === "active"
+      );
+      if (activeSession) {
+        loadSessionMessages(activeSession);
+      }
+    } catch (error: any) {
+      console.error("Error loading sessions:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [loadSessionMessages]);
+
+  useEffect(() => {
+    loadSessions();
+  }, [loadSessions]);
 
   const panResponder = useMemo(
     () =>
@@ -174,67 +223,7 @@ const Chat = () => {
     }));
   };
 
-  const loadSessions = async () => {
-    try {
-      setLoading(true);
-      const fetchedSessions = await getSessions();
-      setSessions(fetchedSessions);
 
-      // Auto-select most recent active session
-      const activeSession = fetchedSessions.find(
-        (s) => s.status === "active"
-      );
-      if (activeSession) {
-        loadSessionMessages(activeSession);
-      }
-    } catch (error: any) {
-      console.error("Error loading sessions:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadSessionMessages = async (session: ChatSession) => {
-    try {
-      setLoading(true);
-      setCurrentSession(session);
-      setSuggestedPrompts([]);
-      setInputText("");
-      const data = await getSessionMessages(session.id);
-
-      // New session — show thinking animation before revealing the opening message
-      if (data.messages.length === 1 && data.messages[0].role === "assistant") {
-        setMessages([]);
-        setShowThinking(true);
-        setLoading(false);
-        setTimeout(() => {
-          setMessages(data.messages);
-          setSuggestedPrompts(data.suggestedPrompts || []);
-          setShowThinking(false);
-        }, 1500);
-        return;
-      }
-
-      setMessages(data.messages);
-    } catch (error: any) {
-      console.error("Error loading messages:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCreateSession = async () => {
-    try {
-      setLoading(true);
-      const newSession = await createSession();
-      setSessions([newSession, ...sessions]);
-      setShowSessions(false);
-      loadSessionMessages(newSession);
-    } catch (error: any) {
-      console.error("Error creating session:", error);
-      setLoading(false);
-    }
-  };
 
   const animateSendButton = () => {
     Animated.sequence([

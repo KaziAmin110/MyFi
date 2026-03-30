@@ -11,40 +11,16 @@ import {
 
 const assessmentRouter = Router();
 
-assessmentRouter.post(
-  "/onboarding/initialize",
-  authenticateUser,
-  initializeOnboardingAssessment
-);
+assessmentRouter.use(authenticateUser);
 
-assessmentRouter.post(
-  "/sessions/:session_id/answers",
-  authenticateUser,
-  submitAnswer
-);
-
-assessmentRouter.post(
-  "/sessions/:session_id/submit",
-  authenticateUser,
-  submitAssessment
-);
-
-assessmentRouter.post(
-  "/:assessment_id/start",
-  authenticateUser,
-  createAssessmentSession
-);
-
-assessmentRouter.get(
-  "/sessions/:session_id/results",
-  authenticateUser,
-  getAssessmentResults
-);
-
+assessmentRouter.post("/onboarding/initialize", initializeOnboardingAssessment);
+assessmentRouter.post("/sessions/:session_id/answers", submitAnswer);
+assessmentRouter.post("/sessions/:session_id/submit", submitAssessment);
+assessmentRouter.post("/:assessment_id/start", createAssessmentSession);
+assessmentRouter.get("/sessions/:session_id/results", getAssessmentResults);
 assessmentRouter.get(
   "/sessions/:session_id/continue",
-  authenticateUser,
-  continueAssessmentSession
+  continueAssessmentSession,
 );
 
 export default assessmentRouter;

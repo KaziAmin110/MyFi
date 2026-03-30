@@ -26,7 +26,7 @@ const HabitCard = ({ onSelect }: HabitCardsProps) => {
       id: "giving",
       title: "Giving",
       borderColor: "#60B334",
-      image: require("../../assets/images/cardImages/giving.png"),
+      image: require("../assets/images/cardImages/giving.png"),
       tagLine: "Money helps your feel good by giving to others.",
       description:
         "Giving is intentionally sharing your money to benefit others, without expecting anything in return. As a habit, it's not about the amount. It's about consistency and intention.",
@@ -43,7 +43,7 @@ const HabitCard = ({ onSelect }: HabitCardsProps) => {
       id: "planning",
       title: "Planning",
       borderColor: "#21428F",
-      image: require("../../assets/images/cardImages/planning.png"),
+      image: require("../assets/images/cardImages/planning.png"),
       tagLine: "Money helps you achieve your goals.",
       description:
         "Planning as a money habit is about being intentional with your finances instead of reacting to them. It's one of the strongest habits because it affects every other money decision you make.",
@@ -58,7 +58,7 @@ const HabitCard = ({ onSelect }: HabitCardsProps) => {
       id: "security",
       title: "Security",
       borderColor: "#787878",
-      image: require("../../assets/images/cardImages/security.png"),
+      image: require("../assets/images/cardImages/security.png"),
       tagLine: "Money helps you feel safe, secure and in control.",
       description:
         "Security is the habit of protecting yourself from financial shocks so money problems don’t turn into life problems.It’s about stability, safety, and resilience, not wealth or luxury.",
@@ -73,7 +73,7 @@ const HabitCard = ({ onSelect }: HabitCardsProps) => {
       id: "status",
       title: "Status",
       borderColor: "#9E3C8E",
-      image: require("../../assets/images/cardImages/status.png"),
+      image: require("../assets/images/cardImages/status.png"),
       tagLine: "Money helps you present a positive image.",
       description:
         "Status is how we use money to signal identity, success, or belonging to others.It’s spending (or saving) driven by how things look, how we compare to others, and how we want to be perceived.",
@@ -89,7 +89,7 @@ const HabitCard = ({ onSelect }: HabitCardsProps) => {
       id: "spontaneous",
       title: "Spontaneous",
       borderColor: "#E31422",
-      image: require("../../assets/images/cardImages/spot.png"),
+      image: require("../assets/images/cardImages/spot.png"),
       tagLine: "Money encourages you to enjoy the moment",
       description:
         "Spontaneous is the money habit that feels good in the moment and quietly shapes your finances long-term. Being spontaneous with money means making decisions in the moment.",
@@ -104,7 +104,7 @@ const HabitCard = ({ onSelect }: HabitCardsProps) => {
       id: "carefree",
       title: "Carefree",
       borderColor: "#FFDE0D",
-      image: require("../../assets/images/cardImages/carefree.png"),
+      image: require("../assets/images/cardImages/carefree.png"),
       tagLine: "Money is not a priority. You just let life happen",
       description:
         "Being carefree with money is having a relaxed, confident attitude toward finances. It’s not about spending recklessly. It’s about not letting money stress dominate your life.",
