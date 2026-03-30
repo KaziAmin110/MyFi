@@ -28,15 +28,15 @@ export async function fetchQuestions(): Promise<Question[]> {
 }
 
 const PLACEHOLDER_QUESTIONS: Question[] = [
-  { id: "1",  text: "I plan for emergencies so I'm not caught off guard." },
-  { id: "2",  text: "Financial setbacks make me doubt my ability to recover." },
-  { id: "3",  text: "I think people will only like me if I am giving." },
-  { id: "4",  text: "I feel uneasy unless my money is completely secure." },
-  { id: "5",  text: "I spend a lot on others but I don't spend on myself." },
-  { id: "6",  text: "I avoid checking my bank balance when I'm stressed." },
-  { id: "7",  text: "I feel guilty spending money on myself." },
-  { id: "8",  text: "I believe I will always have enough money." },
-  { id: "9",  text: "I tend to overspend when I'm feeling emotional." },
+  { id: "1", text: "I plan for emergencies so I'm not caught off guard." },
+  { id: "2", text: "Financial setbacks make me doubt my ability to recover." },
+  { id: "3", text: "I think people will only like me if I am giving." },
+  { id: "4", text: "I feel uneasy unless my money is completely secure." },
+  { id: "5", text: "I spend a lot on others but I don't spend on myself." },
+  { id: "6", text: "I avoid checking my bank balance when I'm stressed." },
+  { id: "7", text: "I feel guilty spending money on myself." },
+  { id: "8", text: "I believe I will always have enough money." },
+  { id: "9", text: "I tend to overspend when I'm feeling emotional." },
   { id: "10", text: "I feel more confident when I have a financial cushion." },
 ];
 
@@ -48,13 +48,19 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const SWIPE_THRESHOLD = 100;
 
 // Figma spec: 336×443 — keep this ratio
-const CARD_WIDTH  = SCREEN_WIDTH * 0.88;
+const CARD_WIDTH = SCREEN_WIDTH * 0.88;
 const CARD_HEIGHT = CARD_WIDTH * (443 / 336); // ~1.318 aspect ratio
 
 // Border colors per card slot: front, middle, back
 // Figma shows: green (active "That's me" state), blue (middle), red (back)
 // At rest the front card uses the CARD_BORDER_COLORS cycling array
-const CARD_BORDER_COLORS = ["#43A047", "#1E88E5", "#E53935", "#FFD600", "#8E24AA"];
+const CARD_BORDER_COLORS = [
+  "#43A047",
+  "#1E88E5",
+  "#E53935",
+  "#FFD600",
+  "#8E24AA",
+];
 
 type Answer = "not_me" | "sometimes" | "thats_me";
 
@@ -80,10 +86,10 @@ const LogoBadge = ({ style }: { style?: object }) => (
 
 export default function AssessmentScreen() {
   const router = useRouter();
-  const [questions, setQuestions]   = useState<Question[]>([]);
-  const [loading, setLoading]       = useState(true);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers]       = useState<CardAnswer[]>([]);
+  const [, setAnswers] = useState<CardAnswer[]>([]);
 
   // Fresh position per card — when currentIndex changes, the Animated.View
   // gets a new key so React fully unmounts it, and positionMap always starts at 0,0
@@ -97,33 +103,55 @@ export default function AssessmentScreen() {
 
   // Refs that always hold the latest values so the panResponder (created once,
   // never recreated) never reads stale state from its closure.
-  const currentIndexRef   = useRef(currentIndex);
-  const questionsRef      = useRef(questions);
+  const currentIndexRef = useRef(currentIndex);
+  const questionsRef = useRef(questions);
   const totalQuestionsRef = useRef(questions.length);
   useEffect(() => {
     currentIndexRef.current = currentIndex;
     // Reset position here — this fires after React has fully committed the
     // new card content to screen, so the old card is guaranteed gone
     position.setValue({ x: 0, y: 0 });
-  }, [currentIndex]);
+  }, [currentIndex, position]);
   useEffect(() => {
-    questionsRef.current      = questions;
+    questionsRef.current = questions;
     totalQuestionsRef.current = questions.length;
   }, [questions]);
 
   // Derived swipe colors shown on the card overlay as you drag
-  const leftOpacity  = positionRef.current.x.interpolate({ inputRange: [-SWIPE_THRESHOLD, 0], outputRange: [1, 0], extrapolate: "clamp" });
-  const rightOpacity = positionRef.current.x.interpolate({ inputRange: [0, SWIPE_THRESHOLD],  outputRange: [0, 1], extrapolate: "clamp" });
+  const leftOpacity = positionRef.current.x.interpolate({
+    inputRange: [-SWIPE_THRESHOLD, 0],
+    outputRange: [1, 0],
+    extrapolate: "clamp",
+  });
+  const rightOpacity = positionRef.current.x.interpolate({
+    inputRange: [0, SWIPE_THRESHOLD],
+    outputRange: [0, 1],
+    extrapolate: "clamp",
+  });
 
   // Upward drag — shows white question mark as card moves up
-  const upOpacity = positionRef.current.y.interpolate({ inputRange: [-SWIPE_THRESHOLD, 0], outputRange: [1, 0], extrapolate: "clamp" });
+  const upOpacity = positionRef.current.y.interpolate({
+    inputRange: [-SWIPE_THRESHOLD, 0],
+    outputRange: [1, 0],
+    extrapolate: "clamp",
+  });
 
   // Button background colors that react to drag direction
-  const btnNotMeBg  = position.x.interpolate({ inputRange: [-SWIPE_THRESHOLD, 0], outputRange: ["#E53935", "#c0392b"], extrapolate: "clamp" });
-  const btnThatsMe  = position.x.interpolate({ inputRange: [0, SWIPE_THRESHOLD],  outputRange: ["#43A047", "#2e7d32"], extrapolate: "clamp" });
-  const btnNotMeScale    = position.x.interpolate({ inputRange: [-SWIPE_THRESHOLD, 0], outputRange: [1.25, 1], extrapolate: "clamp" });
-  const btnThatsMeScale  = position.x.interpolate({ inputRange: [0, SWIPE_THRESHOLD], outputRange: [1, 1.25], extrapolate: "clamp" });
-  const btnSometimesScale = positionRef.current.y.interpolate({ inputRange: [-SWIPE_THRESHOLD, 0], outputRange: [1.25, 1], extrapolate: "clamp" });
+  const btnNotMeScale = position.x.interpolate({
+    inputRange: [-SWIPE_THRESHOLD, 0],
+    outputRange: [1.25, 1],
+    extrapolate: "clamp",
+  });
+  const btnThatsMeScale = position.x.interpolate({
+    inputRange: [0, SWIPE_THRESHOLD],
+    outputRange: [1, 1.25],
+    extrapolate: "clamp",
+  });
+  const btnSometimesScale = positionRef.current.y.interpolate({
+    inputRange: [-SWIPE_THRESHOLD, 0],
+    outputRange: [1.25, 1],
+    extrapolate: "clamp",
+  });
 
   useEffect(() => {
     fetchQuestions()
@@ -142,20 +170,29 @@ export default function AssessmentScreen() {
 
   // Mutable refs so panResponder can always call the latest version of these
   // functions without being recreated itself.
-  const recordAnswerRef = useRef<(answer: Answer) => void>();
-  const swipeCardRef    = useRef<(answer: Answer, toX: number, toY: number) => void>();
+  const recordAnswerRef = useRef<(answer: Answer) => void>(undefined);
+  const swipeCardRef =
+    useRef<(answer: Answer, toX: number, toY: number) => void>(undefined);
 
   recordAnswerRef.current = (answer: Answer) => {
-    const idx      = currentIndexRef.current;
-    const qs       = questionsRef.current;
-    const total    = totalQuestionsRef.current;
+    const idx = currentIndexRef.current;
+    const qs = questionsRef.current;
+    const total = totalQuestionsRef.current;
     const question = qs[idx];
     if (!question) return;
 
     setAnswers((prev) => {
       const newAnswers = [...prev, { questionId: question.id, answer }];
       if (idx + 1 >= total) {
-        setTimeout(() => alert("Assessment complete! " + newAnswers.length + " answers recorded."), 0);
+        setTimeout(
+          () =>
+            alert(
+              "Assessment complete! " +
+                newAnswers.length +
+                " answers recorded.",
+            ),
+          0,
+        );
       }
       return newAnswers;
     });
@@ -193,16 +230,16 @@ export default function AssessmentScreen() {
           }).start();
         }
       },
-    })
+    }),
   ).current;
 
   // Public wrappers used by the buttons
-  const swipeCard   = (answer: Answer, toX: number, toY: number) => swipeCardRef.current?.(answer, toX, toY);
-  const recordAnswer = (answer: Answer) => recordAnswerRef.current?.(answer);
+  const swipeCard = (answer: Answer, toX: number, toY: number) =>
+    swipeCardRef.current?.(answer, toX, toY);
 
   const handleButton = (answer: Answer) => {
-    if (answer === "not_me")    swipeCard(answer, -SCREEN_WIDTH * 1.5, 0);
-    if (answer === "thats_me")  swipeCard(answer, SCREEN_WIDTH * 1.5, 0);
+    if (answer === "not_me") swipeCard(answer, -SCREEN_WIDTH * 1.5, 0);
+    if (answer === "thats_me") swipeCard(answer, SCREEN_WIDTH * 1.5, 0);
     if (answer === "sometimes") swipeCard(answer, 0, -SCREEN_HEIGHT);
   };
 
@@ -210,19 +247,24 @@ export default function AssessmentScreen() {
     return (
       <SafeAreaView style={[styles.container, { justifyContent: "center" }]}>
         <ActivityIndicator size="large" color="#1E88E5" />
-        <Text style={{ marginTop: 12, color: "#888" }}>Loading questions...</Text>
+        <Text style={{ marginTop: 12, color: "#888" }}>
+          Loading questions...
+        </Text>
       </SafeAreaView>
     );
   }
 
-  const progressPercent   = totalQuestions > 0 ? (currentIndex / totalQuestions) * 100 : 0;
-  const frontBorderColor  = CARD_BORDER_COLORS[currentIndex % CARD_BORDER_COLORS.length];
-  const middleBorderColor = CARD_BORDER_COLORS[(currentIndex + 1) % CARD_BORDER_COLORS.length];
-  const backBorderColor   = CARD_BORDER_COLORS[(currentIndex + 2) % CARD_BORDER_COLORS.length];
+  const progressPercent =
+    totalQuestions > 0 ? (currentIndex / totalQuestions) * 100 : 0;
+  const frontBorderColor =
+    CARD_BORDER_COLORS[currentIndex % CARD_BORDER_COLORS.length];
+  const middleBorderColor =
+    CARD_BORDER_COLORS[(currentIndex + 1) % CARD_BORDER_COLORS.length];
+  const backBorderColor =
+    CARD_BORDER_COLORS[(currentIndex + 2) % CARD_BORDER_COLORS.length];
 
   return (
     <SafeAreaView style={styles.container}>
-
       {/* ── Header ── */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
@@ -236,14 +278,15 @@ export default function AssessmentScreen() {
 
       {/* ── Progress Bar ── */}
       <View style={styles.progressBarBg}>
-        <View style={[styles.progressBarFill, { width: `${progressPercent}%` }]} />
+        <View
+          style={[styles.progressBarFill, { width: `${progressPercent}%` }]}
+        />
       </View>
 
       <Text style={styles.subtitle}>How well does this describe you?</Text>
 
       {/* ── Card Stack ── */}
       <View style={styles.cardContainer}>
-
         {/* Back card — furthest behind, shows question after next */}
         {currentIndex + 2 < totalQuestions && (
           <View
@@ -255,7 +298,9 @@ export default function AssessmentScreen() {
           >
             <LogoBadge style={styles.logoTopLeft} />
             <View style={[styles.cardTextContainer, { top: 0 }]}>
-              <Text style={styles.cardText}>{questions[currentIndex + 2]?.text}</Text>
+              <Text style={styles.cardText}>
+                {questions[currentIndex + 2]?.text}
+              </Text>
             </View>
             <LogoBadge style={styles.logoBottomRight} />
           </View>
@@ -271,10 +316,10 @@ export default function AssessmentScreen() {
             ]}
           >
             <LogoBadge style={styles.logoTopLeft} />
-            <View
-              style={[styles.cardTextContainer, { top: 0 }]}
-            >
-              <Text style={styles.cardText}>{questions[currentIndex + 1]?.text}</Text>
+            <View style={[styles.cardTextContainer, { top: 0 }]}>
+              <Text style={styles.cardText}>
+                {questions[currentIndex + 1]?.text}
+              </Text>
             </View>
             <LogoBadge style={styles.logoBottomRight} />
           </View>
@@ -300,49 +345,32 @@ export default function AssessmentScreen() {
           {/* Swipe hint overlays */}
 
           <LogoBadge style={styles.logoTopLeft} />
-          <View
-            style={styles.cardTextContainer}
-          >
+          <View style={styles.cardTextContainer}>
             <Text style={styles.cardText}>{questions[currentIndex]?.text}</Text>
           </View>
           <LogoBadge style={styles.logoBottomRight} />
         </Animated.View>
-
       </View>
 
       {/* ── Labels ── */}
       <View style={styles.labelsRow}>
-        
         <Animated.View
-          style={[
-            styles.label,
-            styles.labelNotMe,
-            { opacity: leftOpacity }
-          ]}
+          style={[styles.label, styles.labelNotMe, { opacity: leftOpacity }]}
         >
           <Text style={styles.labelTextRed}>Not me!</Text>
         </Animated.View>
 
         <Animated.View
-          style={[
-            styles.label,
-            styles.labelSometimes,
-            { opacity: upOpacity }
-          ]}
+          style={[styles.label, styles.labelSometimes, { opacity: upOpacity }]}
         >
           <Text style={styles.labelTextYellow}>Sometimes</Text>
         </Animated.View>
 
         <Animated.View
-          style={[
-            styles.label,
-            styles.labelThatsMe,
-            { opacity: rightOpacity }
-          ]}
+          style={[styles.label, styles.labelThatsMe, { opacity: rightOpacity }]}
         >
-          <Text style={styles.labelTextGreen}>That's me!</Text>
+          <Text style={styles.labelTextGreen}>That&apos;s me!</Text>
         </Animated.View>
-
       </View>
 
       {/* ── Buttons ── */}
@@ -353,36 +381,108 @@ export default function AssessmentScreen() {
           resizeMode="stretch"
         />
         <View style={styles.buttonsRow}>
-          <TouchableOpacity onPress={() => handleButton("not_me")} activeOpacity={0.8}>
-            <Animated.View style={[
-              styles.actionBtn, styles.btnNotMe,
-              { transform: [{ scale: btnNotMeScale }],
-                backgroundColor: leftOpacity.interpolate({ inputRange: [0, 1], outputRange: ["#FFFFFF", "#E53935"] }) }
-            ]}>
-              <Animated.Image source={require("../../assets/images/X_Mark_Red.png")} style={[styles.btnImg, { opacity: Animated.subtract(1, leftOpacity) }]} />
-              <Animated.Image source={require("../../assets/images/X_Mark_White.png")} style={[styles.btnImg, styles.btnImgOverlay, { opacity: leftOpacity }]} />
+          <TouchableOpacity
+            onPress={() => handleButton("not_me")}
+            activeOpacity={0.8}
+          >
+            <Animated.View
+              style={[
+                styles.actionBtn,
+                styles.btnNotMe,
+                {
+                  transform: [{ scale: btnNotMeScale }],
+                  backgroundColor: leftOpacity.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ["#FFFFFF", "#E53935"],
+                  }),
+                },
+              ]}
+            >
+              <Animated.Image
+                source={require("../../assets/images/X_Mark_Red.png")}
+                style={[
+                  styles.btnImg,
+                  { opacity: Animated.subtract(1, leftOpacity) },
+                ]}
+              />
+              <Animated.Image
+                source={require("../../assets/images/X_Mark_White.png")}
+                style={[
+                  styles.btnImg,
+                  styles.btnImgOverlay,
+                  { opacity: leftOpacity },
+                ]}
+              />
             </Animated.View>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => handleButton("sometimes")} activeOpacity={0.8}>
-            <Animated.View style={[
-              styles.actionBtn, styles.btnSometimes,
-              { transform: [{ scale: btnSometimesScale }],
-                backgroundColor: upOpacity.interpolate({ inputRange: [0, 1], outputRange: ["#FFFFFF", "#F5A623"] }) }
-            ]}>
-              <Animated.Image source={require("../../assets/images/Qeustion_Mark_Yellow.png")} style={[styles.btnImg, { opacity: Animated.subtract(1, upOpacity) }]} />
-              <Animated.Image source={require("../../assets/images/Question_Mark_White.png")} style={[styles.btnImg, styles.btnImgOverlay, { opacity: upOpacity }]} />
+          <TouchableOpacity
+            onPress={() => handleButton("sometimes")}
+            activeOpacity={0.8}
+          >
+            <Animated.View
+              style={[
+                styles.actionBtn,
+                styles.btnSometimes,
+                {
+                  transform: [{ scale: btnSometimesScale }],
+                  backgroundColor: upOpacity.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ["#FFFFFF", "#F5A623"],
+                  }),
+                },
+              ]}
+            >
+              <Animated.Image
+                source={require("../../assets/images/Qeustion_Mark_Yellow.png")}
+                style={[
+                  styles.btnImg,
+                  { opacity: Animated.subtract(1, upOpacity) },
+                ]}
+              />
+              <Animated.Image
+                source={require("../../assets/images/Question_Mark_White.png")}
+                style={[
+                  styles.btnImg,
+                  styles.btnImgOverlay,
+                  { opacity: upOpacity },
+                ]}
+              />
             </Animated.View>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => handleButton("thats_me")} activeOpacity={0.8}>
-            <Animated.View style={[
-              styles.actionBtn, styles.btnThatsMe,
-              { transform: [{ scale: btnThatsMeScale }],
-                backgroundColor: rightOpacity.interpolate({ inputRange: [0, 1], outputRange: ["#FFFFFF", "#43A047"] }) }
-            ]}>
-              <Animated.Image source={require("../../assets/images/Check_Mark_Green.png")} style={[styles.btnImg, { opacity: Animated.subtract(1, rightOpacity) }]} />
-              <Animated.Image source={require("../../assets/images/Check_Mark_White.png")} style={[styles.btnImg, styles.btnImgOverlay, { opacity: rightOpacity }]} />
+          <TouchableOpacity
+            onPress={() => handleButton("thats_me")}
+            activeOpacity={0.8}
+          >
+            <Animated.View
+              style={[
+                styles.actionBtn,
+                styles.btnThatsMe,
+                {
+                  transform: [{ scale: btnThatsMeScale }],
+                  backgroundColor: rightOpacity.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ["#FFFFFF", "#43A047"],
+                  }),
+                },
+              ]}
+            >
+              <Animated.Image
+                source={require("../../assets/images/Check_Mark_Green.png")}
+                style={[
+                  styles.btnImg,
+                  { opacity: Animated.subtract(1, rightOpacity) },
+                ]}
+              />
+              <Animated.Image
+                source={require("../../assets/images/Check_Mark_White.png")}
+                style={[
+                  styles.btnImg,
+                  styles.btnImgOverlay,
+                  { opacity: rightOpacity },
+                ]}
+              />
             </Animated.View>
           </TouchableOpacity>
         </View>
@@ -414,8 +514,8 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 8,
   },
-  backBtn:       { width: 36 },
-  backArrow:     { fontSize: 22, color: "#333" },
+  backBtn: { width: 36 },
+  backArrow: { fontSize: 22, color: "#333" },
   questionCount: { fontSize: 14, fontWeight: "600", color: "#444" },
 
   // ── Progress Bar ─────────────────────────────────────────────────────────
@@ -456,7 +556,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     // Shadow for depth
     shadowColor: "#000",
-    shadowOpacity: 0.10,
+    shadowOpacity: 0.1,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
     elevation: 8,
@@ -509,7 +609,6 @@ const styles = StyleSheet.create({
     color: "#111",
     lineHeight: 38,
   },
-
 
   // FIX: Logos are absolutely positioned in both corners — was missing
   //      bottom-right in some versions, and size was too small
@@ -572,12 +671,39 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     alignItems: "center",
   },
-  labelNotMe:      { borderColor: "#E53935", transform: [{ rotate: "-8deg" }], width: 74 },
-  labelSometimes:  { borderColor: "#FFD600", transform: [{ rotate: "0deg" }], width: 90 },
-  labelThatsMe:    { borderColor: "#43A047", transform: [{ rotate:  "8deg" }], width: 74 },
-  labelTextRed:    { color: "#E53935", fontWeight: "800", fontSize: 12, textAlign: "center" },
-  labelTextYellow: { color: "#F9A825", fontWeight: "800", fontSize: 12, textAlign: "center" },
-  labelTextGreen:  { color: "#43A047", fontWeight: "800", fontSize: 12, textAlign: "center" },
+  labelNotMe: {
+    borderColor: "#E53935",
+    transform: [{ rotate: "-8deg" }],
+    width: 74,
+  },
+  labelSometimes: {
+    borderColor: "#FFD600",
+    transform: [{ rotate: "0deg" }],
+    width: 90,
+  },
+  labelThatsMe: {
+    borderColor: "#43A047",
+    transform: [{ rotate: "8deg" }],
+    width: 74,
+  },
+  labelTextRed: {
+    color: "#E53935",
+    fontWeight: "800",
+    fontSize: 12,
+    textAlign: "center",
+  },
+  labelTextYellow: {
+    color: "#F9A825",
+    fontWeight: "800",
+    fontSize: 12,
+    textAlign: "center",
+  },
+  labelTextGreen: {
+    color: "#43A047",
+    fontWeight: "800",
+    fontSize: 12,
+    textAlign: "center",
+  },
 
   // ── Buttons ──────────────────────────────────────────────────────────────
   optionsContainer: {
@@ -608,16 +734,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     shadowColor: "#000",
-    shadowOpacity: 0.20,
+    shadowOpacity: 0.2,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 3 },
     elevation: 5,
   },
-  btnNotMe:    { backgroundColor: "#FFFFFF", marginLeft: -16, marginTop: 5 },
-  btnSometimes:{ backgroundColor: "#FFFFFF", marginLeft: -15, marginTop: -30 },
-  btnThatsMe:  { backgroundColor: "#FFFFFF", marginRight: -20, marginTop: 5 },
-  btnIcon:     { fontSize: 22, color: "#FFF", fontWeight: "bold" },
-  btnImg:      { width: 28, height: 28, resizeMode: "contain" },
+  btnNotMe: { backgroundColor: "#FFFFFF", marginLeft: -16, marginTop: 5 },
+  btnSometimes: { backgroundColor: "#FFFFFF", marginLeft: -15, marginTop: -30 },
+  btnThatsMe: { backgroundColor: "#FFFFFF", marginRight: -20, marginTop: 5 },
+  btnIcon: { fontSize: 22, color: "#FFF", fontWeight: "bold" },
+  btnImg: { width: 28, height: 28, resizeMode: "contain" },
   btnImgOverlay: { position: "absolute" },
 
   hint: { fontSize: 12, color: "#AAA", marginBottom: 20 },
