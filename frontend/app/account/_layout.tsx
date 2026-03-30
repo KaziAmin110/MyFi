@@ -232,6 +232,13 @@ const TabsLayout = () => {
           headerShown: false,
         }}
       />
+      <Tabs.Screen
+        name="HabitudeReport"
+        options={{
+          href: null,
+          headerShown: false,
+        }}
+      />
     </Tabs>
   );
 };

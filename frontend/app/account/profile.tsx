@@ -10,10 +10,9 @@ export const API_URL = "http://localhost:5500/api/auth";
 export const signOut = async () => {
   const token = await SecureStore.getItemAsync("token");
 
-  const response = await fetch(`${API_URL}/auth/sign-out`, {
+  const response = await fetch(`${API_URL}/sign-out`, {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
   });
@@ -31,36 +30,36 @@ const handleLogout = async () => {
   try {
     // Invalidate refresh token
     await signOut();
-
   } catch (error) {
     console.log("Backend logout failed:", error);
   }
 
   // Clear local token
   await SecureStore.deleteItemAsync("token");
+  await SecureStore.deleteItemAsync("user");
 
   // Redirect to landing/login
   router.replace("/(tabs)");
 };
 
-const Profile = () => {
+export default function Profile() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
 
   useEffect(() => {
-      const getUser = async () => {
-        const stored = await SecureStore.getItemAsync("user");
-        if (stored) {
-          const user = JSON.parse(stored);
-          setFirstName(user.name.split(" ")[0] || "User");
-          setLastName(user.name.split(" ")[1] || "User");
-        }
-      };
-      getUser();
-    }, []);
+    const getUser = async () => {
+      const stored = await SecureStore.getItemAsync("user");
+      if (stored) {
+        const user = JSON.parse(stored);
+        setFirstName(user.name.split(" ")[0] || "User");
+        setLastName(user.name.split(" ")[1] || "User");
+      }
+    };
+    getUser();
+  }, []);
 
-    // Define the username
-    const userName = {firstName} + " " + {lastName};
+  // Define the username
+  const userName = `${firstName} ${lastName}`;
 
   return (
     <View style={styles.container}>
@@ -68,34 +67,30 @@ const Profile = () => {
       <View style={styles.header}>
         <Text style={styles.title}>Profile</Text>
 
-      {/* Avatar placeholder */}
-      <View style={styles.avatar} />
+        {/* Avatar placeholder */}
+        <View style={styles.avatar} />
+      </View>
+
+      <View style={styles.card}>
+        {/* Gradient username */}
+        <GradientText text={userName} />
+
+        {/* Account Actions */}
+        <ProfileItem
+          label="Update Profile"
+          onPress={() => router.push("/account/profile")}
+        />
+
+        <ProfileItem
+          label="Change Password"
+          onPress={() => router.push("/account/profile")}
+        />
+
+        <ProfileItem label="Log Out" onPress={handleLogout} />
+      </View>
     </View>
-
-    <View style={styles.card}>
-      {/* Gradient username */}
-      <GradientText text={userName} />
-
-      {/* Account Actions */}
-      <ProfileItem
-        label="Update Profile"
-        onPress={() => router.push("/account/profile")}
-      />
-
-      <ProfileItem
-        label="Change Password"
-        onPress={() => router.push("/account/profile")}
-      />
-
-      <ProfileItem
-        label="Log Out"
-        onPress={handleLogout}
-      />
-    </View>
-  </View>
   );
 }
-
 
 function GradientText({ text }: { text: string }) {
   return (
@@ -112,24 +107,20 @@ function GradientText({ text }: { text: string }) {
   );
 }
 
-
 function ProfileItem({
   label,
-  onPress
+  onPress,
 }: {
   label: string;
   onPress: () => void;
 }) {
   return (
     <TouchableOpacity style={styles.item} onPress={onPress}>
-      <Text style={styles.itemText}>
-        {label}
-      </Text>
+      <Text style={styles.itemText}>{label}</Text>
       <Text style={styles.chevron}>›</Text>
     </TouchableOpacity>
   );
 }
-
 
 const styles = StyleSheet.create({
   /* Screen background */
