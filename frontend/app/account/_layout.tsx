@@ -140,7 +140,7 @@ const TabsLayout = () => {
       <Tabs.Screen
         name="assessment"
         options={{
-          title: "Assessment",
+          title: "Results",
           tabBarIcon: ({ color, size, focused }) => (
             <TabIcon name="documents-outline" activeName="documents" color={color} size={size} focused={focused} />
           ),
@@ -162,7 +162,30 @@ const TabsLayout = () => {
           headerShown: false,
         }}
       />
+      <Tabs.Screen
+        name="AssessmentSkeleton"
+        options={{
+          href: null,
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
+        name="takeAssessment"
+        options={{
+          href: null,
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
+        name="preAssessment"
+        options={{
+          href: null,
+          headerShown: false,
+        }}
+      />
+      
     </Tabs>
+    
   );
 };
 
