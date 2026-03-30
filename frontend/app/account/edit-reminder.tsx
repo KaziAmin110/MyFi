@@ -9,6 +9,7 @@ import {
   Dimensions,
   Modal,
   ActivityIndicator,
+  ScrollView,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -43,22 +44,27 @@ const EditReminderScreen = () => {
     ? String(params.date)
     : new Date().toISOString().split("T")[0];
   const initialTimeStr = params.time ? String(params.time) : "8:00 AM";
-
-  // Helper to convert "8:00 AM" to Date object
-  const parseTimeStr = (timeStr: string) => {
-    const [time, modifier] = timeStr.split(" ");
-    let [hours, minutes] = time.split(":").map(Number);
-    if (modifier === "PM" && hours < 12) hours += 12;
-    if (modifier === "AM" && hours === 12) hours = 0;
-    const d = new Date();
-    d.setHours(hours, minutes, 0, 0);
-    return d;
-  };
+  const todayISO = new Date().toISOString().split("T")[0];
 
   const [selectedDate, setSelectedDate] = useState(initialDate);
-  const [selectedTime, setSelectedTime] = useState(
-    parseTimeStr(initialTimeStr),
-  );
+  const [selectedTime, setSelectedTime] = useState(() => {
+    try {
+      // Robust regex to handle diverse locale formats (like narrow non-breaking spaces)
+      const timeParts = initialTimeStr.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+      if (!timeParts) return new Date();
+      const [, hoursStr, minutesStr, modifier] = timeParts;
+      let hours = parseInt(hoursStr, 10);
+      const minutes = parseInt(minutesStr, 10);
+      if (modifier?.toUpperCase() === "PM" && hours < 12) hours += 12;
+      if (modifier?.toUpperCase() === "AM" && hours === 12) hours = 0;
+      const d = new Date();
+      d.setHours(hours, minutes, 0, 0);
+      return d;
+    } catch (e) {
+      console.error("Time Parse Error:", e);
+      return new Date();
+    }
+  });
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [showFrequencyPicker, setShowFrequencyPicker] = useState(false);
   const [selectedFrequency, setSelectedFrequency] = useState(
@@ -66,7 +72,7 @@ const EditReminderScreen = () => {
   );
   const [loading, setLoading] = useState(false);
 
-  const onTimeChange = (event: any, selected: Date | undefined) => {
+  const onTimeChange = (_event: any, selected: Date | undefined) => {
     if (selected) {
       setSelectedTime(selected);
     }
@@ -78,7 +84,6 @@ const EditReminderScreen = () => {
   const handleUpdate = async () => {
     setLoading(true);
     try {
-      // Create date by splitting YYYY-MM-DD to avoid timezone shifting
       const [year, month, day] = selectedDate.split("-").map(Number);
       const combinedDateTime = new Date(year, month - 1, day);
       combinedDateTime.setHours(selectedTime.getHours());
@@ -138,7 +143,6 @@ const EditReminderScreen = () => {
   };
 
   const formatDateReadable = (dateStr: string) => {
-    // Append T00:00:00 to treat as local date rather than UTC
     const date = new Date(dateStr + "T00:00:00");
     if (isNaN(date.getTime())) return "Invalid Date";
     return date.toLocaleDateString("en-US", {
@@ -166,31 +170,35 @@ const EditReminderScreen = () => {
           </View>
         </View>
 
-        <View style={styles.mainContent}>
-          <View style={styles.section}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.mainContent}
+        >
+          <View style={styles.cardSection}>
             <Text style={styles.sectionTitle}>Select Date</Text>
             <View style={styles.calendarWrapper}>
               <Calendar
                 current={selectedDate}
+                minDate={todayISO}
                 onDayPress={(day: any) => setSelectedDate(day.dateString)}
                 markedDates={{
                   [selectedDate]: {
                     selected: true,
                     disableTouchEvent: true,
-                    selectedColor: "#3B66C5",
+                    selectedColor: "#3154A8",
                     selectedTextColor: "white",
                   },
                 }}
                 theme={{
                   backgroundColor: "transparent",
-                  calendarBackground: "transparent",
+                  calendarBackground: "#FFFFFF",
                   textSectionTitleColor: "#999",
-                  selectedDayBackgroundColor: "#3B66C5",
+                  selectedDayBackgroundColor: "#3154A8",
                   selectedDayTextColor: "#ffffff",
-                  todayTextColor: "#3B66C5",
+                  todayTextColor: "#3154A8",
                   dayTextColor: "#333",
                   textDisabledColor: "#d9e1e8",
-                  dotColor: "#3B66C5",
+                  dotColor: "#3154A8",
                   selectedDotColor: "#ffffff",
                   arrowColor: "#333",
                   monthTextColor: "#333",
@@ -199,41 +207,53 @@ const EditReminderScreen = () => {
                   textMonthFontWeight: "bold",
                   textDayHeaderFontWeight: "600",
                   textDayFontSize: scale(14),
-                  textMonthFontSize: scale(20),
-                  textDayHeaderFontSize: scale(12),
+                  textMonthFontSize: scale(18),
+                  textDayHeaderFontSize: scale(11),
                 }}
               />
             </View>
           </View>
 
-          <View style={styles.section}>
+          <View style={styles.cardSection}>
             <Text style={styles.sectionTitle}>Select Time</Text>
-            <View style={styles.timeRow}>
-              <Text style={styles.selectedDateReadable}>
-                {formatDateReadable(selectedDate)}
-              </Text>
-              <TouchableOpacity
-                style={styles.timeBadge}
-                onPress={() => setShowTimePicker(true)}
-              >
+            <TouchableOpacity
+              style={styles.timeView}
+              onPress={() => setShowTimePicker(true)}
+            >
+              <View style={styles.timeInfo}>
+                <Ionicons
+                  name="calendar-outline"
+                  size={scale(20)}
+                  color="#666"
+                />
+                <Text style={styles.selectedDateReadable}>
+                  {formatDateReadable(selectedDate)}
+                </Text>
+              </View>
+              <View style={styles.timeBadge}>
                 <Text style={styles.timeBadgeText}>
                   {formatTime(selectedTime)}
                 </Text>
-              </TouchableOpacity>
-            </View>
+              </View>
+            </TouchableOpacity>
           </View>
 
-          <View style={[styles.section, { marginBottom: scale(15) }]}>
+          <View style={styles.cardSection}>
             <Text style={styles.sectionTitle}>Reminder Frequency</Text>
             <TouchableOpacity
               style={styles.frequencyDropdown}
               onPress={() => setShowFrequencyPicker(true)}
             >
-              <Text style={styles.frequencyText}>{selectedFrequency}</Text>
-              <Ionicons name="chevron-down" size={scale(24)} color="#333" />
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <Ionicons name="repeat" size={scale(20)} color="#666" />
+                <Text style={styles.frequencyText}>{selectedFrequency}</Text>
+              </View>
+              <Ionicons name="chevron-down" size={scale(22)} color="#333" />
             </TouchableOpacity>
           </View>
-        </View>
+
+          <View style={styles.footerFiller} />
+        </ScrollView>
 
         {!showTimePicker && !showFrequencyPicker && (
           <View style={styles.footer}>
@@ -337,84 +357,108 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   header: {
     paddingHorizontal: scale(20),
-    paddingTop: Platform.OS === "ios" ? scale(10) : scale(20),
+    paddingTop: Platform.OS === "ios" ? scale(10) : scale(30),
     flexDirection: "row",
     alignItems: "center",
-    height: SCREEN_HEIGHT * 0.1,
+    height: SCREEN_HEIGHT * 0.12,
   },
   backButton: {
     padding: scale(8),
     position: "absolute",
     left: scale(10),
-    top: Platform.OS === "ios" ? scale(10) : scale(20),
+    top: Platform.OS === "ios" ? scale(10) : scale(30),
     zIndex: 1,
   },
   titleContainer: { flex: 1, alignItems: "center" },
-  headerTitle: { fontSize: scale(24), fontWeight: "700", color: "#333" },
-  headerSubtitle: { fontSize: scale(13), color: "#666", marginTop: scale(2) },
+  headerTitle: { fontSize: scale(26), fontWeight: "700", color: "#333" },
+  headerSubtitle: { fontSize: scale(14), color: "#666", marginTop: scale(2) },
   mainContent: {
-    flex: 1,
-    paddingHorizontal: scale(24),
-    justifyContent: "space-between",
-    paddingBottom: scale(10),
+    paddingHorizontal: scale(20),
+    paddingBottom: scale(120),
+    paddingTop: scale(10),
   },
-  section: { flexShrink: 1, marginBottom: scale(10) },
+  cardSection: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: scale(24),
+    padding: scale(20),
+    marginBottom: scale(20),
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 4,
+  },
   sectionTitle: {
-    fontSize: scale(18),
+    fontSize: scale(16),
     fontWeight: "700",
-    color: "#000",
-    marginBottom: scale(8),
+    color: "#333",
+    marginBottom: scale(12),
+    marginLeft: scale(4),
   },
   calendarWrapper: {
-    backgroundColor: "transparent",
+    backgroundColor: "#FFFFFF",
     borderRadius: scale(15),
     overflow: "hidden",
-    padding: 0,
-    minHeight: scale(280),
   },
-  timeRow: {
+  timeView: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "transparent",
-    paddingVertical: scale(10),
-    borderRadius: 0,
+    paddingVertical: scale(4),
+  },
+  timeInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: scale(8),
   },
   selectedDateReadable: {
     fontSize: scale(14),
-    color: "#333",
+    color: "#444",
     fontWeight: "600",
   },
   timeBadge: {
     backgroundColor: "#3154A8",
-    paddingHorizontal: scale(15),
-    paddingVertical: scale(8),
-    borderRadius: scale(12),
+    paddingHorizontal: scale(16),
+    paddingVertical: scale(10),
+    borderRadius: scale(14),
   },
   timeBadgeText: { color: "#FFF", fontSize: scale(16), fontWeight: "700" },
   frequencyDropdown: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    borderWidth: 1.5,
-    borderColor: "#3154A8",
-    borderRadius: scale(15),
-    paddingHorizontal: scale(15),
-    paddingVertical: scale(10),
-    backgroundColor: "white",
+    backgroundColor: "#F9F9F9",
+    borderRadius: scale(16),
+    paddingHorizontal: scale(16),
+    paddingVertical: scale(14),
   },
-  frequencyText: { fontSize: scale(15), color: "#333", fontWeight: "500" },
-  footer: { paddingHorizontal: scale(24), paddingBottom: scale(20) },
+  frequencyText: {
+    fontSize: scale(15),
+    color: "#333",
+    fontWeight: "600",
+    marginLeft: scale(8),
+  },
+  footer: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: scale(24),
+    paddingBottom: scale(30),
+    paddingTop: scale(20),
+    backgroundColor: "rgba(245,245,245,0.9)",
+  },
+  footerFiller: { height: scale(40) },
   createButton: {
     backgroundColor: "#3154A8",
-    paddingVertical: scale(15),
-    borderRadius: scale(15),
+    paddingVertical: scale(18),
+    borderRadius: scale(20),
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 4,
+    shadowColor: "#3154A8",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
   },
   createButtonText: { color: "#FFF", fontSize: scale(18), fontWeight: "700" },
   modalOverlay: {
@@ -437,19 +481,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#F0F0F0",
   },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#333",
-  },
-  doneText: {
-    fontSize: 16,
-    color: "#3154A8",
-    fontWeight: "700",
-  },
-  frequencyList: {
-    paddingVertical: 10,
-  },
+  modalTitle: { fontSize: 18, fontWeight: "700", color: "#333" },
+  doneText: { fontSize: 16, color: "#3154A8", fontWeight: "700" },
+  frequencyList: { paddingVertical: 10 },
   frequencyOption: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -457,18 +491,9 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 20,
   },
-  selectedFrequencyOption: {
-    backgroundColor: "#F5F8FF",
-  },
-  frequencyOptionText: {
-    fontSize: 16,
-    color: "#333",
-    fontWeight: "500",
-  },
-  selectedFrequencyOptionText: {
-    color: "#3B66C5",
-    fontWeight: "700",
-  },
+  selectedFrequencyOption: { backgroundColor: "#F5F8FF" },
+  frequencyOptionText: { fontSize: 16, color: "#333", fontWeight: "500" },
+  selectedFrequencyOptionText: { color: "#3B66C5", fontWeight: "700" },
 });
 
 export default EditReminderScreen;

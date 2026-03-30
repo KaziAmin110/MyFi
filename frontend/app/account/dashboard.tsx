@@ -7,13 +7,13 @@ import {
   Pressable,
   ScrollView,
 } from "react-native";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useRouter, useFocusEffect } from "expo-router";
 import Slider from "@react-native-community/slider";
 import * as SecureStore from "expo-secure-store";
 import MaskedView from "@react-native-masked-view/masked-view";
 import { LinearGradient } from "expo-linear-gradient";
 import HabitCard from "../../components/HabitCard";
-import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { appointmentsApi } from "../../utils/api";
 
@@ -51,21 +51,23 @@ const Dashboard = () => {
     getUser();
   }, []);
 
-  useEffect(() => {
-    const fetchReminders = async () => {
-      try {
-        const start = weekDates[0].toISOString().split("T")[0];
-        const end = weekDates[6].toISOString().split("T")[0];
-        const res = await appointmentsApi.getCalendar(start, end);
-        if (res.success) {
-          setAppointmentDates(res.data.dates);
+  useFocusEffect(
+    useCallback(() => {
+      const fetchReminders = async () => {
+        try {
+          const start = weekDates[0].toISOString().split("T")[0];
+          const end = weekDates[6].toISOString().split("T")[0];
+          const res = await appointmentsApi.getCalendar(start, end);
+          if (res.success) {
+            setAppointmentDates(res.data.dates);
+          }
+        } catch (error) {
+          console.error("Dashboard Fetch Calendar Error:", error);
         }
-      } catch (error) {
-        console.error("Dashboard Fetch Calendar Error:", error);
-      }
-    };
-    fetchReminders();
-  }, [anchorDate, weekDates]);
+      };
+      fetchReminders();
+    }, [weekDates]),
+  );
 
   const handlePrevWeek = () => {
     const prev = new Date(anchorDate);
