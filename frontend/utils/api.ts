@@ -45,4 +45,6 @@ export const appointmentsApi = {
     apiFetch(`/appointments/${id}`, {
       method: "DELETE",
     }),
+  getCalendar: (startDate: string, endDate: string) =>
+    apiFetch(`/appointments/calendar?startDate=${startDate}&endDate=${endDate}`),
 };

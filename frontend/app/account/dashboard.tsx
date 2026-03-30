@@ -14,13 +14,19 @@ import MaskedView from "@react-native-masked-view/masked-view";
 import { LinearGradient } from "expo-linear-gradient";
 import HabitCard from "../../components/HabitCard";
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { appointmentsApi } from "../../utils/api";
 
 const Dashboard = () => {
   const router = useRouter();
   const [mood, setMood] = useState(60);
   const [firstName, setFirstName] = useState("");
+  const [anchorDate, setAnchorDate] = useState(new Date());
+  const [appointmentDates, setAppointmentDates] = useState<string[]>([]);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const dayLabel = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  const weekDates = weekInfo(new Date());
+  const weekDates = weekInfo(anchorDate);
 
   const [selectedHabit, setSelectedHabit] = useState<any>(null);
   const [habitOpen, setHabitOpen] = useState(false);
@@ -44,6 +50,51 @@ const Dashboard = () => {
     };
     getUser();
   }, []);
+
+  useEffect(() => {
+    const fetchReminders = async () => {
+      try {
+        const start = weekDates[0].toISOString().split("T")[0];
+        const end = weekDates[6].toISOString().split("T")[0];
+        const res = await appointmentsApi.getCalendar(start, end);
+        if (res.success) {
+          setAppointmentDates(res.data.dates);
+        }
+      } catch (error) {
+        console.error("Dashboard Fetch Calendar Error:", error);
+      }
+    };
+    fetchReminders();
+  }, [anchorDate, weekDates]);
+
+  const handlePrevWeek = () => {
+    const prev = new Date(anchorDate);
+    prev.setDate(prev.getDate() - 7);
+
+    // Restriction: Cannot go to a week earlier than the current week
+    const today = new Date();
+    const todayStart = getStart(today);
+    const prevStart = getStart(prev);
+
+    if (prevStart.getTime() < todayStart.getTime()) {
+      return;
+    }
+
+    setAnchorDate(prev);
+  };
+
+  const handleNextWeek = () => {
+    const next = new Date(anchorDate);
+    next.setDate(next.getDate() + 7);
+    setAnchorDate(next);
+  };
+
+  const currentMonthYear = anchorDate.toLocaleString("default", {
+    month: "long",
+    year: "numeric",
+  });
+
+  const isAtStart = getStart(anchorDate).getTime() <= today.getTime();
 
   return (
     <LinearGradient
@@ -76,9 +127,38 @@ const Dashboard = () => {
 
           {/* Calendar*/}
           <View style={styles.calendar}>
+            <View style={styles.calendarHeader}>
+              <Pressable
+                onPress={handlePrevWeek}
+                disabled={isAtStart}
+                style={({ pressed }) => [
+                  styles.navBtn,
+                  pressed && !isAtStart && { opacity: 0.5 },
+                  isAtStart && { opacity: 0.3 },
+                ]}
+              >
+                <Ionicons
+                  name="chevron-back"
+                  size={20}
+                  color={isAtStart ? "#D1D1D1" : "#3D3D3D"}
+                />
+              </Pressable>
+              <Text style={styles.monthName}>{currentMonthYear}</Text>
+              <Pressable
+                onPress={handleNextWeek}
+                style={({ pressed }) => [
+                  styles.navBtn,
+                  pressed && { opacity: 0.5 },
+                ]}
+              >
+                <Ionicons name="chevron-forward" size={20} color="#3D3D3D" />
+              </Pressable>
+            </View>
             <View style={styles.week}>
               {weekDates.map((day, i) => {
                 const today = isToday(day);
+                const dateStr = day.toISOString().split("T")[0];
+                const hasReminder = appointmentDates.includes(dateStr);
                 return (
                   <View key={day.toISOString()} style={styles.day}>
                     <Text
@@ -87,7 +167,7 @@ const Dashboard = () => {
                         today ? styles.todayLabel : styles.normalLabel,
                       ]}
                     >
-                      {dayLabel[i]}
+                      {dayLabel[day.getDay()]}
                     </Text>
                     <View
                       style={[styles.dateBubble, today && styles.todayBubble]}
@@ -101,6 +181,7 @@ const Dashboard = () => {
                         {day.getDate()}
                       </Text>
                     </View>
+                    {hasReminder && <View style={styles.blueDot} />}
                   </View>
                 );
               })}
@@ -247,9 +328,6 @@ export default Dashboard;
 const getStart = (date: Date) => {
   const obj = new Date(date);
   obj.setHours(0, 0, 0, 0);
-  const day = obj.getDay();
-
-  obj.setDate(obj.getDate() - day);
   return obj;
 };
 const weekInfo = (anchor: Date) => {
@@ -302,6 +380,22 @@ const styles = StyleSheet.create({
   calendar: {
     paddingVertical: 14,
     paddingHorizontal: 20,
+    width: "100%",
+  },
+  calendarHeader: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
+    gap: 20,
+  },
+  monthName: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#3D3D3D",
+  },
+  navBtn: {
+    padding: 2,
   },
   week: {
     flexDirection: "row",
@@ -342,6 +436,13 @@ const styles = StyleSheet.create({
   date: {
     fontWeight: "600",
     fontSize: 13,
+  },
+  blueDot: {
+    marginTop: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#3059AD",
   },
   moneyMood: {
     backgroundColor: "#FFFFFF",
