@@ -1,6 +1,6 @@
 import { Text, View, StyleSheet, ScrollView, TouchableOpacity} from "react-native";
 import {scale, verticalScale, moderateScale} from "../../utils/scale";
-import MultiRing from "../components/MultiRing";
+import MultiRing from "../../components/MultiRing";
 import { HABITUDES } from "../../constants/habitudes";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect } from "expo-router";
@@ -62,7 +62,7 @@ const AssessmentResult = ({resultData}: any ) => {
                             </View>
 
                             <TouchableOpacity onPress={() => router.push({
-                                pathname: "/components/HabitudeReport",
+                                pathname: "/account/HabitudeReport",
                                 params: {
                                     id: item.id,
                                     score: String(item.score),

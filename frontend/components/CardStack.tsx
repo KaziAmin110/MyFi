@@ -1,6 +1,6 @@
 import React from "react";
-import { View ,Text, StyleSheet, Image} from "react-native";
-import {scale, verticalScale, moderateScale} from "../../utils/scale";
+import { View ,Text, StyleSheet} from "react-native";
+import {scale, verticalScale, moderateScale} from "../utils/scale";
 
 const CardStack = ({ count, color, secondaryColor, num }: {
     count: number,

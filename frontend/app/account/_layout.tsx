@@ -1,10 +1,10 @@
 import React, { useEffect, useRef } from "react";
-import { View, Platform, Animated as RNAnimated } from "react-native";
+import { Platform, Animated as RNAnimated } from "react-native";
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { BottomTabBar, BottomTabBarProps } from "@react-navigation/bottom-tabs";
-import { TabBarProvider, useTabBar } from "../components/TabBarContext";
+import { TabBarProvider, useTabBar } from "../../components/TabBarContext";
 
 const TabIcon = ({
   name,
@@ -28,11 +28,15 @@ const TabIcon = ({
       stiffness: 180,
       useNativeDriver: true,
     }).start();
-  }, [focused]);
+  }, [focused, scale]);
 
   return (
     <RNAnimated.View style={{ alignItems: "center", transform: [{ scale }] }}>
-      <Ionicons name={focused ? activeName : name} size={size - 2} color={color} />
+      <Ionicons
+        name={focused ? activeName : name}
+        size={size - 2}
+        color={color}
+      />
     </RNAnimated.View>
   );
 };
@@ -48,7 +52,7 @@ const AnimatedTabBar = (props: BottomTabBarProps) => {
       stiffness: 200,
       useNativeDriver: true,
     }).start();
-  }, [visible]);
+  }, [visible, animValue]);
 
   return (
     <RNAnimated.View
@@ -124,7 +128,13 @@ const TabsLayout = () => {
         options={{
           title: "Home",
           tabBarIcon: ({ color, size, focused }) => (
-            <TabIcon name="home-outline" activeName="home" color={color} size={size} focused={focused} />
+            <TabIcon
+              name="home-outline"
+              activeName="home"
+              color={color}
+              size={size}
+              focused={focused}
+            />
           ),
         }}
       />
@@ -133,7 +143,13 @@ const TabsLayout = () => {
         options={{
           title: "Chat",
           tabBarIcon: ({ color, size, focused }) => (
-            <TabIcon name="chatbubble-outline" activeName="chatbubble" color={color} size={size} focused={focused} />
+            <TabIcon
+              name="chatbubble-outline"
+              activeName="chatbubble"
+              color={color}
+              size={size}
+              focused={focused}
+            />
           ),
         }}
       />
@@ -163,7 +179,13 @@ const TabsLayout = () => {
         options={{
           title: "Results",
           tabBarIcon: ({ color, size, focused }) => (
-            <TabIcon name="documents-outline" activeName="documents" color={color} size={size} focused={focused} />
+            <TabIcon
+              name="documents-outline"
+              activeName="documents"
+              color={color}
+              size={size}
+              focused={focused}
+            />
           ),
         }}
       />
@@ -172,7 +194,13 @@ const TabsLayout = () => {
         options={{
           title: "Profile",
           tabBarIcon: ({ color, size, focused }) => (
-            <TabIcon name="person-outline" activeName="person" color={color} size={size} focused={focused} />
+            <TabIcon
+              name="person-outline"
+              activeName="person"
+              color={color}
+              size={size}
+              focused={focused}
+            />
           ),
         }}
       />
@@ -205,7 +233,6 @@ const TabsLayout = () => {
         }}
       />
     </Tabs>
-    
   );
 };
 

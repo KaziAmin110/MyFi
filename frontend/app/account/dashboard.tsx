@@ -12,7 +12,7 @@ import Slider from "@react-native-community/slider";
 import * as SecureStore from "expo-secure-store";
 import MaskedView from "@react-native-masked-view/masked-view";
 import { LinearGradient } from "expo-linear-gradient";
-import HabitCard from "../components/HabitCard";
+import HabitCard from "../../components/HabitCard";
 import { useRouter } from "expo-router";
 
 const Dashboard = () => {

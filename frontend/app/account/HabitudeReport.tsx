@@ -1,8 +1,8 @@
 import { useLocalSearchParams, Stack, router } from "expo-router";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from "react-native";
 import React, { useState } from "react";
-import SingleRing from "../components/SingleRing";
-import CardStack from "../components/CardStack";
+import SingleRing from "../../components/SingleRing";
+import CardStack from "../../components/CardStack";
 import { scale, verticalScale, moderateScale } from "../../utils/scale";
 import { HABITUDES, getScoreTier } from "../../constants/habitudes";
 
@@ -66,7 +66,7 @@ const HabitudeReport = () => {
                     <CardStack count={parsedSometimesMe} color={parsedColor} secondaryColor={parsedDarkColor} num={parsedSometimesMe} />
                     </View>
                     <View style={styles.cardColumn}>
-                    <Text style={[styles.cardLabel, { color: parsedColor }]}>THAT'S ME</Text>
+                    <Text style={[styles.cardLabel, { color: parsedColor }]}>THAT{"'"}S ME</Text>
                     <CardStack count={parsedScore} color={parsedColor} secondaryColor={parsedDarkColor} num={parsedScore} />
                     </View>
                 </View>

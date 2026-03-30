@@ -1,7 +1,7 @@
-import { Text, View, StyleSheet, Animated, Easing} from "react-native";
+import { View, StyleSheet, Animated, Easing} from "react-native";
 import Svg, {Circle, G} from 'react-native-svg';
 import React, {useEffect, useRef, useState} from 'react';
-import {scale, verticalScale, moderateScale} from "../../utils/scale";
+import { moderateScale } from "../utils/scale";
 
 const GAP = 3;
 type Segment = {
@@ -45,7 +45,7 @@ const Ring = ({
     animation.removeListener(listenerId);
     animation.stopAnimation();
   };
-}, [animatedKey]);
+}, [animatedKey, animation]);
 
    let totalPercent = 0;
     
