@@ -9,6 +9,7 @@ import {
 import React, { useState } from "react";
 import { Link, router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
+import { getUserContext } from "../../services/user.service";
 
 export const API_URL = "http://localhost:5500/api/auth";
 
@@ -29,7 +30,7 @@ export async function signIn(data: {
   return json;
 }
 
-const login = () => {
+const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false); // Track password visibility
@@ -54,7 +55,19 @@ const login = () => {
         await SecureStore.setItemAsync("user", JSON.stringify(user));
       }
 
-      router.replace("../account/dashboard"); // Go to the home dashboard page
+      // Check onboarding status before navigating
+      try {
+        const context = await getUserContext();
+        if (!context.user.onboarding_completed) {
+          router.replace("/takeAssessment");
+        } else {
+          router.replace("/account/dashboard");
+        }
+      } catch (contextErr) {
+        // Fallback — if context call fails, go to dashboard
+        console.error("Failed to fetch user context:", contextErr);
+        router.replace("/account/dashboard");
+      }
     } catch(err: any) {
       setError(err.message);
     } finally {
@@ -154,7 +167,7 @@ const login = () => {
       </View>
 
       <View className="flex-row justify-center pb-10">
-        <Text className="text-black">Don't have an account? </Text>
+        <Text className="text-black">Don&apos;t have an account? </Text>
         <Link href="/register" className="font-semibold text-black">
           Sign up
         </Link>
@@ -162,4 +175,4 @@ const login = () => {
     </ScrollView>
   );
 };
-export default login;
+export default Login;
