@@ -58,19 +58,37 @@ const HabitudeReport = () => {
                 <Text style={styles.cardHeader}>Your Personal Combination</Text>
                 <View style={styles.cardStackRow}>
                 <View style={styles.cardColumn}>
-                    <Text style={[styles.cardLabel, { color: parsedColor }]}>NOT ME</Text>
-                    <CardStack count={parsedNotMe} color={parsedColor} secondaryColor={parsedDarkColor} num={parsedNotMe} />
-                    </View>
-                    <View style={styles.cardColumn}>
-                    <Text style={[styles.cardLabel, { color: parsedColor }]}>SOMETIMES</Text>
-                    <CardStack count={parsedSometimesMe} color={parsedColor} secondaryColor={parsedDarkColor} num={parsedSometimesMe} />
-                    </View>
-                    <View style={styles.cardColumn}>
                     <Text style={[styles.cardLabel, { color: parsedColor }]}>THAT{"'"}S ME</Text>
-                    <CardStack count={parsedScore} color={parsedColor} secondaryColor={parsedDarkColor} num={parsedScore} />
-                    </View>
+                    <CardStack
+                    count={parsedScore}
+                    color={parsedColor}
+                    secondaryColor={parsedDarkColor}
+                    num={parsedScore}
+                    />
+                </View>
+
+                <View style={styles.cardColumn}>
+                    <Text style={[styles.cardLabel, { color: parsedColor }]}>SOMETIMES</Text>
+                    <CardStack
+                    count={parsedSometimesMe}
+                    color={parsedColor}
+                    secondaryColor={parsedDarkColor}
+                    num={parsedSometimesMe}
+                    />
+                </View>
+
+                <View style={styles.cardColumn}>
+                    <Text style={[styles.cardLabel, { color: parsedColor }]}>NOT ME</Text>
+                    <CardStack
+                    count={parsedNotMe}
+                    color={parsedColor}
+                    secondaryColor={parsedDarkColor}
+                    num={parsedNotMe}
+                    />
+                </View>
                 </View>
             </View>
+
 
             {content.cardBody ? (
                 <View style={styles.yourHabitsInfo}>
@@ -207,6 +225,7 @@ const styles = StyleSheet.create({
     cardColumn:
     {
         alignItems:"center",
+    
     },
     yourHabitsInfo:
     {

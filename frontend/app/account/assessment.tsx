@@ -5,7 +5,8 @@ import AssessmentResults from "./assessmentResult";
 import React, {useEffect, useState} from 'react'
 import * as SecureStore from "expo-secure-store";
 
-export const API_URL = "http://192.168.1.40:5500/api";
+export const API_URL = "http://localhost:5500/api";
+
 
 const Assessment = () => {
 
@@ -29,11 +30,9 @@ const Assessment = () => {
                 }
 
             );
-            console.log("   -> ", res);
-            console.log("API_URL:", API_URL);
-            console.log("ID", sessionId);
+           
             const data = await res.json();
-            console.log("raw response:", data);
+            
 
             if(data.success)
             {
