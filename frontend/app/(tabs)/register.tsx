@@ -61,7 +61,7 @@ const Register = () => {
             }
 
             // New user — always needs onboarding
-            router.replace("/takeAssessment");
+            router.replace("../takeAssessment");
         } catch(err: any) {
             setError(err.message);
         } finally {
