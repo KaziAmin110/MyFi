@@ -59,7 +59,7 @@ const Login = () => {
       try {
         const context = await getUserContext();
         if (!context.user.onboarding_completed) {
-          router.replace("/takeAssessment");
+          router.replace("../takeAssessment");
         } else {
           router.replace("/account/dashboard");
         }
