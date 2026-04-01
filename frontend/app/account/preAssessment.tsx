@@ -25,7 +25,7 @@ const preAssessment = () => {
                 <View style={styles.btn}>
                     <TouchableOpacity 
                         style={styles.assessmentBtn}
-                        onPress={() => router.push('/account/takeAssessment')}
+                        onPress={() => router.push('/takeAssessment')}
                     
                     >
                         <Text style={styles.assessmentBtnText}>Take assessment</Text>
