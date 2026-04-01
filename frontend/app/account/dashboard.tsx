@@ -6,8 +6,9 @@ import {
   Modal,
   Pressable,
   ScrollView,
+  Animated,
 } from "react-native";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useFocusEffect } from "expo-router";
 import Slider from "@react-native-community/slider";
 import * as SecureStore from "expo-secure-store";
@@ -15,11 +16,14 @@ import MaskedView from "@react-native-masked-view/masked-view";
 import { LinearGradient } from "expo-linear-gradient";
 import HabitCard from "../../components/HabitCard";
 import { Ionicons } from "@expo/vector-icons";
-import { appointmentsApi } from "../../utils/api";
+import { appointmentsApi  } from "../../utils/api";
+import {scale, verticalScale, moderateScale} from "../../utils/scale";
+import * as Haptics from "expo-haptics";
+
 
 const Dashboard = () => {
   const router = useRouter();
-  const [mood, setMood] = useState(60);
+  
   const [firstName, setFirstName] = useState("");
   const [anchorDate, setAnchorDate] = useState(new Date());
   const [appointmentDates, setAppointmentDates] = useState<string[]>([]);
@@ -28,8 +32,61 @@ const Dashboard = () => {
   const dayLabel = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const weekDates = weekInfo(anchorDate);
 
+  const sadShake = useRef(new Animated.Value(0)).current;
+  const happyShake = useRef(new Animated.Value(0)).current;
+  const sadScale = useRef(new Animated.Value(1)).current;
+  const happyScale = useRef(new Animated.Value(1)).current;
+  const sliderVal = useRef(50);
+  const lastZone = useRef<"sad" | "middle"| "happy">("middle");
+
+
   const [selectedHabit, setSelectedHabit] = useState<any>(null);
   const [habitOpen, setHabitOpen] = useState(false);
+  
+
+  const doShake = (rotation: Animated.Value, scale: Animated.Value) => {
+    Animated.parallel([
+      
+      Animated.sequence([
+        Animated.timing(scale, { toValue: 1.75, duration: 100, useNativeDriver: true }),
+        Animated.timing(scale, { toValue: 1, duration: 200, useNativeDriver: true }),
+      ]),
+      
+      Animated.sequence([
+        Animated.timing(rotation, { toValue: -1, duration: 80, useNativeDriver: true }),
+        Animated.timing(rotation, { toValue: 1, duration: 80, useNativeDriver: true }),
+        Animated.timing(rotation, { toValue: -0.5, duration: 60, useNativeDriver: true }),
+        Animated.timing(rotation, { toValue: 0, duration: 60, useNativeDriver: true }),
+      ]),
+    ]).start();
+  };
+
+  const handleMoodChange = (value: number) => {
+
+    sliderVal.current = value;
+    let currentZone: "sad" | "middle" |"happy" = "middle";
+
+    if(value <=25)
+      currentZone = "sad";
+    else if(value >= 75)
+      currentZone = "happy";
+
+    if(currentZone !== lastZone.current)
+    {
+      lastZone.current = currentZone;
+      if(currentZone === "sad")
+      {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        doShake(sadShake, sadScale);
+      }
+
+      if(currentZone === "happy")
+      {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        doShake(happyShake, happyScale);
+      }
+    }
+  };
 
   const openHabit = (habit: any) => {
     setSelectedHabit(habit);
@@ -82,12 +139,14 @@ const Dashboard = () => {
       return;
     }
 
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setAnchorDate(prev);
   };
 
   const handleNextWeek = () => {
     const next = new Date(anchorDate);
     next.setDate(next.getDate() + 7);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setAnchorDate(next);
   };
 
@@ -197,11 +256,23 @@ const Dashboard = () => {
             </Text>
 
             <View style={styles.sliderRow}>
-              <Image
+              <Animated.Image
                 source={require("../../assets/images/sad.png")}
-                style={[styles.moodIcon, { marginRight: 8 }]}
-                resizeMode="contain"
-              />
+                style={[styles.moodIcon, 
+                  { marginRight: 8 }, 
+                  {transform: [
+                  {
+                    rotate: sadShake.interpolate({
+                      inputRange: [-1, 1],
+                      outputRange: ["-15deg", "15deg"],
+                    }),
+                  },
+                  { scale: sadScale },
+                ],
+              },
+            ]}
+            resizeMode="contain"
+          />
               <View style={styles.sliderContainer}>
                 <LinearGradient
                   colors={["#BEFFC3", "#06BE00"]}
@@ -213,18 +284,30 @@ const Dashboard = () => {
                   style={styles.slider}
                   minimumValue={0}
                   maximumValue={100}
-                  value={mood}
-                  onValueChange={setMood}
+                  value={sliderVal.current}
+                  onValueChange={handleMoodChange}
                   minimumTrackTintColor="transparent"
                   maximumTrackTintColor="transparent"
                   thumbTintColor="#059C00"
                 />
               </View>
-              <Image
+              <Animated.Image
                 source={require("../../assets/images/happy.png")}
-                style={[styles.moodIcon, { marginLeft: 8 }]}
-                resizeMode="contain"
-              />
+                style={[styles.moodIcon, 
+                  { marginLeft: 8 }, 
+                  {transform: [
+                    {
+                      rotate: happyShake.interpolate({
+                        inputRange: [-1, 1],
+                        outputRange: ["-15deg", "15deg"],
+                      }),
+                    },
+                    { scale: happyScale },
+                  ],
+                },
+              ]}
+              resizeMode="contain"
+            />
             </View>
           </View>
 
@@ -247,7 +330,7 @@ const Dashboard = () => {
           </Pressable>
         </View>
 
-        {/*Habitude Card info — fixed height, sits at bottom */}
+        {/*Habitude Card info*/}
         <View style={styles.cardsDisplay}>
           <Text style={styles.cardTitle}>Learn about money habits</Text>
           <Text style={styles.cardSubtTitle}>
@@ -259,7 +342,7 @@ const Dashboard = () => {
         <Modal
           visible={habitOpen}
           transparent
-          animationType="fade"
+          animationType="slide"
           onRequestClose={closeHabit}
         >
           {/* dark backdrop */}
@@ -282,7 +365,7 @@ const Dashboard = () => {
                 {/* header row */}
                 <View style={styles.modalHeader}>
                   <Text style={styles.modalTitle}>{selectedHabit?.title}</Text>
-                  <Pressable onPress={closeHabit}>
+                  <Pressable onPress={closeHabit} style={{ position: "absolute", right: 8 }}>
                     <Text style={styles.closeX}>×</Text>
                   </Pressable>
                 </View>
@@ -308,6 +391,13 @@ const Dashboard = () => {
                     <View key={idx} style={styles.bulletRow}>
                       <Text style={styles.bullet}>•</Text>
                       <Text style={styles.bulletText}>{a}</Text>
+                    </View>
+                  ))}
+                  <Text style={styles.sectionTitle}>Disadvantages</Text>
+                  {selectedHabit?.disadvantages?.map((d: string, idx: number) => (
+                    <View key={idx} style={styles.bulletRow}>
+                      <Text style={styles.bullet}>•</Text>
+                      <Text style={styles.bulletText}>{d}</Text>
                     </View>
                   ))}
 
@@ -367,13 +457,13 @@ const styles = StyleSheet.create({
 
   title: {
     paddingTop: 60,
-    fontSize: 36,
+    fontSize: moderateScale(36),
     fontWeight: "600",
   },
   subtitle: {
     paddingTop: 6,
     color: "#3D3D3D",
-    fontSize: 14,
+    fontSize: moderateScale(14),
     fontWeight: "600",
   },
   tackle: {
@@ -392,7 +482,7 @@ const styles = StyleSheet.create({
     gap: 20,
   },
   monthName: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontWeight: "700",
     color: "#3D3D3D",
   },
@@ -455,7 +545,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   moneyMoodTitle: {
-    fontSize: 14,
+    fontSize: moderateScale(14),
     fontWeight: "600",
     color: "#3D3D3D",
     marginBottom: 4,
@@ -508,12 +598,12 @@ const styles = StyleSheet.create({
     flexDirection: "column",
   },
   appointmentTitle: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontWeight: "600",
     marginBottom: 3,
   },
   appointmentSubTitle: {
-    fontSize: 13,
+    fontSize: moderateScale(13),
     color: "#3D3D3D",
   },
   cardsDisplay: {
@@ -526,13 +616,13 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
   },
   cardTitle: {
-    fontSize: 15,
+    fontSize: moderateScale(15),
     fontWeight: "600",
     paddingTop: 6,
     paddingBottom: 2,
   },
   cardSubtTitle: {
-    fontSize: 11,
+    fontSize: moderateScale(11),
     color: "#3D3D3D",
   },
   backdrop: {
@@ -542,28 +632,37 @@ const styles = StyleSheet.create({
 
   modalCenter: {
     flex: 1,
-    justifyContent: "center",
+    justifyContent: "flex-end",
     alignItems: "center",
-    paddingHorizontal: 16,
+
   },
   habitModal: {
-    width: "90%",
+    width: "100%",
+    maxHeight: "75%",
     borderWidth: 4,
-    borderRadius: 28,
+    borderBottomWidth: 0, 
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    borderBottomLeftRadius: 0, 
+    borderBottomRightRadius: 0,
     backgroundColor: "#FFFFFF",
     padding: 12,
   },
 
   habitModalInner: {
     borderWidth: 3,
-    borderRadius: 22,
+    borderBottomWidth: 0,
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
     padding: 14,
   },
 
   modalHeader: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "center",
     paddingHorizontal: 8,
     paddingTop: 4,
   },
@@ -597,7 +696,8 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: "#6A6A6A",
     marginTop: 12,
-    marginBottom: 12,
+    marginBottom: 25,
+    paddingHorizontal: 55,
   },
 
   paragraph: {
@@ -605,6 +705,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     color: "#222",
     marginBottom: 18,
+    paddingRight: 25,
   },
 
   sectionTitle: {
@@ -617,6 +718,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     marginBottom: 10,
+    marginLeft: 10,
   },
 
   bullet: {
@@ -637,7 +739,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#3A7DFF",
     paddingHorizontal: 28,
     paddingVertical: 12,
-    borderRadius: 999,
+    borderRadius: 45,
+    marginBottom: 15,
+  
   },
 
   ctaText: {
