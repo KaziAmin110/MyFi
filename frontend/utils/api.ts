@@ -60,36 +60,68 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}): Pro
     });
 
     if (response.status === 401) {
-      if (!isRefreshing) {
-        isRefreshing = true;
-        try {
-          const newToken = await refreshTokens();
-          isRefreshing = false;
-          onRefreshed(newToken);
-        } catch (error) {
-          isRefreshing = false;
-          await SecureStore.deleteItemAsync("token");
-          await SecureStore.deleteItemAsync("refreshToken");
-          await SecureStore.deleteItemAsync("user");
-          router.replace("/login");
-          throw error;
-        }
+      // A refresh is already in progress from another concurrent call — queue behind it
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          subscribeTokenRefresh(async (token) => {
+            try {
+              const retryResponse = await fetch(`${API_URL}${endpoint}`, {
+                ...options,
+                headers: {
+                  ...headers,
+                  ...options.headers,
+                  Authorization: `Bearer ${token}`,
+                },
+              });
+              const retryJson = await retryResponse.json();
+              if (!retryResponse.ok) {
+                const err = new Error(retryJson.message || "Something went wrong") as any;
+                if (retryJson.code) err.code = retryJson.code;
+                reject(err);
+              } else {
+                resolve(retryJson);
+              }
+            } catch (err) {
+              reject(err);
+            }
+          });
+        });
       }
 
-      return new Promise((resolve) => {
-        subscribeTokenRefresh(async (token) => {
-          const retryHeaders = {
-            ...headers,
-            ...options.headers,
-            Authorization: `Bearer ${token}`,
-          };
-          const retryResponse = await fetch(`${API_URL}${endpoint}`, {
-            ...options,
-            headers: retryHeaders,
-          });
-          resolve(await retryResponse.json());
-        });
+      // First caller to hit 401 — kick off refresh, then retry own request directly
+      isRefreshing = true;
+      let newToken: string;
+      try {
+        newToken = await refreshTokens();
+      } catch (refreshError) {
+        isRefreshing = false;
+        refreshSubscribers = [];
+        await SecureStore.deleteItemAsync("token");
+        await SecureStore.deleteItemAsync("refreshToken");
+        await SecureStore.deleteItemAsync("user");
+        router.replace("/login");
+        throw refreshError;
+      }
+
+      isRefreshing = false;
+      onRefreshed(newToken); // notify any queued concurrent callers
+
+      // Retry this request with the fresh token
+      const retryResponse = await fetch(`${API_URL}${endpoint}`, {
+        ...options,
+        headers: {
+          ...headers,
+          ...options.headers,
+          Authorization: `Bearer ${newToken}`,
+        },
       });
+      const retryJson = await retryResponse.json();
+      if (!retryResponse.ok) {
+        const retryErr = new Error(retryJson.message || "Something went wrong") as any;
+        if (retryJson.code) retryErr.code = retryJson.code;
+        throw retryErr;
+      }
+      return retryJson;
     }
 
     const json = await response.json();

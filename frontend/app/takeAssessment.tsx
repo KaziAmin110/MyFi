@@ -39,7 +39,9 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const SWIPE_THRESHOLD = 100;
 
 const CARD_WIDTH = SCREEN_WIDTH * 0.85;
-const CARD_HEIGHT = CARD_WIDTH * (400 / 336);
+const CARD_HEIGHT = CARD_WIDTH * 1.35;
+// Container height: paddingTop(28) + front card top(24) + card height + 10px buffer
+const CARD_CONTAINER_HEIGHT = CARD_HEIGHT + 62;
 
 const CARD_BORDER_COLORS = [
   "#43A047",
@@ -99,6 +101,8 @@ export default function AssessmentScreen() {
 
   // Animation position for current card
   const position = useRef(new Animated.ValueXY()).current;
+  // 0→1 as front card is dragged toward swipe threshold (drives back card animations)
+  const dragProgress = useRef(new Animated.Value(0)).current;
 
   // Refs for latest values so panResponder doesn't read stale state
   const currentIndexRef = useRef(currentIndex);
@@ -109,6 +113,12 @@ export default function AssessmentScreen() {
   useEffect(() => {
     currentIndexRef.current = currentIndex;
     position.setValue({ x: 0, y: 0 });
+    // Animate dragProgress to 0 smoothly so the new back card settles without snapping
+    Animated.timing(dragProgress, {
+      toValue: 0,
+      duration: 120,
+      useNativeDriver: false,
+    }).start();
   }, [currentIndex, position]);
 
   useEffect(() => {
@@ -271,13 +281,22 @@ export default function AssessmentScreen() {
 
   const swipeCard = useCallback(
     (answer: Answer, toX: number, toY: number) => {
-      Animated.timing(position, {
-        toValue: { x: toX, y: toY },
-        duration: 250,
-        useNativeDriver: false,
-      }).start(() => recordAnswer(answer));
+      Animated.parallel([
+        Animated.timing(position, {
+          toValue: { x: toX, y: toY },
+          duration: 250,
+          useNativeDriver: false,
+        }),
+        Animated.timing(dragProgress, {
+          toValue: 1,
+          duration: 250,
+          useNativeDriver: false,
+        }),
+      ]).start(() => {
+        recordAnswer(answer);
+      });
     },
-    [position, recordAnswer],
+    [position, dragProgress, recordAnswer],
   );
 
   const panResponder = useRef(
@@ -285,6 +304,10 @@ export default function AssessmentScreen() {
       onStartShouldSetPanResponder: () => true,
       onPanResponderMove: (_, gesture) => {
         position.setValue({ x: gesture.dx, y: gesture.dy });
+        const absDx = Math.abs(gesture.dx);
+        const absDy = Math.max(0, -gesture.dy); // only upward drag counts
+        const progress = Math.min(Math.max(absDx, absDy) / SWIPE_THRESHOLD, 1);
+        dragProgress.setValue(progress);
       },
       onPanResponderRelease: (_, gesture) => {
         if (gesture.dx < -SWIPE_THRESHOLD) {
@@ -292,24 +315,36 @@ export default function AssessmentScreen() {
             toValue: { x: -SCREEN_WIDTH * 1.5, y: 0 },
             duration: 250,
             useNativeDriver: false,
-          }).start(() => recordAnswer("not_me"));
+          }).start(() => {
+            recordAnswer("not_me");
+          });
         } else if (gesture.dx > SWIPE_THRESHOLD) {
           Animated.timing(position, {
             toValue: { x: SCREEN_WIDTH * 1.5, y: 0 },
             duration: 250,
             useNativeDriver: false,
-          }).start(() => recordAnswer("thats_me"));
+          }).start(() => {
+            recordAnswer("thats_me");
+          });
         } else if (gesture.dy < -SWIPE_THRESHOLD) {
           Animated.timing(position, {
             toValue: { x: 0, y: -SCREEN_HEIGHT },
             duration: 250,
             useNativeDriver: false,
-          }).start(() => recordAnswer("sometimes"));
+          }).start(() => {
+            recordAnswer("sometimes");
+          });
         } else {
-          Animated.spring(position, {
-            toValue: { x: 0, y: 0 },
-            useNativeDriver: false,
-          }).start();
+          Animated.parallel([
+            Animated.spring(position, {
+              toValue: { x: 0, y: 0 },
+              useNativeDriver: false,
+            }),
+            Animated.spring(dragProgress, {
+              toValue: 0,
+              useNativeDriver: false,
+            }),
+          ]).start();
         }
       },
     }),
@@ -457,6 +492,24 @@ export default function AssessmentScreen() {
   const backBorderColor =
     CARD_BORDER_COLORS[(currentIndex + 2) % CARD_BORDER_COLORS.length];
 
+  // Back card animated styles — driven by drag progress (0 = resting, 1 = swiped)
+  const back1Top = dragProgress.interpolate({ inputRange: [0, 1], outputRange: [12, 24] });
+  const back1Width = dragProgress.interpolate({ inputRange: [0, 1], outputRange: [CARD_WIDTH * 0.92, CARD_WIDTH] });
+  const back1Height = dragProgress.interpolate({ inputRange: [0, 1], outputRange: [CARD_HEIGHT * 0.92, CARD_HEIGHT] });
+  const back1Opacity = dragProgress.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] });
+
+  const back2Top = dragProgress.interpolate({ inputRange: [0, 1], outputRange: [2, 12] });
+  const back2Width = dragProgress.interpolate({ inputRange: [0, 1], outputRange: [CARD_WIDTH * 0.84, CARD_WIDTH * 0.92] });
+  const back2Height = dragProgress.interpolate({ inputRange: [0, 1], outputRange: [CARD_HEIGHT * 0.84, CARD_HEIGHT * 0.92] });
+  const back2Opacity = dragProgress.interpolate({ inputRange: [0, 1], outputRange: [0.3, 0.6] });
+
+  // Smoothly animate back card text from back-card size to front-card size
+  const backCardTextScale = dragProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [19 / 24, 1],
+    extrapolate: "clamp",
+  });
+
   return (
     <SafeAreaView style={styles.container}>
       {/* ── Header ── */}
@@ -490,24 +543,32 @@ export default function AssessmentScreen() {
       <View style={styles.cardContainer}>
         {/* Back card */}
         {currentIndex + 2 < totalQuestions && (
-          <View
+          <Animated.View
             style={[
               styles.card,
               styles.cardBack2,
               { borderColor: backBorderColor },
+              { top: back2Top, width: back2Width, height: back2Height, opacity: back2Opacity },
             ]}
           />
         )}
 
-        {/* Middle card */}
+        {/* Middle card — shows next question and animates toward front as card is dragged */}
         {currentIndex + 1 < totalQuestions && (
-          <View
+          <Animated.View
             style={[
               styles.card,
               styles.cardBack1,
               { borderColor: middleBorderColor },
+              { top: back1Top, width: back1Width, height: back1Height, opacity: back1Opacity },
             ]}
-          />
+          >
+            <Animated.View style={[styles.cardTextContainer, { transform: [{ scale: backCardTextScale }] }]}>
+              <Text style={styles.cardText}>
+                {questions[currentIndex + 1]?.text}
+              </Text>
+            </Animated.View>
+          </Animated.View>
         )}
 
         {/* Front / active card */}
@@ -826,8 +887,8 @@ const styles = StyleSheet.create({
 
   // ── Card Stack ───────────────────────────────────────────────────────────
   cardContainer: {
-    flex: 1,
     width: "100%",
+    height: CARD_CONTAINER_HEIGHT,
     alignItems: "center",
     justifyContent: "flex-start",
     paddingTop: 28,
@@ -854,17 +915,10 @@ const styles = StyleSheet.create({
 
   cardBack1: {
     zIndex: 5,
-    top: 12,
-    width: CARD_WIDTH * 0.92,
-    height: CARD_HEIGHT * 0.92,
-    opacity: 0.6,
+    overflow: "hidden",
   },
   cardBack2: {
     zIndex: 1,
-    top: 2,
-    width: CARD_WIDTH * 0.84,
-    height: CARD_HEIGHT * 0.84,
-    opacity: 0.3,
   },
 
   cardTextContainer: {
@@ -882,6 +936,14 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#1A2E50",
     lineHeight: 34,
+    letterSpacing: -0.3,
+  },
+  cardBackText: {
+    fontSize: 19,
+    fontWeight: "600",
+    textAlign: "center",
+    color: "#1A2E50",
+    lineHeight: 28,
     letterSpacing: -0.3,
   },
 
