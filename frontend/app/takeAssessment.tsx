@@ -44,11 +44,11 @@ const CARD_HEIGHT = CARD_WIDTH * 1.25;
 const CARD_CONTAINER_HEIGHT = CARD_HEIGHT + 62;
 
 const CARD_BORDER_COLORS = [
-  "#43A047",
-  "#1E88E5",
-  "#E53935",
-  "#FFD600",
-  "#8E24AA",
+  "#3A8F3F",
+  "#21428F",
+  "#C81220",
+  "#E5A800",
+  "#7B1FA2",
 ];
 
 function answerToValue(answer: Answer): number {
@@ -496,12 +496,12 @@ export default function AssessmentScreen() {
   const back1Top = dragProgress.interpolate({ inputRange: [0, 1], outputRange: [12, 24] });
   const back1Width = dragProgress.interpolate({ inputRange: [0, 1], outputRange: [CARD_WIDTH * 0.92, CARD_WIDTH] });
   const back1Height = dragProgress.interpolate({ inputRange: [0, 1], outputRange: [CARD_HEIGHT * 0.92, CARD_HEIGHT] });
-  const back1Opacity = dragProgress.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] });
+  const back1Opacity = dragProgress.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] });
 
   const back2Top = dragProgress.interpolate({ inputRange: [0, 1], outputRange: [2, 12] });
   const back2Width = dragProgress.interpolate({ inputRange: [0, 1], outputRange: [CARD_WIDTH * 0.84, CARD_WIDTH * 0.92] });
   const back2Height = dragProgress.interpolate({ inputRange: [0, 1], outputRange: [CARD_HEIGHT * 0.84, CARD_HEIGHT * 0.92] });
-  const back2Opacity = dragProgress.interpolate({ inputRange: [0, 1], outputRange: [0.3, 0.6] });
+  const back2Opacity = dragProgress.interpolate({ inputRange: [0, 1], outputRange: [0.75, 0.9] });
 
   // Smoothly animate back card text from back-card size to front-card size
   const backCardTextScale = dragProgress.interpolate({
@@ -863,7 +863,7 @@ const styles = StyleSheet.create({
     height: 9,
     backgroundColor: "#E2E7F0",
     borderRadius: 5,
-    marginBottom: 14,
+    marginBottom: 6,
   },
   progressBarFill: {
     height: 9,
@@ -881,7 +881,8 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 16,
     color: "#1A2E50",
-    marginBottom: 12,
+    marginTop: 8,
+    marginBottom: 20,
     fontWeight: "700",
     letterSpacing: 0.1,
   },
@@ -952,7 +953,6 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     resizeMode: "contain",
-    opacity: 0.5,
   },
   logoTopLeft: {
     position: "absolute",
@@ -1035,57 +1035,57 @@ const styles = StyleSheet.create({
   },
 
   actionBtn: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 68,
+    height: 68,
+    borderRadius: 34,
     justifyContent: "center",
     alignItems: "center",
     shadowColor: "#1A2E50",
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
-    borderWidth: 2,
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 8,
+    borderWidth: 2.5,
     alignSelf: "center",
   },
   btnNotMe: {
     backgroundColor: "#FFFFFF",
-    borderColor: "#F0D0D0",
+    borderColor: "#E8B4B2",
   },
   btnNotMeActive: {
-    backgroundColor: "#E53935",
-    borderColor: "#E53935",
+    backgroundColor: "#C81220",
+    borderColor: "#C81220",
   },
   btnSometimes: {
     backgroundColor: "#FFFFFF",
-    borderColor: "#F5E0B8",
+    borderColor: "#E5C87A",
   },
   btnSometimesActive: {
-    backgroundColor: "#F5A623",
-    borderColor: "#F5A623",
+    backgroundColor: "#E5A800",
+    borderColor: "#E5A800",
   },
   btnThatsMe: {
     backgroundColor: "#FFFFFF",
-    borderColor: "#C8E6C9",
+    borderColor: "#A5D6A7",
   },
   btnThatsMeActive: {
-    backgroundColor: "#43A047",
-    borderColor: "#43A047",
+    backgroundColor: "#3A8F3F",
+    borderColor: "#3A8F3F",
   },
-  btnImg: { width: 26, height: 26, resizeMode: "contain" },
+  btnImg: { width: 32, height: 32, resizeMode: "contain" },
   btnImgOverlay: { position: "absolute" },
   btnLabel: {
-    fontSize: 11,
-    fontWeight: "600",
+    fontSize: 12,
+    fontWeight: "700",
     textAlign: "center",
-    marginTop: 6,
+    marginTop: 7,
     letterSpacing: 0.2,
     color: "#AAB2C0",
   },
 
   hint: {
     fontSize: 12,
-    color: "#3059AD",
+    color: "#1A2E50",
     marginBottom: 14,
     fontWeight: "600",
   },
