@@ -109,6 +109,7 @@ export const signUp = async (
       success: true,
       message: "User Created Successfully",
       accessToken,
+      refreshToken,
       user: {
         id: user.id,
         name: user.name,
@@ -371,23 +372,22 @@ export const resetPassword = async (
   }
 };
 
-// Uses Refresh Token Stored in Cookies to give a new access token to a User
+// Uses Refresh Token to give a new access token to a User
 export const refreshAccess = async (
   req: Request & { cookies?: any },
   res: Response,
   next: NextFunction,
 ): Promise<Response | void> => {
   try {
-    // Get Refresh Token from Cookies
-    const cookies = req.cookies;
-    // Given JWT Cookie Doesnt Exist
-    if (!cookies?.refreshToken) {
-      const error = new Error("JWT refresh failed - No JWT Cookie Found");
+    // Get Refresh Token from Cookies or Request Body
+    const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
+
+    if (!refreshToken) {
+      const error = new Error("JWT refresh failed - No Refresh Token Found");
       (error as any).statusCode = 401;
       throw error;
     }
 
-    const refreshToken = cookies.refreshToken;
     const user = await getUserByAttribute("refresh_token", refreshToken);
 
     if (!user) {
@@ -401,7 +401,7 @@ export const refreshAccess = async (
     // Verify refresh token synchronously (throws on invalid)
     try {
       const payload = jwt.verify(refreshToken, REFRESH_SECRET as string) as any;
-      if (!payload || user.id !== payload.id) {
+      if (!payload || user.id !== payload.userId) {
         const error = new Error(
           "JWT refresh failed - Unable to Authenticate User.",
         );

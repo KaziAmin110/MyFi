@@ -45,11 +45,13 @@ const Login = () => {
       const data = await signIn({ email, password });
 
       // Extract what the backend returns
-      const token = data.token ?? data.accessToken ?? data.jwt;
-      const user  = data.user;
+      const token = data.accessToken ?? data.token ?? data.jwt;
+      const refreshToken = data.refreshToken;
+      const user = data.user;
 
       // Store safely
-      await SecureStore.setItemAsync("token", String(token));
+      if (token) await SecureStore.setItemAsync("token", String(token));
+      if (refreshToken) await SecureStore.setItemAsync("refreshToken", String(refreshToken));
 
       if (user) {
         await SecureStore.setItemAsync("user", JSON.stringify(user));
