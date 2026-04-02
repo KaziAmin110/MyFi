@@ -7,8 +7,10 @@ import {
   Pressable,
   ScrollView,
   Animated,
+  useWindowDimensions,
 } from "react-native";
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
 import Slider from "@react-native-community/slider";
 import * as SecureStore from "expo-secure-store";
@@ -17,12 +19,17 @@ import { LinearGradient } from "expo-linear-gradient";
 import HabitCard from "../../components/HabitCard";
 import { Ionicons } from "@expo/vector-icons";
 import { appointmentsApi  } from "../../utils/api";
-import {scale, verticalScale, moderateScale} from "../../utils/scale";
+import { moderateScale } from "../../utils/scale";
 import * as Haptics from "expo-haptics";
 
 
 const Dashboard = () => {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const isTablet = width > 500;
+  const maxWidth = 600;
+  const contentWidth = width > maxWidth ? maxWidth : "100%";
   
   const [firstName, setFirstName] = useState("");
   const [anchorDate, setAnchorDate] = useState(new Date());
@@ -164,9 +171,9 @@ const Dashboard = () => {
       end={{ x: 0.5, y: 0.4 }}
       style={styles.background}
     >
-      <View style={styles.container}>
+      <View style={[styles.container, { paddingTop: insets.top + (isTablet ? 20 : 10) }]}>
         {/* Upper content — spreads evenly to fill available space */}
-        <View style={styles.upperContent}>
+        <View style={[styles.upperContent, { width: contentWidth }]}>
           <MaskedView
             maskElement={<Text style={styles.title}>Hello {firstName}!</Text>}
           >
@@ -331,12 +338,14 @@ const Dashboard = () => {
         </View>
 
         {/*Habitude Card info*/}
-        <View style={styles.cardsDisplay}>
-          <Text style={styles.cardTitle}>Learn about money habits</Text>
-          <Text style={styles.cardSubtTitle}>
-            Press any card for more infomation
-          </Text>
-          <HabitCard onSelect={openHabit} />
+        <View style={[styles.cardsDisplay, { paddingBottom: Math.max(insets.bottom, 20) }]}>
+          <View style={{ width: contentWidth, alignItems: "center", justifyContent: "center", flex: 1 }}>
+            <Text style={styles.cardTitle}>Learn about money habits</Text>
+            <Text style={styles.cardSubtTitle}>
+              Press any card for more infomation
+            </Text>
+            <HabitCard onSelect={openHabit} />
+          </View>
         </View>
         {/*Partial View*/}
         <Modal
@@ -449,40 +458,43 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   upperContent: {
-    flex: 1,
+    flex: 1.4,
     width: "100%",
     alignItems: "center",
-    justifyContent: "space-evenly",
+    justifyContent: "space-between",
+    paddingBottom: moderateScale(5),
   },
 
   title: {
-    paddingTop: 60,
-    fontSize: moderateScale(36),
-    fontWeight: "600",
+    paddingTop: 0,
+    fontSize: moderateScale(32),
+    fontWeight: "700",
+    textAlign: "center",
   },
   subtitle: {
-    paddingTop: 6,
+    paddingTop: 0,
     color: "#3D3D3D",
-    fontSize: moderateScale(14),
+    fontSize: moderateScale(13),
     fontWeight: "600",
   },
   tackle: {
     color: "#06BE00",
   },
   calendar: {
-    paddingVertical: 14,
+    paddingVertical: moderateScale(2),
     paddingHorizontal: 20,
     width: "100%",
+    flexShrink: 2,
   },
   calendarHeader: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: moderateScale(4),
     gap: 20,
   },
   monthName: {
-    fontSize: moderateScale(16),
+    fontSize: moderateScale(15),
     fontWeight: "700",
     color: "#3D3D3D",
   },
@@ -498,8 +510,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   dayLabel: {
-    marginBottom: 6,
-    fontSize: 12,
+    marginBottom: 4,
+    fontSize: 11,
   },
   todayLabel: {
     color: "#000000",
@@ -518,9 +530,9 @@ const styles = StyleSheet.create({
     color: "#000000",
   },
   dateBubble: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     backgroundColor: "#FFFFFF",
     alignItems: "center",
     justifyContent: "center",
@@ -538,11 +550,17 @@ const styles = StyleSheet.create({
   },
   moneyMood: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 18,
-    width: "90%",
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    marginBottom: 14,
+    borderRadius: 24,
+    width: "92%",
+    paddingVertical: moderateScale(10),
+    paddingHorizontal: moderateScale(24),
+    flexShrink: 1,
+    // Add subtle shadow for premium feel
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 3,
   },
   moneyMoodTitle: {
     fontSize: moderateScale(14),
@@ -580,18 +598,24 @@ const styles = StyleSheet.create({
 
   appointmentDisplay: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 18,
-    width: "90%",
-    paddingVertical: 18,
-    paddingHorizontal: 24,
-    marginBottom: 16,
+    borderRadius: 24,
+    width: "92%",
+    paddingVertical: moderateScale(12),
+    paddingHorizontal: moderateScale(24),
     flexDirection: "row",
     alignItems: "center",
+    flexShrink: 1,
+    // Add subtle shadow
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 3,
   },
   calPic: {
     marginRight: 12,
-    width: 44,
-    height: 44,
+    width: 36,
+    height: 36,
   },
   appointmentText: {
     flex: 1,
@@ -607,22 +631,22 @@ const styles = StyleSheet.create({
     color: "#3D3D3D",
   },
   cardsDisplay: {
+    flex: 1,
     alignItems: "center",
     backgroundColor: "#FFFFFF",
     width: "100%",
-    paddingTop: 10,
-    paddingBottom: 84,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    paddingTop: 8,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
   },
   cardTitle: {
-    fontSize: moderateScale(15),
+    fontSize: moderateScale(14),
     fontWeight: "600",
-    paddingTop: 6,
-    paddingBottom: 2,
+    paddingTop: 4,
+    paddingBottom: 0,
   },
   cardSubtTitle: {
-    fontSize: moderateScale(11),
+    fontSize: moderateScale(10),
     color: "#3D3D3D",
   },
   backdrop: {

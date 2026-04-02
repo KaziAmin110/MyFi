@@ -6,9 +6,11 @@ import {
   Image,
   Pressable,
   Animated,
+  useWindowDimensions,
 } from "react-native";
 import { useRef, useCallback } from "react";
 import * as Haptics from "expo-haptics";
+import { moderateScale } from "../utils/scale";
 
 type Habit = {
   id: string;
@@ -26,11 +28,17 @@ type HabitCardsProps = {
 };
 
 const AnimatedCard = ({ item, onSelect }: { item: Habit; onSelect: (habit: Habit) => void }) => {
-  const scale = useRef(new Animated.Value(1)).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const { width, height } = useWindowDimensions();
+  
+  // Calculate responsive dimensions
+  const isTablet = width > 500;
+  const cardWidth = isTablet ? 180 : Math.min(135, width * 0.35);
+  const cardHeight = isTablet ? 250 : Math.min(170, height * 0.21);
 
   const handlePressIn = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Animated.spring(scale, {
+    Animated.spring(scaleAnim, {
       toValue: 0.93,
       useNativeDriver: true,
       speed: 50,
@@ -39,7 +47,7 @@ const AnimatedCard = ({ item, onSelect }: { item: Habit; onSelect: (habit: Habit
   };
 
   const handlePressOut = () => {
-    Animated.spring(scale, {
+    Animated.spring(scaleAnim, {
       toValue: 1,
       useNativeDriver: true,
       speed: 20,
@@ -48,20 +56,20 @@ const AnimatedCard = ({ item, onSelect }: { item: Habit; onSelect: (habit: Habit
   };
 
   return (
-    <Animated.View style={[styles.pressable, { transform: [{ scale }] }]}>
+    <Animated.View style={[styles.pressable, { transform: [{ scale: scaleAnim }] }]}>
       <Pressable
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         onPress={() => onSelect(item)}
       >
-        <View style={[styles.outerCard, { borderColor: item.borderColor }]}>
+        <View style={[styles.outerCard, { borderColor: item.borderColor, width: cardWidth, height: cardHeight }]}>
           <View style={[styles.innerBorder, { borderColor: item.borderColor }]}>
             <View style={styles.cardContent}>
               <Text style={styles.title}>{item.title}</Text>
               <View style={styles.imageContainer}>
                 <Image
                   source={item.image}
-                  style={styles.icon}
+                  style={[styles.icon, { height: cardHeight * 0.45, width: cardWidth * 0.7 }]}
                   resizeMode="contain"
                 />
               </View>
@@ -276,7 +284,7 @@ const styles = StyleSheet.create({
   },
   title: {
     width: "100%",
-    fontSize: 14,
+    fontSize: moderateScale(14),
     fontWeight: "700",
     color: "#5A5A5A",
     textAlign: "center",
