@@ -30,7 +30,10 @@ const HabitudeReport = () => {
             showsVerticalScrollIndicator={false}
         >
             <View style={styles.headerContainer}>
-                <TouchableOpacity onPress={() => router.push("/account/assessment")} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <TouchableOpacity
+                    onPress={() => router.replace("/account/assessment")}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
                     <Image
                         source={require("../../assets/images/resultDisplay/backArrow.png")} 
                         style={styles.backArrow}
