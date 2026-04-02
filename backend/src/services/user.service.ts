@@ -53,10 +53,13 @@ export const uploadFile = async (
   try {
     const { data, error } = await supabase.storage
       .from("avatars")
-      .upload(filePath, file.buffer);
+      .upload(filePath, file.buffer, {
+        contentType: file.mimetype,
+        upsert: true,
+      });
 
     if (error) {
-      console.error("Supbase error uploading file:", error.message);
+      console.error("Supabase error uploading file:", error.message);
       return null;
     }
 

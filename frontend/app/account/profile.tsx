@@ -15,7 +15,8 @@ import {
   Image
 } from "react-native";
 import { router, useFocusEffect } from "expo-router";
-import { getUserContext, updateProfile, changePassword, UserData } from "../../services/user.service";
+import * as ImagePicker from "expo-image-picker";
+import { getUserContext, updateProfile, changePassword, updateAvatar, UserData } from "../../services/user.service";
 import { Ionicons } from "@expo/vector-icons";
 
 export const API_URL = "http://localhost:5500/api/auth";
@@ -59,6 +60,7 @@ export default function Profile() {
   // Modals Visibility
   const [isUpdateModalVisible, setIsUpdateModalVisible] = useState(false);
   const [isPasswordModalVisible, setIsPasswordModalVisible] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   // Form States
   const [newName, setNewName] = useState("");
@@ -137,6 +139,54 @@ export default function Profile() {
     }
   };
 
+  const handleEditAvatar = async () => {
+    try {
+      // Request permissions
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Permission Denied", "We need access to your photos to update your profile picture.");
+        return;
+      }
+
+      // Launch picker
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets[0]) {
+        const selectedImage = result.assets[0];
+        
+        // Prepare FormData
+        const formData = new FormData();
+        const uriParts = selectedImage.uri.split(".");
+        const fileType = uriParts[uriParts.length - 1];
+
+        // @ts-ignore - React Native FormData expects an object for the file
+        formData.append("avatar", {
+          uri: selectedImage.uri,
+          name: `avatar.${fileType}`,
+          type: `image/${fileType}`,
+        });
+
+        setUploadingAvatar(true);
+        const updatedUser = await updateAvatar(formData);
+        setUser(updatedUser);
+        
+        // Update local storage
+        await SecureStore.setItemAsync("user", JSON.stringify(updatedUser));
+        Alert.alert("Success", "Profile picture updated successfully!");
+      }
+    } catch (error: any) {
+      console.error("Avatar upload error:", error);
+      Alert.alert("Error", error.message || "Failed to update profile picture.");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
   if (loading && !user) {
     return (
       <View style={[styles.container, { justifyContent: "center" }]}>
@@ -148,13 +198,12 @@ export default function Profile() {
 
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom + 90 }]}>
-      {/* Page title and avatar */}
+      {/* Avatar Section */}
       <View style={styles.header}>
         <LinearGradient
           colors={["#A5C2F0", "#BCD1F0"]}
           style={StyleSheet.absoluteFill}
         />
-        <Text style={styles.title}>Profile</Text>
 
         {/* Avatar */}
         <View style={styles.avatarContainer}>
@@ -164,6 +213,20 @@ export default function Profile() {
             <View style={styles.avatarPlaceholder}>
               <Ionicons name="person" size={50} color="#3059AD" />
             </View>
+          )}
+          
+          {uploadingAvatar ? (
+            <View style={styles.uploadingOverlay}>
+              <ActivityIndicator color="#fff" />
+            </View>
+          ) : (
+            <TouchableOpacity 
+              style={styles.editAvatarButton} 
+              onPress={handleEditAvatar}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="camera" size={22} color="#fff" />
+            </TouchableOpacity>
           )}
         </View>
       </View>
@@ -355,18 +418,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#BCD1F0",
   },
   header: {
-    height: 240, // Slightly more compact header
+    height: 200, // Reduced height now that title is gone
     alignItems: "center",
     justifyContent: "center",
-    paddingTop: 30, 
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
-  },
-  title: {
-    color: "#fff",
-    fontSize: 28,
-    fontWeight: "700",
-    marginBottom: 0,
   },
   avatarContainer: {
     position: "absolute",
@@ -375,25 +431,51 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: 60,
     backgroundColor: "#fff",
-    borderWidth: 3,
+    borderWidth: 4, // Increased border thickness
     borderColor: "#fff",
-    elevation: 8,
+    elevation: 10,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    overflow: "hidden",
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    overflow: "visible", // To allow button to show clearly
     alignItems: "center",
     justifyContent: "center",
   },
   avatarImage: {
     width: "100%",
     height: "100%",
+    borderRadius: 60, // Ensure image itself is also rounded
   },
   avatarPlaceholder: {
     width: "100%",
     height: "100%",
     backgroundColor: "#F3F4F6",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 60,
+  },
+  editAvatarButton: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    backgroundColor: "#3059AD",
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 3,
+    borderColor: "#fff",
+    elevation: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 5,
+  },
+  uploadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
     alignItems: "center",
     justifyContent: "center",
   },
