@@ -7,6 +7,7 @@ import {
   signOut,
   signUp,
   verifyResetToken,
+  refreshAccess,
 } from "../controllers/auth.controller";
 
 const authRouter = Router();
@@ -17,5 +18,6 @@ authRouter.post("/sign-out", authenticateUser, signOut);
 authRouter.post("/forgot-password", forgotPassword);
 authRouter.post("/verify-token", verifyResetToken);
 authRouter.post("/reset-password", resetPassword);
+authRouter.post("/refresh-token", refreshAccess);
 
 export default authRouter;

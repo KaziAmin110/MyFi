@@ -42,7 +42,7 @@ const styles = StyleSheet.create({
     },
     card: {
         width: scale(47),
-        height: verticalScale(30),
+        height: verticalScale(63),
         borderRadius: moderateScale(5),
         alignItems: "center",
         justifyContent: "center",

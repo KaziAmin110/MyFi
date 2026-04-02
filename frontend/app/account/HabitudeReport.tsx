@@ -30,7 +30,11 @@ const HabitudeReport = () => {
             showsVerticalScrollIndicator={false}
         >
             <View style={styles.headerContainer}>
-                <TouchableOpacity onPress={() => router.push("/account/assessment")} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <TouchableOpacity
+                    onPress={() => router.replace("/account/assessment")}
+                    style={styles.backButton}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
                     <Image
                         source={require("../../assets/images/resultDisplay/backArrow.png")} 
                         style={styles.backArrow}
@@ -158,6 +162,11 @@ const styles = StyleSheet.create({
         alignItems:"center",
         justifyContent:"center",
     },
+    backButton: 
+    {
+        padding:scale(10),
+        marginLeft: scale(-10),
+    },
     heading:
     {
         fontSize: moderateScale(20),
@@ -181,8 +190,8 @@ const styles = StyleSheet.create({
     {
         backgroundColor: "#FFFFFF",
         borderRadius: moderateScale(20),
-        paddingVertical: 25,
-        paddingHorizontal: 20,
+        paddingVertical: scale(25),
+        paddingHorizontal: scale(20),
         flex:1,
     },
     forYouText:
@@ -238,7 +247,6 @@ const styles = StyleSheet.create({
     {
         fontSize: moderateScale(15),
         fontWeight: "600",
-        marginBottom: verticalScale(5),
         textAlign:"center"
     },
     cardBody: 
@@ -246,6 +254,7 @@ const styles = StyleSheet.create({
         fontSize: moderateScale(13),
         color: "#3D3D3D",
         lineHeight: moderateScale(22),
+        padding: scale(10),
     },
     expand:
     {
@@ -261,12 +270,14 @@ const styles = StyleSheet.create({
     bulletContainer: 
     {
         marginTop: verticalScale(4),
+        padding: scale(10),
     },
     bulletRow: 
     {
         flexDirection: "row",
         alignItems: "flex-start",
         marginBottom: verticalScale(3),
+        
     },
     bullet: 
     {

@@ -127,7 +127,7 @@ export const updateAvatar = async (
 
     const fileExt = path.extname(file.originalname);
     const fileName = `${user_id}-${Date.now()}${fileExt}`;
-    const filePath = `public/avatars/${fileName}`;
+    const filePath = fileName; // Upload directly to the bucket root
 
     const publicUrl = await uploadFile(file, filePath);
 

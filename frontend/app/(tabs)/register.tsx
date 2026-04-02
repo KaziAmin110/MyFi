@@ -52,10 +52,13 @@ const Register = () => {
 
             // Auto-login after registration
             const loginData = await signIn({ email, password });
-            const token = loginData.token ?? loginData.accessToken ?? loginData.jwt;
+            const token = loginData.accessToken ?? loginData.token ?? loginData.jwt;
+            const refreshToken = loginData.refreshToken;
             const user = loginData.user;
 
-            await SecureStore.setItemAsync("token", String(token));
+            if (token) await SecureStore.setItemAsync("token", String(token));
+            if (refreshToken) await SecureStore.setItemAsync("refreshToken", String(refreshToken));
+            
             if (user) {
               await SecureStore.setItemAsync("user", JSON.stringify(user));
             }

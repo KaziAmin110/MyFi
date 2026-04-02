@@ -1,27 +1,65 @@
 import { Text, View, StyleSheet, ScrollView, TouchableOpacity} from "react-native";
+
 import {scale, verticalScale, moderateScale} from "../../utils/scale";
 import MultiRing from "../../components/MultiRing";
 import { HABITUDES } from "../../constants/habitudes";
 import { LinearGradient } from "expo-linear-gradient";
-import { router, useFocusEffect } from "expo-router";
-import React, {useState, useCallback} from 'react';
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import React, {useState, useCallback, useMemo} from 'react';
+import AssessmentSkeleton from "./AssessmentSkeleton";
 
+const AssessmentResult = ({ resultData: propResultData }: { resultData?: any }) => {
 
-const AssessmentResult = ({resultData}: any ) => {
+    const { resultData: rawResultData} = useLocalSearchParams();
+    const [animatekey, setAnimateKey] = useState(0);
+    const results = useMemo(() => {
+        if (propResultData) 
+        {
+            return propResultData;
+        }
+
+       
+
+        if (!rawResultData) {
+            return null;
+        }
+
+        try 
+        {
+            return JSON.parse(Array.isArray(rawResultData) ? rawResultData[0] : rawResultData);
+        } 
+        catch (error) 
+        {
+            console.log("Failed to parse results:", error);
+            return null;
+        }
+    }, [propResultData, rawResultData]);
+
     const habitudes = HABITUDES.map(h => {
         const key = h.id.toLowerCase();
-        const score = resultData?.[key]?.thats_me ?? 0;
+        const score = results?.[key]?.thats_me ?? 0;
         const percent = Math.round((score / 54) * 100);
         return { ...h, score, percent };
     });
-    const [animatekey, setAnimateKey] = useState(0);
+    
     const sortedHabitudes = [...habitudes].sort((a, b) => b.percent - a.percent);
 
     useFocusEffect(
         useCallback(() => {
             setAnimateKey(Date.now());
-        }, [])
+            if (!propResultData && !results) {
+                router.replace("/account/preAssessment");
+            }
+        }, [propResultData, results])
     );
+
+    if (!propResultData && rawResultData && !results)
+        return <AssessmentSkeleton/>;
+
+    if(!results)
+    {
+        return null;
+    }
 
     return (
         <View style={styles.container}>
@@ -63,8 +101,9 @@ const AssessmentResult = ({resultData}: any ) => {
                                     percent: String(item.percent),
                                     color: item.color,
                                     darkerColor: item.secondaryColor,
-                                    notMe: String(resultData?.[item.id.toLowerCase()]?.not_me ?? 0),
-                                    sometimesMe: String(resultData?.[item.id.toLowerCase()]?.sometimes_me ?? 0),
+                                    notMe: String(results?.[item.id.toLowerCase()]?.not_me ?? 0),
+                                    sometimesMe: String(results?.[item.id.toLowerCase()]?.sometimes_me ?? 0),
+                                    resultData: JSON.stringify(results),
                                 },
                             })}
                         >
@@ -77,6 +116,7 @@ const AssessmentResult = ({resultData}: any ) => {
 
                             <Text style={styles.arrow}>›</Text>
                         </TouchableOpacity>
+                        
 
                         {index !== sortedHabitudes.length - 1 && <View style={styles.divider} />}
                     </View>
@@ -93,7 +133,7 @@ const styles = StyleSheet.create({
     {
         flex:1,
         alignItems: "center",
-        paddingTop: verticalScale(30),
+        paddingTop: verticalScale(45),
         paddingBottom: verticalScale(30),
     
     },

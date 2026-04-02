@@ -68,3 +68,53 @@ export async function getUserContext(): Promise<UserContextResponse["data"]> {
 
   return json.data;
 }
+
+export async function updateProfile(name: string): Promise<UserData> {
+  const response = await fetchWithAuth(`${API_BASE_URL}/users/me/profile`, {
+    method: "PUT",
+    body: JSON.stringify({ name }),
+  });
+
+  const json = await response.json();
+
+  if (!response.ok) {
+    throw new Error(json.message || "Failed to update profile");
+  }
+
+  return json.data.user;
+}
+
+export async function updateAvatar(formData: FormData): Promise<UserData> {
+  const token = await SecureStore.getItemAsync("token");
+  
+  // Note: We don't use fetchWithAuth here because we need to let the browser
+  // set the Content-Type header with the boundary for FormData.
+  const response = await fetch(`${API_BASE_URL}/users/me/avatar`, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  const json = await response.json();
+
+  if (!response.ok) {
+    throw new Error(json.message || "Failed to update avatar");
+  }
+
+  return json.data.user;
+}
+
+export async function changePassword(old_password: string, new_password: string): Promise<void> {
+  const response = await fetchWithAuth(`${API_BASE_URL}/users/me/password`, {
+    method: "PUT",
+    body: JSON.stringify({ old_password, new_password }),
+  });
+
+  const json = await response.json();
+
+  if (!response.ok) {
+    throw new Error(json.message || "Failed to change password");
+  }
+}
