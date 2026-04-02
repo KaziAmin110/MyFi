@@ -1,4 +1,4 @@
-import { useLocalSearchParams, Stack, router } from "expo-router";
+import { useLocalSearchParams, router } from "expo-router";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from "react-native";
 import React, { useState } from "react";
 import SingleRing from "../../components/SingleRing";
@@ -25,13 +25,12 @@ const HabitudeReport = () => {
 
     return (
         <>
-        <Stack.Screen options={{ headerShown: false }} />    
         <ScrollView
             contentContainerStyle={styles.container}
             showsVerticalScrollIndicator={false}
         >
             <View style={styles.headerContainer}>
-                <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <TouchableOpacity onPress={() => router.push("/account/assessment")} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                     <Image
                         source={require("../../assets/images/resultDisplay/backArrow.png")} 
                         style={styles.backArrow}
