@@ -99,6 +99,7 @@ const Chat = () => {
   const scrollViewRef = useRef<ScrollView>(null);
   const sidebarAnim = useRef(new Animated.Value(-SIDEBAR_WIDTH)).current;
   const sendButtonScale = useRef(new Animated.Value(1)).current;
+  const sendingRef = useRef(false);
 
   // When habitude param arrives, prep for the auto-send flow
   useEffect(() => {
@@ -141,6 +142,7 @@ const Chat = () => {
   }, [showSessions, sidebarAnim]);
 
   const loadSessionMessages = React.useCallback(async (session: ChatSession) => {
+    if (sendingRef.current) return;
     try {
       setLoading(true);
       setCurrentSession(session);
@@ -191,7 +193,7 @@ const Chat = () => {
         (s) => s.status === "active"
       );
       if (activeSession) {
-        loadSessionMessages(activeSession);
+        await loadSessionMessages(activeSession);
       }
     } catch (error: any) {
       console.error("Error loading sessions:", error);
@@ -274,6 +276,7 @@ const Chat = () => {
     animateSendButton();
     setInputText("");
     setSending(true);
+    sendingRef.current = true;
     setSuggestedPrompts([]);
 
     const optimisticMessage: ChatMessage = {
@@ -302,6 +305,7 @@ const Chat = () => {
         setInputText(messageText);
       }
     } finally {
+      sendingRef.current = false;
       setSending(false);
     }
   };
