@@ -137,7 +137,7 @@ const RemindersScreen = () => {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
           <TouchableOpacity
-            onPress={() => router.back()}
+            onPress={() => router.push("/account/dashboard")}
             style={styles.backButton}
           >
             <Ionicons name="chevron-back" size={28} color="#333" />

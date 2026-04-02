@@ -230,13 +230,7 @@ const TabsLayout = () => {
           headerShown: false,
         }}
       />
-      <Tabs.Screen
-        name="takeAssessment"
-        options={{
-          href: null,
-          headerShown: false,
-        }}
-      />
+
       <Tabs.Screen
         name="preAssessment"
         options={{
