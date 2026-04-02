@@ -39,28 +39,28 @@ const GivingCardBody =
     "It could mean anything from giving a handout to a homeless person, paying your adult child's bills or donating money to a charity. "+
     "It could be giving to meet someone's basic needs (like food or shelter) or giving non-essentials (like buying another toy for a child who has lots of toys). "+
     "This giving tendency could be: "+
-    "- informal, like responding in the moment to a person's need. "+
-    "- formal, like tithing or writing annual checks to specific organizations. "
+    "• informal, like responding in the moment to a person's need. "+
+    "• formal, like tithing or writing annual checks to specific organizations. "
         
 
 const PlanningCardBody= 
-    "Typically, when you have money, your first thought is about how it could be used to reach your goals or accomplish something you've been planning.\n"+
+    "Typically, when you have money, your first thought is about how it could be used to reach your goals or accomplish something you've been planning. "+
     "That may mean:\n"+
-        "- Putting it toward saving for a house, car, or future event.\n"+
-        "- Paying a bill.\n"+
-        "- Giving it to a person or organization you plan to help.\n"+
-        "- Investing in yourself.\n"+
-        "- Making a financial investment.\n"+
-        "Whatever you choose to do with money, it fits into a plan.\n"+
-        "- It may be formal like a financial plan, a budget, or written goals.\n"+
-        "- It may also be informal and something you've thought about but haven't written down.\n"+
-        `Note that *having a plan* for your money doesn't mean that it is necessarily *an effective plan for long-term financial success*. `
+        "• Putting it toward saving for a house, car, or future event.\n"+
+        "• Paying a bill.\n"+
+        "• Giving it to a person or organization you plan to help.\n"+
+        "• Investing in yourself.\n"+
+        "• Making a financial investment.\n"+
+        "\nWhatever you choose to do with money, it fits into a plan.\n"+
+        "• It may be formal like a financial plan, a budget, or written goals.\n"+
+        "• It may also be informal and something you've thought about but haven't written down.\n"+
+        "Note that having a plan for your money doesn't mean that it is necessarily an effective plan for long-term financial success. "
 
 const CarefreeCardBody=
     "Typically, when you have money, you don't really think about what you would do with it. You may let someone else make the decision or just let it slide. That may mean: "+
-       "- Taking a wait-and-see attitude until more information is available. "+
-       "- Waiting until you think the timing is better. "+
-       "- Avoiding, denying or ignoring issues that need to be addressed or actions that should be taken. "
+       "• Taking a wait-and-see attitude until more information is available. "+
+       "• Waiting until you think the timing is better. "+
+       "• Avoiding, denying or ignoring issues that need to be addressed or actions that should be taken. "
 
 const StatusCardBody=
     "Typically, when you have money choices, you first think about how you can use money to make a positive impression on others. "+
@@ -162,9 +162,9 @@ export const HABITUDES: Habitude[] = [
             { 
                 forYou: "You are using the Giving Habitude in moderation. ", 
                 cardBody: "You like to give to others and make choices depending on the situation. "+
-                "- You may like to give and have a plan and a system to give gifts as appropriate. "+
-                "- You may want to be more generous and are being careful to strike a balance with your needs. "+
-                "- You may not really care that much about giving but do it as necessary or required. "
+                "• You may like to give and have a plan and a system to give gifts as appropriate. "+
+                "• You may want to be more generous and are being careful to strike a balance with your needs. "+
+                "• You may not really care that much about giving but do it as necessary or required. "
                 
             },
             medium:  
@@ -214,10 +214,10 @@ export const HABITUDES: Habitude[] = [
           { 
             forYou: "You are using the Planning Habitude in moderation. ", 
             cardBody: "You have a plan or some ideas of what is important to you. "+
-            "- You may be well on your way so Planning is not a strong focus for you. "+
-            "- You may have plans but don't necessarily think of them first when you have money to spend. "+
-            "- You may find you don't give your plans enough priority to make them happen. "+
-            "- Other demands on your time and money always seem to cause delays and obstacles. " 
+            "• You may be well on your way so Planning is not a strong focus for you. "+
+            "• You may have plans but don't necessarily think of them first when you have money to spend. "+
+            "• You may find you don't give your plans enough priority to make them happen. "+
+            "• Other demands on your time and money always seem to cause delays and obstacles. " 
           },
           medium: 
           { 
@@ -266,9 +266,9 @@ export const HABITUDES: Habitude[] = [
           low: { 
             forYou: "You are using the Carefree Habitude in moderation. ",
             cardBody: "You can let things go and be flexible at times. "+
-            "- You may clearly differentiate between what is important and be responsible, but not give much attention to things that are unimportant to you. "+
-            `- You may make some decisions "just because" without having any concern about the money involved. `+
-            "- You may procrastinate or not pay enough attention to details and necessary responsibilities when making financial choices. "
+            "• You may clearly differentiate between what is important and be responsible, but not give much attention to things that are unimportant to you. "+
+            "• You may make some decisions just because without having any concern about the money involved. "+
+            "• You may procrastinate or not pay enough attention to details and necessary responsibilities when making financial choices. "
             
              
           },
@@ -385,8 +385,8 @@ export const HABITUDES: Habitude[] = [
           low: { 
             forYou: "You are using the Status Habitude in moderation. ", 
             cardBody: "You care about what people think but don't feel you need to go out of your way to impress others. "+
-            "- You are usually aware of what is appropriate behavior for a situation. This could be buying a gift or how you dress. "+
-            "- You either have chosen to be with people that have the same priorities as you, or you are comfortable choosing to be different. "
+            "• You are usually aware of what is appropriate behavior for a situation. This could be buying a gift or how you dress. "+
+            "• You either have chosen to be with people that have the same priorities as you, or you are comfortable choosing to be different. "
              
           },
           medium: { 
