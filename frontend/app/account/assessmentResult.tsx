@@ -53,15 +53,9 @@ const AssessmentResult = ({resultData}: any ) => {
             >
                 {sortedHabitudes.map((item, index) => (
                     <View key={item.id}>
-                        <View style={styles.row}>
-                            <View style={styles.left}>
-                                <View style={[styles.colorBox, { backgroundColor: item.color }]} />
-                                <Text style={styles.score}>{item.score}</Text>
-                                <Text style={styles.percent}>{item.percent}%</Text>
-                                <Text style={styles.label}>{item.id}</Text>
-                            </View>
-
-                            <TouchableOpacity onPress={() => router.push({
+                        <TouchableOpacity 
+                            style={styles.row}
+                            onPress={() => router.push({
                                 pathname: "/account/HabitudeReport",
                                 params: {
                                     id: item.id,
@@ -72,10 +66,17 @@ const AssessmentResult = ({resultData}: any ) => {
                                     notMe: String(resultData?.[item.id.toLowerCase()]?.not_me ?? 0),
                                     sometimesMe: String(resultData?.[item.id.toLowerCase()]?.sometimes_me ?? 0),
                                 },
-                            })}>
-                                <Text style={styles.arrow}>›</Text>
-                            </TouchableOpacity>
-                        </View>
+                            })}
+                        >
+                            <View style={styles.left}>
+                                <View style={[styles.colorBox, { backgroundColor: item.color }]} />
+                                <Text style={styles.score}>{item.score}</Text>
+                                <Text style={styles.percent}>{item.percent}%</Text>
+                                <Text style={styles.label}>{item.id}</Text>
+                            </View>
+
+                            <Text style={styles.arrow}>›</Text>
+                        </TouchableOpacity>
 
                         {index !== sortedHabitudes.length - 1 && <View style={styles.divider} />}
                     </View>

@@ -37,6 +37,10 @@ export const getUserContext = async (
       (session) => session.status === "in_progress",
     );
 
+    const completedOnboardingSession = onboardingSessions?.find(
+      (session) => session.status === "completed",
+    );
+
     const activeSessions = allSessions?.filter(
       (session) => session.status === "in_progress",
     );
@@ -47,7 +51,10 @@ export const getUserContext = async (
         user: {
           ...userData,
           onboarding_completed: isOnboardingCompleted,
-          onboarding_session_id: activeOnboardingSession?.session_id || null,
+          onboarding_session_id:
+            activeOnboardingSession?.session_id ||
+            completedOnboardingSession?.session_id ||
+            null,
         },
         active_sessions: activeSessions || null,
       },

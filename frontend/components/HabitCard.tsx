@@ -5,7 +5,12 @@ import {
   FlatList,
   Image,
   Pressable,
+  Animated,
+  useWindowDimensions,
 } from "react-native";
+import { useRef, useCallback } from "react";
+import * as Haptics from "expo-haptics";
+import { moderateScale } from "../utils/scale";
 
 type Habit = {
   id: string;
@@ -15,11 +20,67 @@ type Habit = {
   tagLine: string;
   description: string;
   advantages: string[];
+  disadvantages: string[];
 };
 
 type HabitCardsProps = {
   onSelect: (habit: Habit) => void;
 };
+
+const AnimatedCard = ({ item, onSelect }: { item: Habit; onSelect: (habit: Habit) => void }) => {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const { width, height } = useWindowDimensions();
+  
+  // Calculate responsive dimensions
+  const isTablet = width > 500;
+  const cardWidth = isTablet ? 180 : Math.min(135, width * 0.35);
+  const cardHeight = isTablet ? 250 : Math.min(170, height * 0.21);
+
+  const handlePressIn = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Animated.spring(scaleAnim, {
+      toValue: 0.93,
+      useNativeDriver: true,
+      speed: 50,
+      bounciness: 4,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 20,
+      bounciness: 8,
+    }).start();
+  };
+
+  return (
+    <Animated.View style={[styles.pressable, { transform: [{ scale: scaleAnim }] }]}>
+      <Pressable
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        onPress={() => onSelect(item)}
+      >
+        <View style={[styles.outerCard, { borderColor: item.borderColor, width: cardWidth, height: cardHeight }]}>
+          <View style={[styles.innerBorder, { borderColor: item.borderColor }]}>
+            <View style={styles.cardContent}>
+              <Text style={styles.title}>{item.title}</Text>
+              <View style={styles.imageContainer}>
+                <Image
+                  source={item.image}
+                  style={[styles.icon, { height: cardHeight * 0.45, width: cardWidth * 0.7 }]}
+                  resizeMode="contain"
+                />
+              </View>
+            </View>
+          </View>
+        </View>
+      </Pressable>
+    </Animated.View>
+  );
+};
+
 const HabitCard = ({ onSelect }: HabitCardsProps) => {
   const cards: Habit[] = [
     {
@@ -38,6 +99,15 @@ const HabitCard = ({ onSelect }: HabitCardsProps) => {
         "Be needed; other depend on you.",
         "Be appeciated for being thoughtful",
       ],
+      disadvantages: [
+        "Disappointed if money or gifts are not appreciated. ",
+        "May have unrealistic expectations that others will repay your generosity. ",
+        "Use giving as a form of control to impose your personal values on others. ",
+        "Intolerant of people who have different lifestyles. ",
+        "Resent when giving is expected and assumed. ",
+        "Promote dependence or irresponsible behavior by giving too much or too often. ",
+        "Sacrifice your needs or future security for others",
+      ],
     },
     {
       id: "planning",
@@ -53,6 +123,13 @@ const HabitCard = ({ onSelect }: HabitCardsProps) => {
         "Set and accomplish goals.",
         "Buy items you really want that will retain value",
       ],
+      disadvantages: [
+        "Feel pressured by others to spend money on things that do not fit your budget or values. ",
+        "Expected to help others who did not plan. ",
+        "Have difficulty responding to new opportunities if it means changing or abandoning your plan. ",
+        "Intolerant or impatient when others do not meet your standards or have different values. ",
+        "Hide or withhold information from significant others to stay in control of the money. ",
+      ],
     },
     {
       id: "security",
@@ -61,12 +138,20 @@ const HabitCard = ({ onSelect }: HabitCardsProps) => {
       image: require("../assets/images/cardImages/security.png"),
       tagLine: "Money helps you feel safe, secure and in control.",
       description:
-        "Security is the habit of protecting yourself from financial shocks so money problems don’t turn into life problems.It’s about stability, safety, and resilience, not wealth or luxury.",
+        "Security is the habit of protecting yourself from financial shocks so money problems don't turn into life problems. It's about stability, safety, and resilience, not wealth or luxury.",
       advantages: [
         "Have a budget, financial goals and savings.",
         "Shop wisely for value items on sale.",
         "Protect money by being conservative",
         "Have more choices later because you've saved today.",
+      ],
+      disadvantages: [
+        "Worry about money even when it is safe. ",
+        "Be so cautious that you miss out on good chances. ",
+        `Feel like you never have "enough" to be secure.`,
+        "Hide or keep secrets about money to protect it. ",
+        "Spend too much energy focusing on risks instead of enjoying life. ",
+        "Find it hard to relax or trust others with money decisions. ",
       ],
     },
     {
@@ -76,13 +161,22 @@ const HabitCard = ({ onSelect }: HabitCardsProps) => {
       image: require("../assets/images/cardImages/status.png"),
       tagLine: "Money helps you present a positive image.",
       description:
-        "Status is how we use money to signal identity, success, or belonging to others.It’s spending (or saving) driven by how things look, how we compare to others, and how we want to be perceived.",
+        "Status is how we use money to signal identity, success, or belonging to others. It's spending (or saving) driven by how things look, how we compare to others, and how we want to be perceived.",
       advantages: [
         "Present a strong first impression.",
         "Make generous donations.",
         "Give expensive or unexpected gifts.",
         "Be attentive to what is important to others.",
         "Never burden others about money problems.",
+      ],
+      disadvantages: [
+        "Create a false impression of having wealth. ",
+        "Feel constant stress to keep up with others. ",
+        "Do not have reserves for the unexpected. ",
+        "Spend money unwisely to maintain appearances. ",
+        "Feel entitled to special treatment. ",
+        "Actions motivated by personal gain may be seen as suspicious and insincere; people may feel used. ",
+        "Keep money secrets because of the fear of losing friends or status if others knew your real financial situation. ",
       ],
     },
     {
@@ -99,6 +193,13 @@ const HabitCard = ({ onSelect }: HabitCardsProps) => {
         "Get a lot of attention and recognition.",
         "Get things right away without waiting.",
       ],
+      disadvantages: [
+        "Feel pressured by others to spend money on things that do not fit your budget or values. ",
+        "Expected to help others who did not plan",
+        "Have difficulty responding to new opportunities if it means changing or abandoning your plan. ",
+        "Intolerant or impatient when others do not meet your standards or have different values. ",
+        "Hide or withhold information from significant others to stay in control of the money. ",
+      ],
     },
     {
       id: "carefree",
@@ -107,15 +208,31 @@ const HabitCard = ({ onSelect }: HabitCardsProps) => {
       image: require("../assets/images/cardImages/carefree.png"),
       tagLine: "Money is not a priority. You just let life happen",
       description:
-        "Being carefree with money is having a relaxed, confident attitude toward finances. It’s not about spending recklessly. It’s about not letting money stress dominate your life.",
+        "Being carefree with money is having a relaxed, confident attitude toward finances. It's not about spending recklessly. It's about not letting money stress dominate your life.",
       advantages: [
         "Be optimistic that everything will work out.",
         "Respond quickly to new opportunities.",
         "Not be distracted by money considerations or details.",
         "Easily share what you have with others.",
       ],
+      disadvantages: [
+        "Lack the skills and information to feel confident. ",
+        "Unable to support yourself if the person(s) providing for you cannot continue or chooses to stop. ",
+        "Feel trapped or obligated by being supported. ",
+        "Miss opportunities by avoiding commitments or missing deadlines. ",
+        "Lose track of money or possessions. ",
+        "Frustrated by how often things don't work out as expected. ",
+      ],
     },
   ];
+
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 60 }).current;
+
+  const onViewableItemsChanged = useCallback(({ changed }: any) => {
+    if (changed.length > 0 && changed[0].isViewable) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  }, []);
 
   return (
     <FlatList
@@ -124,30 +241,17 @@ const HabitCard = ({ onSelect }: HabitCardsProps) => {
       showsHorizontalScrollIndicator={false}
       keyExtractor={(item) => item.id}
       contentContainerStyle={styles.row}
+      viewabilityConfig={viewabilityConfig}
+      onViewableItemsChanged={onViewableItemsChanged}
       renderItem={({ item }) => (
-        <Pressable onPress={() => onSelect(item)} style={styles.pressable}>
-          <View style={[styles.outerCard, { borderColor: item.borderColor }]}>
-            <View
-              style={[styles.innerBorder, { borderColor: item.borderColor }]}
-            >
-              <View style={styles.cardContent}>
-                <Text style={styles.title}>{item.title}</Text>
-                <View style={styles.imageContainer}>
-                  <Image
-                    source={item.image}
-                    style={styles.icon}
-                    resizeMode="contain"
-                  />
-                </View>
-              </View>
-            </View>
-          </View>
-        </Pressable>
+        <AnimatedCard item={item} onSelect={onSelect} />
       )}
     />
   );
 };
+
 export default HabitCard;
+
 const styles = StyleSheet.create({
   row: {
     paddingLeft: 16,
@@ -163,9 +267,7 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderRadius: 10,
     padding: 5,
-    marginRight: 0,
   },
-
   innerBorder: {
     flex: 1,
     borderWidth: 1.5,
@@ -182,7 +284,7 @@ const styles = StyleSheet.create({
   },
   title: {
     width: "100%",
-    fontSize: 14,
+    fontSize: moderateScale(14),
     fontWeight: "700",
     color: "#5A5A5A",
     textAlign: "center",

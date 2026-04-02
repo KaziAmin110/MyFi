@@ -1,4 +1,4 @@
-import { useLocalSearchParams, Stack, router } from "expo-router";
+import { useLocalSearchParams, router } from "expo-router";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from "react-native";
 import React, { useState } from "react";
 import SingleRing from "../../components/SingleRing";
@@ -25,13 +25,12 @@ const HabitudeReport = () => {
 
     return (
         <>
-        <Stack.Screen options={{ headerShown: false }} />    
         <ScrollView
             contentContainerStyle={styles.container}
             showsVerticalScrollIndicator={false}
         >
             <View style={styles.headerContainer}>
-                <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <TouchableOpacity onPress={() => router.push("/account/assessment")} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                     <Image
                         source={require("../../assets/images/resultDisplay/backArrow.png")} 
                         style={styles.backArrow}
@@ -58,19 +57,37 @@ const HabitudeReport = () => {
                 <Text style={styles.cardHeader}>Your Personal Combination</Text>
                 <View style={styles.cardStackRow}>
                 <View style={styles.cardColumn}>
-                    <Text style={[styles.cardLabel, { color: parsedColor }]}>NOT ME</Text>
-                    <CardStack count={parsedNotMe} color={parsedColor} secondaryColor={parsedDarkColor} num={parsedNotMe} />
-                    </View>
-                    <View style={styles.cardColumn}>
-                    <Text style={[styles.cardLabel, { color: parsedColor }]}>SOMETIMES</Text>
-                    <CardStack count={parsedSometimesMe} color={parsedColor} secondaryColor={parsedDarkColor} num={parsedSometimesMe} />
-                    </View>
-                    <View style={styles.cardColumn}>
                     <Text style={[styles.cardLabel, { color: parsedColor }]}>THAT{"'"}S ME</Text>
-                    <CardStack count={parsedScore} color={parsedColor} secondaryColor={parsedDarkColor} num={parsedScore} />
-                    </View>
+                    <CardStack
+                    count={parsedScore}
+                    color={parsedColor}
+                    secondaryColor={parsedDarkColor}
+                    num={parsedScore}
+                    />
+                </View>
+
+                <View style={styles.cardColumn}>
+                    <Text style={[styles.cardLabel, { color: parsedColor }]}>SOMETIMES</Text>
+                    <CardStack
+                    count={parsedSometimesMe}
+                    color={parsedColor}
+                    secondaryColor={parsedDarkColor}
+                    num={parsedSometimesMe}
+                    />
+                </View>
+
+                <View style={styles.cardColumn}>
+                    <Text style={[styles.cardLabel, { color: parsedColor }]}>NOT ME</Text>
+                    <CardStack
+                    count={parsedNotMe}
+                    color={parsedColor}
+                    secondaryColor={parsedDarkColor}
+                    num={parsedNotMe}
+                    />
+                </View>
                 </View>
             </View>
+
 
             {content.cardBody ? (
                 <View style={styles.yourHabitsInfo}>
@@ -207,6 +224,7 @@ const styles = StyleSheet.create({
     cardColumn:
     {
         alignItems:"center",
+    
     },
     yourHabitsInfo:
     {

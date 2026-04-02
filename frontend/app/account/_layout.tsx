@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
-import { Platform, Animated as RNAnimated } from "react-native";
+import { Platform, Animated as RNAnimated, useWindowDimensions } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
@@ -30,11 +31,14 @@ const TabIcon = ({
     }).start();
   }, [focused, scale]);
 
+  const { width } = useWindowDimensions();
+  const dynamicSize = Math.min(26, Math.max(20, width * 0.06));
+
   return (
     <RNAnimated.View style={{ alignItems: "center", transform: [{ scale }] }}>
       <Ionicons
         name={focused ? activeName : name}
-        size={size - 2}
+        size={dynamicSize}
         color={color}
       />
     </RNAnimated.View>
@@ -74,6 +78,13 @@ const AnimatedTabBar = (props: BottomTabBarProps) => {
 };
 
 const TabsLayout = () => {
+  const insets = useSafeAreaInsets();
+  const isIos = Platform.OS === "ios";
+  
+  // Compact navbar logic
+  const tabHeight = isIos ? (insets.bottom > 0 ? 74 : 64) : 60;
+  const bottomPadding = isIos ? (insets.bottom > 0 ? insets.bottom - 12 : 4) : 4;
+
   return (
     <Tabs
       tabBar={(props) => <AnimatedTabBar {...props} />}
@@ -82,9 +93,10 @@ const TabsLayout = () => {
         tabBarActiveTintColor: "#3059AD",
         tabBarInactiveTintColor: "#9CA3AF",
         tabBarLabelStyle: {
-          fontSize: 10,
+          fontSize: 9,
           fontWeight: "600",
-          letterSpacing: 0.2,
+          letterSpacing: 0.1,
+          marginTop: -2,
         },
         tabBarItemStyle: {
           paddingVertical: 2,
@@ -108,13 +120,13 @@ const TabsLayout = () => {
         ),
         tabBarStyle: {
           position: "absolute",
-          height: Platform.OS === "ios" ? 84 : 64,
+          height: tabHeight,
           backgroundColor: "transparent",
           borderTopWidth: 0,
           borderTopLeftRadius: 28,
           borderTopRightRadius: 28,
-          paddingBottom: Platform.OS === "ios" ? 20 : 6,
-          paddingTop: 6,
+          paddingBottom: bottomPadding,
+          paddingTop: 4,
           shadowColor: "#1a2e50",
           shadowOffset: { width: 0, height: -4 },
           shadowOpacity: 0.06,
