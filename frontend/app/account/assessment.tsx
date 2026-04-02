@@ -1,9 +1,9 @@
-import {StyleSheet} from "react-native";
 import AssessmentSkeleton from "./AssessmentSkeleton";
 import PreAssessment from "./preAssessment";
 import AssessmentResults from "./assessmentResult";
 import React, {useEffect, useState} from 'react'
 import * as SecureStore from "expo-secure-store";
+import { getUserContext } from "../../services/user.service";
 
 export const API_URL = "http://localhost:5500/api";
 
@@ -16,12 +16,21 @@ const Assessment = () => {
     const loadData = async() => {
         try
         {
-            const token = await SecureStore.getItemAsync("token");
-            const sessionId = 12;
+            // Get user context to find the modern onboarding_session_id
+            const context = await getUserContext();
+            const sessionId = context.user.onboarding_session_id;
 
+            if(!sessionId)
+            {
+                setResultData(null);
+                return;
+            }
+
+            const token = await SecureStore.getItemAsync("token");
+
+            // Fetch results using the dynamic session ID
             const res = await fetch(
                 `${API_URL}/assessments/sessions/${sessionId}/results`,
-
                 {
                     headers:
                     {
@@ -72,5 +81,3 @@ const Assessment = () => {
 };
 
 export default Assessment;
-
-const styles = StyleSheet.create({});
