@@ -83,6 +83,7 @@ const Chat = () => {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
   const habitudeSentRef = useRef(false);
+  const skipOpeningAnimationRef = useRef(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState("");
   const [loading, setLoading] = useState(false);
@@ -99,7 +100,15 @@ const Chat = () => {
   const sidebarAnim = useRef(new Animated.Value(-SIDEBAR_WIDTH)).current;
   const sendButtonScale = useRef(new Animated.Value(1)).current;
 
-  // Load sessions on mount
+  // When habitude param arrives, prep for the auto-send flow
+  useEffect(() => {
+    if (habitude) {
+      habitudeSentRef.current = false;
+      skipOpeningAnimationRef.current = true;
+      sidebarAnim.setValue(-SIDEBAR_WIDTH);
+      setShowSessions(false);
+    }
+  }, [habitude]);
 
   // Refresh sessions when app returns from background (picks up cron-rotated sessions)
   useEffect(() => {
@@ -141,12 +150,23 @@ const Chat = () => {
 
       // New session — show thinking animation before revealing the opening message
       if (data.messages.length === 1 && data.messages[0].role === "assistant") {
+        // If habitude param is pending, skip the animation so the message array
+        // is populated before the auto-send effect fires
+        if (skipOpeningAnimationRef.current) {
+          skipOpeningAnimationRef.current = false;
+          setMessages(data.messages);
+          setLoading(false);
+          return;
+        }
+
         setMessages([]);
         setShowThinking(true);
         setLoading(false);
         setTimeout(() => {
           setMessages(data.messages);
-          setSuggestedPrompts(data.suggestedPrompts || []);
+          if (!habitudeSentRef.current) {
+            setSuggestedPrompts(data.suggestedPrompts || []);
+          }
           setShowThinking(false);
         }, 1500);
         return;

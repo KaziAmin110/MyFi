@@ -49,7 +49,7 @@ const Dashboard = () => {
 
   const [selectedHabit, setSelectedHabit] = useState<any>(null);
   const [habitOpen, setHabitOpen] = useState(false);
-  
+  const pendingHabitude = useRef<string | null>(null);
 
   const doShake = (rotation: Animated.Value, scale: Animated.Value) => {
     Animated.parallel([
@@ -353,6 +353,16 @@ const Dashboard = () => {
           transparent
           animationType="slide"
           onRequestClose={closeHabit}
+          onDismiss={() => {
+            if (pendingHabitude.current) {
+              const name = pendingHabitude.current;
+              pendingHabitude.current = null;
+              router.push({
+                pathname: "/account/chat",
+                params: { habitude: name },
+              });
+            }
+          }}
         >
           {/* dark backdrop */}
           <Pressable style={styles.backdrop} onPress={closeHabit} />
@@ -413,11 +423,8 @@ const Dashboard = () => {
                   <Pressable
                     style={styles.cta}
                     onPress={() => {
-                      setSelectedHabit(null);
-                      router.push({
-                        pathname: "/account/chat",
-                        params: { habitude: selectedHabit?.title },
-                      });
+                      pendingHabitude.current = selectedHabit?.title;
+                      closeHabit();
                     }}
                   >
                     <Text style={styles.ctaText}>Ask AI Coach</Text>
