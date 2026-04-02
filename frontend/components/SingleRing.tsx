@@ -9,6 +9,7 @@ type SingleRingProps = {
     percent: number;
     color: string;
     backgroundColor?: string;
+    animatedKey?: number;
 }
 const SingleRing = ({
   size = 99,
@@ -16,13 +17,37 @@ const SingleRing = ({
   percent,
   color,
   backgroundColor = "#FFFFFF",
+  animatedKey = 0,
 }: SingleRingProps) => {
   const clampedPercent = Math.max(0, Math.min(percent, 100));
+  const animation = useRef(new Animated.Value(0)).current;
+  const [animateProgress, setAnimatedProgress] = useState(0);
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
 
-  const progressLength = (clampedPercent / 100) * circumference;
+  const progressLength = (clampedPercent / 100) * circumference * animateProgress;
   const remainingLength = circumference - progressLength;
+
+  
+
+  useEffect(() => {
+    animation.setValue(0);
+    setAnimatedProgress(0);
+    const listenerId = animation.addListener(({ value }) => {
+        setAnimatedProgress(value);
+    });
+    Animated.timing(animation, {
+        toValue: 1,
+        duration: 1200,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver:false,
+    }).start();
+    return () => {
+        animation.removeListener(listenerId);
+        animation.stopAnimation();
+    };
+}, [animatedKey, animation]);
+
 
   return (
     <View style={styles.wrapper}>
