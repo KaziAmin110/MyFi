@@ -1,5 +1,4 @@
 import { Request, Response } from "express";
-import { AuthRequest } from "../middlewares/auth.middleware";
 import {
   AnsweredQuestionData,
   createNewAssessmentSession,
@@ -110,7 +109,7 @@ export const submitAnswer = async (
 
 // Submits an assessment for completion
 export const submitAssessment = async (
-  req: AuthRequest,
+  req: Request & { user?: string },
   res: Response,
 ): Promise<Response | void> => {
   try {

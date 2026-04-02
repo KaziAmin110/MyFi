@@ -623,7 +623,7 @@ const Chat = () => {
                         )}
                       </View>
                       <Text style={styles.sidebarSessionDate}>
-                        {new Date(item.weekStartDate).toLocaleDateString([], {
+                        Week of {new Date(item.weekStartDate).toLocaleDateString([], {
                           month: 'short',
                           day: 'numeric',
                         })}

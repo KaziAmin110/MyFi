@@ -95,10 +95,14 @@ export const createSessionRecord = async (
   const nextSessionNumber = latestSession ? latestSession.session_number + 1 : 1;
 
   const now = new Date();
+  const day = now.getDay();
+  const diffToMonday = day === 0 ? -6 : 1 - day;
   const weekStart = new Date(now);
-  weekStart.setDate(now.getDate() - now.getDay());
+  weekStart.setDate(now.getDate() + diffToMonday);
+  weekStart.setHours(0, 0, 0, 0);
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekStart.getDate() + 6);
+  weekEnd.setHours(23, 59, 59, 999);
 
   const { data, error } = await supabase
     .from("chat_sessions")
