@@ -410,7 +410,16 @@ const Dashboard = () => {
                     </View>
                   ))}
 
-                  <Pressable style={styles.cta}>
+                  <Pressable
+                    style={styles.cta}
+                    onPress={() => {
+                      setSelectedHabit(null);
+                      router.push({
+                        pathname: "/account/chat",
+                        params: { habitude: selectedHabit?.title },
+                      });
+                    }}
+                  >
                     <Text style={styles.ctaText}>Ask AI Coach</Text>
                   </Pressable>
                 </ScrollView>

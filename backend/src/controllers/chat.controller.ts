@@ -29,6 +29,17 @@ export const handleGetSessions = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // Auto-create a session for existing users who completed their assessment
+    // before the session-creation logic was added
+    if (!data?.length) {
+      const { data: newSession, error: createErr } = await chatService.createSession(userId);
+      if (newSession && !createErr) {
+        const { data: refreshed } = await chatService.getUserSessions(userId);
+        const response: GetSessionsResponse = { sessions: refreshed || [] };
+        return res.status(200).json({ success: true, data: response });
+      }
+    }
+
     const response: GetSessionsResponse = { sessions: data || [] };
     return res.status(200).json({ 
       success: true,

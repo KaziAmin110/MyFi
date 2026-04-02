@@ -17,6 +17,7 @@ import {
   SafeAreaView,
 } from "react-native";
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -76,9 +77,12 @@ const BouncingDots = () => {
 
 const Chat = () => {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const { habitude } = useLocalSearchParams<{ habitude?: string }>();
   const { setVisible: setTabBarVisible } = useTabBar();
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
+  const habitudeSentRef = useRef(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState("");
   const [loading, setLoading] = useState(false);
@@ -179,6 +183,17 @@ const Chat = () => {
   useEffect(() => {
     loadSessions();
   }, [loadSessions]);
+
+  // Auto-send habitude question when navigating from "Ask AI Coach"
+  useEffect(() => {
+    if (habitude && currentSession && !loading && !habitudeSentRef.current) {
+      habitudeSentRef.current = true;
+      handleSendMessage(
+        `Tell me about my ${habitude} habitude — what does it mean for me based on my assessment results?`
+      );
+      router.setParams({ habitude: "" });
+    }
+  }, [habitude, currentSession, loading]);
 
   const panResponder = useMemo(
     () =>
