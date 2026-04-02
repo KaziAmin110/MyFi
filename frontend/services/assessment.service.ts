@@ -1,6 +1,4 @@
-import * as SecureStore from "expo-secure-store";
-
-const API_BASE_URL = "http://localhost:5500/api";
+import { apiFetch } from "../utils/api";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -28,32 +26,6 @@ export interface SubmitAssessmentResult {
   habitude_summary: any;
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-async function getAuthToken(): Promise<string | null> {
-  return await SecureStore.getItemAsync("token");
-}
-
-async function fetchWithAuth(
-  url: string,
-  options: RequestInit = {}
-): Promise<Response> {
-  const token = await getAuthToken();
-
-  if (!token) {
-    throw new Error("No authentication token found");
-  }
-
-  return fetch(url, {
-    ...options,
-    headers: {
-      ...options.headers,
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-  });
-}
-
 // ── API Functions ────────────────────────────────────────────────────────────
 
 /**
@@ -62,17 +34,7 @@ async function fetchWithAuth(
  * questions so the UI can resume.
  */
 export async function initializeOnboardingAssessment(): Promise<OnboardingAssessmentData> {
-  const response = await fetchWithAuth(
-    `${API_BASE_URL}/assessments/onboarding/initialize`,
-    { method: "POST" }
-  );
-
-  const json = await response.json();
-
-  if (!response.ok) {
-    throw new Error(json.message || "Failed to initialize onboarding assessment");
-  }
-
+  const json = await apiFetch("/assessments/onboarding/initialize", { method: "POST" });
   return json.data;
 }
 
@@ -85,22 +47,13 @@ export async function submitAnswer(
   questionId: string,
   answerValue: number
 ): Promise<void> {
-  const response = await fetchWithAuth(
-    `${API_BASE_URL}/assessments/sessions/${sessionId}/answers`,
-    {
-      method: "POST",
-      body: JSON.stringify({
-        question_id: parseInt(questionId, 10),
-        answer_value: answerValue,
-      }),
-    }
-  );
-
-  const json = await response.json();
-
-  if (!response.ok) {
-    throw new Error(json.message || "Failed to submit answer");
-  }
+  await apiFetch(`/assessments/sessions/${sessionId}/answers`, {
+    method: "POST",
+    body: JSON.stringify({
+      question_id: parseInt(questionId, 10),
+      answer_value: answerValue,
+    }),
+  });
 }
 
 /**
@@ -109,16 +62,6 @@ export async function submitAnswer(
 export async function submitAssessment(
   sessionId: number
 ): Promise<SubmitAssessmentResult> {
-  const response = await fetchWithAuth(
-    `${API_BASE_URL}/assessments/sessions/${sessionId}/submit`,
-    { method: "POST" }
-  );
-
-  const json = await response.json();
-
-  if (!response.ok) {
-    throw new Error(json.message || "Failed to submit assessment");
-  }
-
+  const json = await apiFetch(`/assessments/sessions/${sessionId}/submit`, { method: "POST" });
   return json.data;
 }

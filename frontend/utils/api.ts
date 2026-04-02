@@ -94,7 +94,9 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}): Pro
 
     const json = await response.json();
     if (!response.ok) {
-      throw new Error(json.message || "Something went wrong");
+      const error = new Error(json.message || "Something went wrong") as any;
+      if (json.code) error.code = json.code;
+      throw error;
     }
     return json;
   } catch (error) {

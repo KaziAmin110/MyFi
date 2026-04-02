@@ -1,6 +1,5 @@
 import * as SecureStore from "expo-secure-store";
-
-const API_BASE_URL = "http://localhost:5500/api";
+import { apiFetch } from "../utils/api";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -29,67 +28,27 @@ export interface UserContextResponse {
   };
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-async function getAuthToken(): Promise<string | null> {
-  return await SecureStore.getItemAsync("token");
-}
-
-async function fetchWithAuth(
-  url: string,
-  options: RequestInit = {}
-): Promise<Response> {
-  const token = await getAuthToken();
-
-  if (!token) {
-    throw new Error("No authentication token found");
-  }
-
-  return fetch(url, {
-    ...options,
-    headers: {
-      ...options.headers,
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-  });
-}
-
 // ── API Functions ────────────────────────────────────────────────────────────
 
 export async function getUserContext(): Promise<UserContextResponse["data"]> {
-  const response = await fetchWithAuth(`${API_BASE_URL}/users/me/context`);
-
-  const json = await response.json();
-
-  if (!response.ok) {
-    throw new Error(json.message || "Failed to fetch user context");
-  }
-
+  const json = await apiFetch("/users/me/context");
   return json.data;
 }
 
 export async function updateProfile(name: string): Promise<UserData> {
-  const response = await fetchWithAuth(`${API_BASE_URL}/users/me/profile`, {
+  const json = await apiFetch("/users/me/profile", {
     method: "PUT",
     body: JSON.stringify({ name }),
   });
-
-  const json = await response.json();
-
-  if (!response.ok) {
-    throw new Error(json.message || "Failed to update profile");
-  }
-
   return json.data.user;
 }
 
 export async function updateAvatar(formData: FormData): Promise<UserData> {
   const token = await SecureStore.getItemAsync("token");
   
-  // Note: We don't use fetchWithAuth here because we need to let the browser
-  // set the Content-Type header with the boundary for FormData.
-  const response = await fetch(`${API_BASE_URL}/users/me/avatar`, {
+  // Note: We don't use apiFetch here because we need to let the runtime
+  // set the Content-Type header with the multipart boundary for FormData.
+  const response = await fetch(`http://localhost:5500/api/users/me/avatar`, {
     method: "PUT",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -107,14 +66,8 @@ export async function updateAvatar(formData: FormData): Promise<UserData> {
 }
 
 export async function changePassword(old_password: string, new_password: string): Promise<void> {
-  const response = await fetchWithAuth(`${API_BASE_URL}/users/me/password`, {
+  await apiFetch("/users/me/password", {
     method: "PUT",
     body: JSON.stringify({ old_password, new_password }),
   });
-
-  const json = await response.json();
-
-  if (!response.ok) {
-    throw new Error(json.message || "Failed to change password");
-  }
 }
