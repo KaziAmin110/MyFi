@@ -39,7 +39,7 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const SWIPE_THRESHOLD = 100;
 
 const CARD_WIDTH = SCREEN_WIDTH * 0.85;
-const CARD_HEIGHT = CARD_WIDTH * 1.35;
+const CARD_HEIGHT = CARD_WIDTH * 1.25;
 // Container height: paddingTop(28) + front card top(24) + card height + 10px buffer
 const CARD_CONTAINER_HEIGHT = CARD_HEIGHT + 62;
 
@@ -528,14 +528,14 @@ export default function AssessmentScreen() {
       </View>
 
       {/* ── Progress Bar ── */}
+      <Text style={styles.questionCount}>
+        Question {currentIndex + 1} of {totalQuestions}
+      </Text>
       <View style={styles.progressBarBg}>
         <Animated.View
           style={[styles.progressBarFill, { width: `${progressPercent}%` }]}
         />
       </View>
-      <Text style={styles.questionCount}>
-        Question {currentIndex + 1} of {totalQuestions}
-      </Text>
 
       <Text style={styles.subtitle}>How well does this describe you?</Text>
 
@@ -684,8 +684,8 @@ export default function AssessmentScreen() {
             style={[
               styles.btnLabel,
               {
-                color: currentAnswer === "not_me" ? "#E53935" : "#AAB2C0",
-                fontWeight: currentAnswer === "not_me" ? "800" : "600",
+                color: "#E53935",
+                fontWeight: "800",
               },
             ]}
           >
@@ -743,8 +743,8 @@ export default function AssessmentScreen() {
             style={[
               styles.btnLabel,
               {
-                color: currentAnswer === "sometimes" ? "#F5A623" : "#AAB2C0",
-                fontWeight: currentAnswer === "sometimes" ? "800" : "600",
+                color: "#F5A623",
+                fontWeight: "800",
               },
             ]}
           >
@@ -802,8 +802,8 @@ export default function AssessmentScreen() {
             style={[
               styles.btnLabel,
               {
-                color: currentAnswer === "thats_me" ? "#43A047" : "#AAB2C0",
-                fontWeight: currentAnswer === "thats_me" ? "800" : "600",
+                color: "#43A047",
+                fontWeight: "800",
               },
             ]}
           >
@@ -860,28 +860,29 @@ const styles = StyleSheet.create({
   // ── Progress Bar ─────────────────────────────────────────────────────────
   progressBarBg: {
     width: "88%",
-    height: 6,
+    height: 9,
     backgroundColor: "#E2E7F0",
-    borderRadius: 3,
+    borderRadius: 5,
+    marginBottom: 14,
   },
   progressBarFill: {
-    height: 6,
+    height: 9,
     backgroundColor: "#43A047",
-    borderRadius: 3,
+    borderRadius: 5,
   },
   questionCount: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#8E99AE",
-    marginTop: 6,
-    marginBottom: 4,
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#1A2E50",
+    marginTop: 4,
+    marginBottom: 5,
   },
 
   subtitle: {
-    fontSize: 15,
-    color: "#7A869A",
-    marginBottom: 6,
-    fontWeight: "500",
+    fontSize: 16,
+    color: "#1A2E50",
+    marginBottom: 12,
+    fontWeight: "700",
     letterSpacing: 0.1,
   },
 
@@ -899,7 +900,7 @@ const styles = StyleSheet.create({
     height: CARD_HEIGHT,
     backgroundColor: "#FFFFFF",
     borderRadius: 20,
-    borderWidth: 6,
+    borderWidth: 14,
     position: "absolute",
     shadowColor: "#1A2E50",
     shadowOpacity: 0.08,
@@ -1084,9 +1085,9 @@ const styles = StyleSheet.create({
 
   hint: {
     fontSize: 12,
-    color: "#B0B8C9",
+    color: "#3059AD",
     marginBottom: 14,
-    fontWeight: "500",
+    fontWeight: "600",
   },
 
   // ── Loading / Error states ─────────────────────────────────────────────
