@@ -9,6 +9,9 @@ import {
   FlatList,
   useWindowDimensions,
 } from "react-native";
+import {scale, verticalScale, moderateScale, moderateVerticalScale} from "../../utils/scale";
+import { VideoExportPreset } from "expo-image-picker";
+
 
 const cards = [
   {
@@ -16,37 +19,36 @@ const cards = [
     title: "Discover What Drives Your Money Decisions",
     subtext: "Your Habits + Attitudes = Your Money Personality",
     imageSz: 200,
-    imageMarginBottom: 95,
-    subtextSize: 18,
-    subtextMarginTop: 15,
+    subtextSize: moderateScale(18),
+    imageMarginBottom: verticalScale(45),
+    subtextMarginTop: verticalScale(15),
     fontWeight: "400",
-    marginBottom: 80,
+    
   },
   {
-    image: require("../../assets/images/display2.png"),
-    title: "Your Habitudes,",
-    subtext: "All In One Place",
-    imageSz: 400,
-    imageMarginBottom: 15,
-    subtextSize: 30,
-    subtextMarginTop: 0,
-    fontWeight: "600",
-    marginBottom: 40,
-  },
-  {
-    image: require("../../assets/images/chatBot.png"),
+    image: require("../../assets/images/chatDisplay.png"),
     title: "Schedule Personalized Chats to",
     subtext: "Explore Your Money Mindset",
     imageSz: 500,
-    imageMarginBottom: 85,
-    subtextSize: 30,
+    imageMarginBottom: verticalScale(35),
+    subtextSize: moderateScale(20),
     fontWeight: "600",
   },
+  {
+    image: require("../../assets/images/display.png"),
+    title: "Your Habitudes,",
+    subtext: "All In One Place",
+    imageSz: 600,
+    subtextSize: moderateScale(25),
+    fontWeight: "600",
+    imageMarginBottom: verticalScale(25),
+  },
+  
 ];
 
 export default function Index() {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const { width, height } = useWindowDimensions();
+  const { width, height} = useWindowDimensions();
 
   const handleScroll = (event: any) => {
     const contentOffsetX = event.nativeEvent.contentOffset.x;
@@ -55,15 +57,13 @@ export default function Index() {
   };
 
   const showCard = ({ item }: any) => {
-    const scaleW = width / 375;
-    const scaledByWidth = item.imageSz * scaleW;
-    const maxHeight = height < 700 ? 0.65 : 0.62;
-    const imageSize = Math.min(scaledByWidth, height * maxHeight);
+    
+    const imageSize = Math.min(scale(item.imageSz), height * 0.6);
 
     return (
       <View style={[styles.slide, { width }]}>
         <View
-          style={[styles.infoContainer, { marginTop: height < 700 ? 10 : 40 }]}
+          style={[styles.infoContainer, { marginTop: verticalScale(40) }]}
         >
           <Image
             source={item.image}
@@ -72,21 +72,22 @@ export default function Index() {
               {
                 width: imageSize,
                 height: imageSize,
-                marginBottom:
-                  item.imageMarginBottom * (height < 700 ? 0.35 : 0.3),
+                marginBottom: item.imageMarginBottom,
               },
             ]}
             resizeMode="contain"
           />
-          <Text style={[styles.title, { fontSize: height < 700 ? 20 : 30 }]}>
+          {cards.indexOf(item) === 1 && (
+            <View style={[styles.line, { width: width - scale(48) }]}></View>
+          )}
+          <Text style={[styles.title, { fontSize: moderateScale(22.5)}]}>
             {item.title}
           </Text>
           <Text
             style={[
               styles.subtext,
               {
-                fontSize:
-                  height < 700 ? item.subtextSize * 0.65 : item.subtextSize,
+                fontSize: item.subtextSize,
                 marginTop: item.subtextMarginTop,
                 fontWeight: item.fontWeight,
               },
@@ -132,7 +133,7 @@ export default function Index() {
 
         <Pressable
           onPress={() => router.push("/register")}
-          style={[styles.primaryBtn, { padding: height < 700 ? 6 : 10 }]}
+          style={[styles.primaryBtn, { padding: verticalScale(10)}]}
         >
           <Text style={styles.primaryBtnTxt}>Create account</Text>
         </Pressable>
@@ -144,7 +145,8 @@ export default function Index() {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  container: 
+  {
     flex: 1,
     justifyContent: "center",
     backgroundColor: "#F0EEEE",
@@ -154,11 +156,19 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  cardImage: {
-    marginBottom: 18,
+  cardImage: 
+  {
+    marginBottom: verticalScale(18),
   },
-  title: {
-    fontSize: 30,
+  line:
+  {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: "#C7C2C2",
+  },
+  title: 
+  {
+    marginTop: verticalScale(15),
+    fontSize: moderateScale(30),
     fontWeight: "600",
     textAlign: "center",
     fontFamily: "Inter",
@@ -166,24 +176,25 @@ const styles = StyleSheet.create({
   subtext: {
     color: "rgb(89,85,85)",
     textAlign: "center",
-    marginTop: 8,
-    maxWidth: 380,
+    marginTop: verticalScale(8),
+    maxWidth: scale(380),
     fontFamily: "Inter",
-    fontSize: 16,
+    fontSize: moderateScale(16),
   },
 
   ellipseContainer: {
+    marginTop: verticalScale(15),
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    paddingVertical: 12,
-    gap: 10,
+    paddingVertical: verticalScale(12),
+    gap: scale(10),
   },
 
   ellipse: {
-    width: 9,
-    height: 9,
-    borderRadius: 4,
+    width: scale(9),
+    height: scale(9),
+    borderRadius: scale(4),
   },
   footer: {
     position: "absolute",
@@ -191,18 +202,18 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     alignItems: "center",
-    paddingBottom: 30,
-    paddingTop: 10,
+    paddingBottom: verticalScale(30),
+    paddingTop: verticalScale(10),
   },
   primaryBtn: {
     backgroundColor: "#345995",
-    marginVertical: 10,
-    borderRadius: 45,
+    marginVertical: verticalScale(10),
+    borderRadius: scale(45),
     width: "80%",
     alignItems: "center",
   },
   primaryBtnTxt: {
-    fontSize: 18,
+    fontSize: moderateScale(18),
     color: "#ffffff",
     fontFamily: "Inter",
   },
@@ -210,7 +221,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "flex-start",
-    paddingHorizontal: 24,
-    paddingBottom: 140,
+    paddingHorizontal: scale(24),
+    paddingBottom: verticalScale(140),
   },
 });
