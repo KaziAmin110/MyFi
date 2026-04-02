@@ -6,6 +6,7 @@ export type SessionData = {
   assessment_id: string;
   current_question_index: number;
   status: "in_progress" | "completed";
+  updated_at?: string | Date;
 };
 
 export type QuestionData = {
@@ -118,8 +119,9 @@ export const getAllUserSessions = async (
   try {
     const { data, error } = await supabase
       .from("assessment_sessions")
-      .select("id, assessment_id, current_question_index, status")
-      .eq("user_id", user_id);
+      .select("id, assessment_id, current_question_index, status, updated_at")
+      .eq("user_id", user_id)
+      .order("updated_at", { ascending: false });
 
     if (error) {
       console.error(
@@ -138,6 +140,7 @@ export const getAllUserSessions = async (
       assessment_id: session.assessment_id,
       current_question_index: session.current_question_index,
       status: session.status,
+      updated_at: session.updated_at,
     }));
   } catch (error) {
     console.error("Error fetching active assessment session:", error);
