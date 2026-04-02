@@ -1,5 +1,5 @@
 import { Text, View, StyleSheet, ScrollView, TouchableOpacity} from "react-native";
-import { getCachedAssessmentResults } from "../../constants/assessmentResultsCache";
+
 import {scale, verticalScale, moderateScale} from "../../utils/scale";
 import MultiRing from "../../components/MultiRing";
 import { HABITUDES } from "../../constants/habitudes";
@@ -18,11 +18,7 @@ const AssessmentResult = ({ resultData: propResultData }: { resultData?: any }) 
             return propResultData;
         }
 
-        const cachedResults = getCachedAssessmentResults();
-        if (cachedResults) 
-        {
-            return cachedResults;
-        }
+       
 
         if (!rawResultData) {
             return null;
