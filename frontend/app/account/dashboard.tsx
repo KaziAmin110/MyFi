@@ -321,7 +321,7 @@ const Dashboard = () => {
           {/* Set up an appointment*/}
           <Pressable
             style={styles.appointmentDisplay}
-            onPress={() => router.push("./account/reminders")}
+            onPress={() => router.push("/account/reminders")}
           >
             <Image
               source={require("../../assets/images/calendarPic.png")}
