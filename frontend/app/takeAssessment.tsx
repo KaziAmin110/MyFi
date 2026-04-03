@@ -503,6 +503,9 @@ export default function AssessmentScreen() {
   const back2Height = dragProgress.interpolate({ inputRange: [0, 1], outputRange: [CARD_HEIGHT * 0.84, CARD_HEIGHT * 0.92] });
   const back2Opacity = dragProgress.interpolate({ inputRange: [0, 1], outputRange: [0.75, 0.9] });
 
+  // 3rd back card fades in from nothing as the front card is dragged
+  const back3Opacity = dragProgress.interpolate({ inputRange: [0, 1], outputRange: [0, 0.75] });
+
   // Smoothly animate back card text from back-card size to front-card size
   const backCardTextScale = dragProgress.interpolate({
     inputRange: [0, 1],
@@ -541,6 +544,18 @@ export default function AssessmentScreen() {
 
       {/* ── Card Stack ── */}
       <View style={styles.cardContainer}>
+        {/* 3rd back card — invisible at rest, fades in during swipe */}
+        {currentIndex + 3 < totalQuestions && (
+          <Animated.View
+            style={[
+              styles.card,
+              styles.cardBack2,
+              { borderColor: CARD_BORDER_COLORS[(currentIndex + 3) % CARD_BORDER_COLORS.length] },
+              { top: 2, width: CARD_WIDTH * 0.84, height: CARD_HEIGHT * 0.84, opacity: back3Opacity },
+            ]}
+          />
+        )}
+
         {/* Back card */}
         {currentIndex + 2 < totalQuestions && (
           <Animated.View
@@ -588,35 +603,6 @@ export default function AssessmentScreen() {
           ]}
           {...panResponder.panHandlers}
         >
-          {/* Swipe direction overlays */}
-          <Animated.View
-            style={[
-              styles.swipeHint,
-              styles.swipeHintLeft,
-              { opacity: leftOpacity },
-            ]}
-          >
-            <Text style={styles.swipeHintTextRed}>✕</Text>
-          </Animated.View>
-          <Animated.View
-            style={[
-              styles.swipeHint,
-              styles.swipeHintRight,
-              { opacity: rightOpacity },
-            ]}
-          >
-            <Text style={styles.swipeHintTextGreen}>✓</Text>
-          </Animated.View>
-          <Animated.View
-            style={[
-              styles.swipeHint,
-              styles.swipeHintUp,
-              { opacity: upOpacity },
-            ]}
-          >
-            <Text style={styles.swipeHintTextYellow}>?</Text>
-          </Animated.View>
-
           {/* Revisiting badge */}
           {isRevisiting && (
             <View style={styles.revisitBadge}>
@@ -812,7 +798,6 @@ export default function AssessmentScreen() {
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.hint}>← Swipe left, right, or up →</Text>
     </SafeAreaView>
   );
 }
@@ -983,48 +968,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 
-  // ── Swipe hint overlays on card ────────────────────────────────────────
-  swipeHint: {
-    position: "absolute",
-    zIndex: 20,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  swipeHintLeft: {
-    top: 14,
-    left: 14,
-    backgroundColor: "rgba(229, 57, 53, 0.15)",
-  },
-  swipeHintRight: {
-    top: 14,
-    right: 14,
-    backgroundColor: "rgba(67, 160, 71, 0.15)",
-  },
-  swipeHintUp: {
-    top: 14,
-    alignSelf: "center",
-    left: CARD_WIDTH / 2 - 25,
-    backgroundColor: "rgba(245, 166, 35, 0.15)",
-  },
-  swipeHintTextRed: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#E53935",
-  },
-  swipeHintTextGreen: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#43A047",
-  },
-  swipeHintTextYellow: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#F5A623",
-  },
-
   // ── Buttons ──────────────────────────────────────────────────────────────
   buttonsSection: {
     flexDirection: "row",
@@ -1081,13 +1024,6 @@ const styles = StyleSheet.create({
     marginTop: 7,
     letterSpacing: 0.2,
     color: "#AAB2C0",
-  },
-
-  hint: {
-    fontSize: 12,
-    color: "#1A2E50",
-    marginBottom: 14,
-    fontWeight: "600",
   },
 
   // ── Loading / Error states ─────────────────────────────────────────────
