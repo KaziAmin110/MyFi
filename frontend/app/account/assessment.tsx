@@ -11,9 +11,8 @@ const Assessment = () => {
   const [loading, setLoading] = useState(true);
   const [resultData, setResultData] = useState<any>(null);
 
-  const loadData = async () => {
-    setLoading(true);
-    setResultData(null);
+  const loadData = useCallback(async () => {
+    setLoading((currentLoading) => currentLoading || !resultData);
 
     try 
     {
@@ -57,12 +56,20 @@ const Assessment = () => {
     {
       setLoading(false);
     }
-  };
+  }, [resultData]);
 
   useFocusEffect(
     useCallback(() => {
-      loadData();
-    }, [])
+      if (resultData) {
+        router.replace({
+          pathname: "/account/assessmentResult",
+          params: { resultData: JSON.stringify(resultData) },
+        });
+        return;
+      }
+
+      void loadData();
+    }, [loadData, resultData])
   );
 
   useEffect(() => 

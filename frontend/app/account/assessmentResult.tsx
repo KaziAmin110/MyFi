@@ -12,15 +12,16 @@ const AssessmentResult = ({ resultData: propResultData }: { resultData?: any }) 
 
     const { resultData: rawResultData} = useLocalSearchParams();
     const [animatekey, setAnimateKey] = useState(0);
+    
     const results = useMemo(() => {
         if (propResultData) 
         {
             return propResultData;
         }
 
-       
 
-        if (!rawResultData) {
+        if (!rawResultData) 
+        {
             return null;
         }
 
@@ -42,6 +43,7 @@ const AssessmentResult = ({ resultData: propResultData }: { resultData?: any }) 
         return { ...h, score, percent };
     });
     
+    const totalThatsMe = habitudes.reduce((sum, item) => sum + item.score, 0);
     const sortedHabitudes = [...habitudes].sort((a, b) => b.percent - a.percent);
 
     useFocusEffect(
@@ -75,13 +77,18 @@ const AssessmentResult = ({ resultData: propResultData }: { resultData?: any }) 
             <View style={styles.topSection}>
                 <Text style={styles.heading} adjustsFontSizeToFit numberOfLines={1}>Habitude Results</Text>
                 <Text style={styles.subheading}>Your results at a glance</Text>
-                <MultiRing
-                    animatedKey={animatekey}
-                    segments={habitudes.map((item) => ({
-                        value: item.percent,
-                        color: item.color,
-                    }))}
-                />
+                <View style={styles.ringView}>
+                    <MultiRing
+                        animatedKey={animatekey}
+                        segments={habitudes.map((item) => ({
+                            value: item.percent,
+                            color: item.color,
+                        }))}
+                    />
+                    <View style={styles.centerText}>
+                        <Text style={styles.totalNum}>{totalThatsMe}</Text>
+                    </View>
+                </View>
             </View>
 
             <ScrollView
@@ -133,7 +140,7 @@ const styles = StyleSheet.create({
     {
         flex:1,
         alignItems: "center",
-        paddingTop: verticalScale(45),
+        paddingTop: verticalScale(10),
         paddingBottom: verticalScale(30),
     
     },
@@ -142,6 +149,7 @@ const styles = StyleSheet.create({
         alignItems:"center",
         flexShrink: 1,
         paddingHorizontal: scale(20),
+        marginTop: verticalScale(45), 
     },
     heading:
     {
@@ -166,8 +174,24 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         width: "100%",
-        height: verticalScale(200),
+        height: verticalScale(550),
         
+    },
+    ringView: 
+    {
+        justifyContent: "center",
+        alignItems:"center",
+    },
+    centerText:
+    {
+        position: "absolute",
+        justifyContent: "center",
+        alignItems:"center",
+    },
+    totalNum:
+    {
+        fontSize: moderateScale(55),
+        color: "#3D3D3D",
     },
     habitudeSection:
     {
@@ -180,10 +204,11 @@ const styles = StyleSheet.create({
     },
    row: 
    {
-    minHeight: verticalScale(18),
+    padding: verticalScale(10),
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    
   },
   left: 
   {
@@ -228,9 +253,9 @@ const styles = StyleSheet.create({
   },
   divider: 
   {
-  height: 1,
-  backgroundColor: "#D3D3D3",
-  marginVertical: verticalScale(5),
-  opacity: 0.6,
-},
+    height: 1,
+    backgroundColor: "#D3D3D3",
+    marginVertical: verticalScale(5),
+    opacity: 0.6,
+  },
 });
