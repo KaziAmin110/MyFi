@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -110,16 +110,11 @@ export default function AssessmentScreen() {
   const totalQuestionsRef = useRef(questions.length);
   const answersMapRef = useRef(answersMap);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     currentIndexRef.current = currentIndex;
     position.setValue({ x: 0, y: 0 });
-    // Animate dragProgress to 0 smoothly so the new back card settles without snapping
-    Animated.timing(dragProgress, {
-      toValue: 0,
-      duration: 120,
-      useNativeDriver: false,
-    }).start();
-  }, [currentIndex, position]);
+    dragProgress.setValue(0);
+  }, [currentIndex]);
 
   useEffect(() => {
     questionsRef.current = questions;
@@ -578,17 +573,18 @@ export default function AssessmentScreen() {
               { top: back1Top, width: back1Width, height: back1Height, opacity: back1Opacity },
             ]}
           >
+            <LogoBadge style={styles.logoTopLeft} />
             <Animated.View style={[styles.cardTextContainer, { transform: [{ scale: backCardTextScale }] }]}>
               <Text style={styles.cardText}>
                 {questions[currentIndex + 1]?.text}
               </Text>
             </Animated.View>
+            <LogoBadge style={styles.logoBottomRight} />
           </Animated.View>
         )}
 
         {/* Front / active card */}
         <Animated.View
-          key={currentIndex}
           style={[
             styles.card,
             styles.cardFront,
