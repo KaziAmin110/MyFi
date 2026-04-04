@@ -21,11 +21,8 @@ import {
   getUserByAttribute,
   createUser,
   getSignInInfoDB,
-  createUserWithProvider,
-  updateUserWithProvider,
   upsertPasswordResetDB,
 } from "../services/auth.service";
-import { getOnboardingCompletedStatus } from "../services/assessment.service";
 
 interface AuthRequestBody {
   email: string;
