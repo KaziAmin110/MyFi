@@ -1,5 +1,9 @@
 import { supabase } from "../database/db";
 import User from "../entities/user.entities";
+import { OAuth2Client } from "google-auth-library";
+import { GOOGLE_CLIENT_ID } from "../config/env";
+
+const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 // Updates Password of Existing User in the Database Based on User Id
 export const updateUserPassword = async (
@@ -518,5 +522,79 @@ export const deleteUser = async (user_id: string) => {
       error: error.message,
       status: 500,
     };
+  }
+};
+// Verifies ID Token with Google
+export const verifyGoogleToken = async (idToken: string) => {
+  try {
+    const ticket = await googleClient.verifyIdToken({
+      idToken,
+      audience: GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    if (!payload) {
+      throw new Error("Invalid Google Token Payload");
+    }
+    return {
+      email: payload.email,
+      name: payload.name,
+      picture: payload.picture,
+      sub: payload.sub,
+    };
+  } catch (error: any) {
+    throw new Error(`Google Verification Failed: ${error.message}`);
+  }
+};
+
+// Orchestrates User Sign In via OAuth
+export const findOrCreateUserByOAuth = async (
+  email: string,
+  name: string,
+  providerId: string,
+  avatarUrl: string
+) => {
+  try {
+    // 1. Check if user exists by email
+    let user = await getUserByAttribute("email", email);
+
+    if (user) {
+      // 2. If user exists but has no provider_id, link it
+      if (!user.provider_id) {
+        const updateResult = await updateUserWithProvider(email, providerId, avatarUrl);
+        if ("error" in updateResult || "message" in updateResult && !("id" in updateResult)) {
+          throw new Error("Failed to link Google account to existing user");
+        }
+        return updateResult as User;
+      }
+      return user;
+    } else {
+      // 3. Create new user with provider info
+      const createResult = await createUserWithProvider(name, email, providerId, avatarUrl);
+      if ("error" in createResult) {
+        throw new Error(`Failed to create user: ${createResult.error}`);
+      }
+      return createResult as User;
+    }
+  } catch (error: any) {
+    throw new Error(`OAuth Synchronization Failed: ${error.message}`);
+  }
+};
+// Verifies Supabase Access Token
+export const verifySupabaseToken = async (accessToken: string) => {
+  try {
+    const { data, error } = await supabase.auth.getUser(accessToken);
+
+    if (error || !data.user) {
+      throw new Error(error?.message || "Invalid Supabase Token");
+    }
+
+    return {
+      email: data.user.email,
+      name: data.user.user_metadata?.full_name || data.user.email?.split("@")[0],
+      picture: data.user.user_metadata?.avatar_url || data.user.user_metadata?.picture,
+      sub: data.user.id,
+    };
+  } catch (error: any) {
+    throw new Error(`Supabase Verification Failed: ${error.message}`);
   }
 };

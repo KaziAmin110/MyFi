@@ -22,6 +22,9 @@ import {
   createUser,
   getSignInInfoDB,
   upsertPasswordResetDB,
+  verifyGoogleToken,
+  verifySupabaseToken,
+  findOrCreateUserByOAuth,
 } from "../services/auth.service";
 
 interface AuthRequestBody {
@@ -487,5 +490,73 @@ export const changePassword = async (
     return res
       .status(err.statusCode || 500)
       .json({ success: false, message: err.message || "Server Error" });
+  }
+};
+// Sign In via Google
+export const googleSignIn = async (
+  req: Request,
+  res: Response,
+): Promise<Response | void> => {
+  try {
+    const { idToken, supabase_access_token } = req.body;
+
+    if (!idToken && !supabase_access_token) {
+      return res.status(400).json({ success: false, message: "No Token provided" });
+    }
+
+    let oauthUser;
+    if (supabase_access_token) {
+      // Use Supabase Verification
+      oauthUser = await verifySupabaseToken(supabase_access_token);
+    } else {
+      // Fallback for legacy Google ID Token
+      const googleUser = await verifyGoogleToken(idToken!);
+      oauthUser = {
+        email: googleUser.email,
+        name: googleUser.name,
+        picture: googleUser.picture,
+        sub: googleUser.sub,
+      };
+    }
+
+    // 2. Find or Create User
+    const user = await findOrCreateUserByOAuth(
+      oauthUser.email!,
+      oauthUser.name!,
+      oauthUser.sub,
+      oauthUser.picture || ""
+    );
+
+    // 3. Generate Session Tokens
+    const accessToken = user.generateAccessToken();
+    const refreshToken = user.generateRefreshToken();
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: NODE_ENV === "production",
+      maxAge: 24 * 60 * 60 * 1000,
+      sameSite: "strict",
+    });
+
+    await updateRefreshToken(user.id, refreshToken);
+
+    return res.status(200).json({
+      success: true,
+      message: "Google Sign In Successful",
+      accessToken,
+      refreshToken,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        avatar_url: user.avatar_url,
+      },
+    });
+  } catch (error: any) {
+    console.error("Google Sign In Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Google Sign In Failed",
+    });
   }
 };

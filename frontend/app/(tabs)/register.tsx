@@ -2,7 +2,12 @@ import { ScrollView, Text, TextInput, TouchableOpacity, View, Image } from "reac
 import React, { useState } from 'react'
 import { Link, router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
+import * as WebBrowser from "expo-web-browser";
+import * as AuthSession from "expo-auth-session";
+import { supabase } from "../../lib/supabase";
 import { signIn } from "./login";
+
+WebBrowser.maybeCompleteAuthSession();
 
 export const API_URL = "http://localhost:5500/api/auth";
 
@@ -32,6 +37,74 @@ const Register = () => {
     const [showPassword, setShowPassword] = useState(false); // track password visibility
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+
+    const handleGoogleLogin = async () => {
+        setLoading(true);
+        setError("");
+        try {
+            const redirectUri = AuthSession.makeRedirectUri({
+                scheme: 'myfi',
+                path: 'google-auth',
+            });
+            
+            const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: redirectUri,
+                    skipBrowserRedirect: true,
+                },
+            });
+
+            if (oauthError) throw oauthError;
+            if (!data?.url) throw new Error("No URL returned from Supabase OAuth");
+
+            const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUri);
+
+            if (result.type === "success" && result.url) {
+                const fragment = result.url.split("#")[1];
+                if (!fragment) throw new Error("No fragment found in redirect URL");
+
+                const params = fragment.split("&").reduce((acc, part) => {
+                    const [key, value] = part.split("=");
+                    acc[key] = value;
+                    return acc;
+                }, {} as any);
+
+                const supabase_access_token = params.access_token;
+
+                if (!supabase_access_token) throw new Error("No access token found in redirect URL");
+
+                const res = await fetch(`${API_URL}/google-signin`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ supabase_access_token }),
+                });
+
+                const backendData = await res.json();
+                if (!res.ok) throw new Error(backendData.message || "Backend authentication failed");
+
+                await handleAuthSuccess(backendData);
+            }
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleAuthSuccess = React.useCallback(async (data: any) => {
+        const token = data.accessToken ?? data.token ?? data.jwt;
+        const refreshToken = data.refreshToken;
+        const user = data.user;
+
+        if (token) await SecureStore.setItemAsync("token", String(token));
+        if (refreshToken) await SecureStore.setItemAsync("refreshToken", String(refreshToken));
+        if (user) await SecureStore.setItemAsync("user", JSON.stringify(user));
+
+        // New user — always needs onboarding
+        router.replace("../takeAssessment");
+    }, []);
+
 
     const handleRegister = async () => {
         setLoading(true);
@@ -156,7 +229,10 @@ const Register = () => {
             </View>
 
             <View className="flex-row justify-center space-x-8 mb-10">
-                <TouchableOpacity>
+                <TouchableOpacity 
+                    disabled={loading}
+                    onPress={handleGoogleLogin}
+                >
                 <Image
                     source={require("../../assets/images/google.png")}
                     className="w-10 h-10 mr-5"
