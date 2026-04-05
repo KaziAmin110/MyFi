@@ -35,7 +35,7 @@ async function refreshTokens() {
   await SecureStore.setItemAsync("token", json.accessToken);
   // Backend returns accessToken on refresh, we keep the original refreshToken or backend might rotate it.
   // In our case, the backend doesn't seem to rotate it in the refreshAccess controller.
-  
+
   return json.accessToken;
 }
 
@@ -47,9 +47,12 @@ export async function getAuthenticatedHeader() {
   };
 }
 
-export async function apiFetch(endpoint: string, options: RequestInit = {}): Promise<any> {
+export async function apiFetch(
+  endpoint: string,
+  options: RequestInit = {},
+): Promise<any> {
   const headers = await getAuthenticatedHeader();
-  
+
   try {
     const response = await fetch(`${API_URL}${endpoint}`, {
       ...options,
@@ -75,7 +78,9 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}): Pro
               });
               const retryJson = await retryResponse.json();
               if (!retryResponse.ok) {
-                const err = new Error(retryJson.message || "Something went wrong") as any;
+                const err = new Error(
+                  retryJson.message || "Something went wrong",
+                ) as any;
                 if (retryJson.code) err.code = retryJson.code;
                 reject(err);
               } else {
@@ -117,7 +122,9 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}): Pro
       });
       const retryJson = await retryResponse.json();
       if (!retryResponse.ok) {
-        const retryErr = new Error(retryJson.message || "Something went wrong") as any;
+        const retryErr = new Error(
+          retryJson.message || "Something went wrong",
+        ) as any;
         if (retryJson.code) retryErr.code = retryJson.code;
         throw retryErr;
       }
@@ -155,5 +162,28 @@ export const appointmentsApi = {
       method: "DELETE",
     }),
   getCalendar: (startDate: string, endDate: string) =>
-    apiFetch(`/appointments/calendar?startDate=${startDate}&endDate=${endDate}`),
+    apiFetch(
+      `/appointments/calendar?startDate=${startDate}&endDate=${endDate}`,
+    ),
+};
+
+export const userApi = {
+  updateProfile: (data: any) =>
+    apiFetch("/users/me/profile", {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  updateAvatar: (formData: FormData) =>
+    apiFetch("/users/me/avatar", {
+      method: "PUT",
+      body: JSON.stringify(formData),
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }),
+  updateExpoPushToken: (token: string) =>
+    apiFetch("/users/me/expo-push-token", {
+      method: "PUT",
+      body: JSON.stringify({ expo_push_token: token }),
+    }),
 };

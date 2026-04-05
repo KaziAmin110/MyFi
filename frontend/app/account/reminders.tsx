@@ -13,14 +13,14 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useFocusEffect } from "expo-router";
-import { appointmentsApi } from "../../utils/api";
+import * as Notifications from "expo-notifications";
+import { appointmentsApi, userApi } from "../../utils/api";
 
 const RemindersScreen = () => {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("All");
   const [loading, setLoading] = useState(true);
   const [upcomingReminders, setUpcomingReminders] = useState<any[]>([]);
-  const [pastReminders, setPastReminders] = useState<any[]>([]);
 
   useFocusEffect(
     useCallback(() => {
@@ -31,10 +31,7 @@ const RemindersScreen = () => {
   const fetchReminders = async () => {
     setLoading(true);
     try {
-      const [upcomingRes, pastRes] = await Promise.all([
-        appointmentsApi.getAppointments("upcoming"),
-        appointmentsApi.getAppointments("past"),
-      ]);
+      const upcomingRes = await appointmentsApi.getAppointments("upcoming");
 
       if (upcomingRes.success) {
         setUpcomingReminders(
@@ -54,29 +51,6 @@ const RemindersScreen = () => {
             date: app.next_occurrence.split("T")[0],
             type: "Upcoming",
             active: true,
-            frequency: app.is_recurring ? `Weekly` : "Does not repeat",
-            fullData: app,
-          })),
-        );
-      }
-
-      if (pastRes.success) {
-        setPastReminders(
-          pastRes.data.map((app: any) => ({
-            id: app.id,
-            time: new Date(app.start_date).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: true,
-            }),
-            title: app.title,
-            month: new Date(app.start_date)
-              .toLocaleString("default", { month: "short" })
-              .toUpperCase(),
-            day: new Date(app.start_date).getDate().toString(),
-            date: app.start_date.split("T")[0],
-            type: "Past",
-            active: false,
             frequency: app.is_recurring ? `Weekly` : "Does not repeat",
             fullData: app,
           })),
@@ -125,12 +99,48 @@ const RemindersScreen = () => {
     ]);
   };
 
-  const filteredReminders = [...upcomingReminders, ...pastReminders].filter(
-    (r) => {
-      if (activeTab === "All") return true;
-      return r.type === activeTab;
-    },
-  );
+  const requestNotificationsPermission = async () => {
+    const { status: existingStatus } =
+      await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+
+    if (existingStatus !== "granted") {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+
+    if (finalStatus !== "granted") {
+      Alert.alert(
+        "Permissions Required",
+        "Please enable notifications in your settings to receive appointment reminders.",
+      );
+      return false;
+    }
+
+    // Get the token and save it to the backend
+    try {
+      const tokenData = await Notifications.getExpoPushTokenAsync({
+        projectId: "your-expo-project-id", // You should replace this with your actual Expo project ID from app.json
+      });
+      await userApi.updateExpoPushToken(tokenData.data);
+    } catch (error) {
+      console.error("Error getting/saving push token:", error);
+    }
+
+    return true;
+  };
+
+  const handleAddPress = async () => {
+    const hasPermission = await requestNotificationsPermission();
+    if (hasPermission) {
+      router.push("/account/create-reminder");
+    }
+  };
+
+  const filteredReminders = upcomingReminders.filter((r) => {
+    if (activeTab === "All") return true;
+    return r.type === activeTab;
+  });
 
   return (
     <LinearGradient colors={["#D5E6FF", "#F5F5F5"]} style={styles.container}>
@@ -151,7 +161,7 @@ const RemindersScreen = () => {
         </View>
 
         <View style={styles.tabContainer}>
-          {["All", "Upcoming", "Past"].map((tab) => (
+          {["All", "Upcoming"].map((tab) => (
             <TouchableOpacity
               key={tab}
               style={[styles.tab, activeTab === tab && styles.activeTab]}
@@ -244,10 +254,7 @@ const RemindersScreen = () => {
           </ScrollView>
         )}
 
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => router.push("/account/create-reminder")}
-        >
+        <TouchableOpacity style={styles.addButton} onPress={handleAddPress}>
           <Ionicons name="add" size={40} color="white" />
         </TouchableOpacity>
       </SafeAreaView>
