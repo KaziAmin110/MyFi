@@ -1,44 +1,25 @@
 import { Text, View, StyleSheet, ScrollView, TouchableOpacity} from "react-native";
-
 import {scale, verticalScale, moderateScale} from "../../utils/scale";
 import MultiRing from "../../components/MultiRing";
 import { HABITUDES } from "../../constants/habitudes";
 import { LinearGradient } from "expo-linear-gradient";
-import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import React, {useState, useCallback, useMemo} from 'react';
+import { router, useFocusEffect } from "expo-router";
+import React, {useState, useCallback} from 'react';
 import AssessmentSkeleton from "./AssessmentSkeleton";
+import { AssessmentResultsData, useAssessmentResults } from "@/services/assessmentResult.service";
 
-const AssessmentResult = ({ resultData: propResultData }: { resultData?: any }) => {
+const AssessmentResult = () => {
 
-    const { resultData: rawResultData} = useLocalSearchParams();
+ 
     const [animatekey, setAnimateKey] = useState(0);
-    
-    const results = useMemo(() => {
-        if (propResultData) 
-        {
-            return propResultData;
-        }
+    const {resultData, loading, hasFetched} = useAssessmentResults();
 
-
-        if (!rawResultData) 
-        {
-            return null;
-        }
-
-        try 
-        {
-            return JSON.parse(Array.isArray(rawResultData) ? rawResultData[0] : rawResultData);
-        } 
-        catch (error) 
-        {
-            console.log("Failed to parse results:", error);
-            return null;
-        }
-    }, [propResultData, rawResultData]);
 
     const habitudes = HABITUDES.map(h => {
-        const key = h.id.toLowerCase();
-        const score = results?.[key]?.thats_me ?? 0;
+        const key = h.id.toLowerCase() as keyof AssessmentResultsData;
+        const habitudeResult = resultData?.[key];
+
+        const score = habitudeResult?.thats_me ?? 0;
         const percent = Math.round((score / 54) * 100);
         return { ...h, score, percent };
     });
@@ -49,16 +30,18 @@ const AssessmentResult = ({ resultData: propResultData }: { resultData?: any }) 
     useFocusEffect(
         useCallback(() => {
             setAnimateKey(Date.now());
-            if (!propResultData && !results) {
+
+            if (!loading && hasFetched&& !resultData) 
+            {
                 router.replace("/account/preAssessment");
             }
-        }, [propResultData, results])
+        }, [loading, hasFetched,resultData])
     );
 
-    if (!propResultData && rawResultData && !results)
+    if (loading || !hasFetched)
         return <AssessmentSkeleton/>;
 
-    if(!results)
+    if(!resultData)
     {
         return null;
     }
@@ -104,13 +87,6 @@ const AssessmentResult = ({ resultData: propResultData }: { resultData?: any }) 
                                 pathname: "/account/HabitudeReport",
                                 params: {
                                     id: item.id,
-                                    score: String(item.score),
-                                    percent: String(item.percent),
-                                    color: item.color,
-                                    darkerColor: item.secondaryColor,
-                                    notMe: String(results?.[item.id.toLowerCase()]?.not_me ?? 0),
-                                    sometimesMe: String(results?.[item.id.toLowerCase()]?.sometimes_me ?? 0),
-                                    resultData: JSON.stringify(results),
                                 },
                             })}
                         >

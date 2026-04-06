@@ -1,11 +1,12 @@
 import React, { useEffect, useRef } from "react";
-import { Platform, Animated as RNAnimated, useWindowDimensions } from "react-native";
+import { Platform, Animated as RNAnimated, useWindowDimensions,Text } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Tabs } from "expo-router";
+import { Tabs, useSegments } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { BottomTabBar, BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { TabBarProvider, useTabBar } from "../../components/TabBarContext";
+import { AssessmentResultProvider } from "../../services/assessmentResult.service";
 
 const TabIcon = ({
   name,
@@ -80,6 +81,10 @@ const AnimatedTabBar = (props: BottomTabBarProps) => {
 const TabsLayout = () => {
   const insets = useSafeAreaInsets();
   const isIos = Platform.OS === "ios";
+  const segments = useSegments();
+  const currentScreen = segments[segments.length - 1];
+  const resultsTabFocused =
+    currentScreen === "assessment" || currentScreen === "assessmentResult";
   
   // Compact navbar logic
   const tabHeight = isIos ? (insets.bottom > 0 ? 74 : 64) : 60;
@@ -190,13 +195,26 @@ const TabsLayout = () => {
         name="assessment"
         options={{
           title: "Results",
+          tabBarLabel: ({ focused, color }) => (
+            <Text
+              style={{
+                fontSize: 9,
+                fontWeight: "600",
+                letterSpacing: 0.1,
+                marginTop: -2,
+                color: focused || resultsTabFocused ? "#3059AD" : color,
+              }}
+            >
+              Results
+            </Text>
+          ),
           tabBarIcon: ({ color, size, focused }) => (
             <TabIcon
               name="documents-outline"
               activeName="documents"
-              color={color}
+              color={focused || resultsTabFocused ? "#3059AD" : color}
               size={size}
-              focused={focused}
+              focused={focused || resultsTabFocused}
             />
           ),
         }}
@@ -251,9 +269,12 @@ const TabsLayout = () => {
 };
 
 const AccountLayout = () => (
-  <TabBarProvider>
-    <TabsLayout />
-  </TabBarProvider>
+  <AssessmentResultProvider>
+    <TabBarProvider>
+      <TabsLayout />
+    </TabBarProvider>
+  </AssessmentResultProvider>
+  
 );
 
 export default AccountLayout;
