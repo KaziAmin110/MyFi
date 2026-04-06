@@ -41,8 +41,8 @@ const styles = StyleSheet.create({
         justifyContent: "center",
     },
     card: {
-        width: scale(47),
-        height: verticalScale(63),
+        width: moderateScale(47),
+        height: moderateScale(63),
         borderRadius: moderateScale(5),
         alignItems: "center",
         justifyContent: "center",

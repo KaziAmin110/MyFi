@@ -52,7 +52,7 @@ const SingleRing = ({
   return (
     <View style={styles.wrapper}>
         <Svg width={size} height={size}>
-            <G rotation="180" origin={`${size / 2}, ${size / 2}`}>
+            <G rotation="-90" origin={`${size / 2}, ${size / 2}`}>
                 <Circle
                     cx={size / 2}
                     cy={size / 2}

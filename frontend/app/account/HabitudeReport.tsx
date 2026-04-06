@@ -1,27 +1,62 @@
-import { useLocalSearchParams, router } from "expo-router";
+import { useLocalSearchParams, router, useFocusEffect } from "expo-router";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from "react-native";
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import SingleRing from "../../components/SingleRing";
 import CardStack from "../../components/CardStack";
 import { scale, verticalScale, moderateScale } from "../../utils/scale";
 import { HABITUDES, getScoreTier } from "../../constants/habitudes";
+import { useAssessmentResults, AssessmentResultsData } from "../../services/assessmentResult.service";
+import AssessmentSkeleton from "./AssessmentSkeleton";
+
 
 const HabitudeReport = () => {
-    const { id, score, percent, color, darkerColor, notMe, sometimesMe } = useLocalSearchParams();
-    const parsedScore = Number(Array.isArray(score) ? score[0] : score);
-    const parsedPercent = Number(Array.isArray(percent) ? percent[0] : percent);
-    const parsedColor = Array.isArray(color) ? color[0] : color;
-    const parsedDarkColor = Array.isArray(darkerColor) ? darkerColor[0] : darkerColor;
-    const parsedNotMe = Number(Array.isArray(notMe) ? notMe[0] : notMe);
-    const parsedSometimesMe = Number(Array.isArray(sometimesMe) ? sometimesMe[0] : sometimesMe);
+    const { id} = useLocalSearchParams();
+    const parsedID =
+        typeof id === "string"
+            ? id
+            : Array.isArray(id)
+            ? id[0]
+            : "";
+
+    
+    const { resultData, loading, hasFetched} = useAssessmentResults();
     const [expanded, setExpanded] = useState(false);
+    const [ringAnimation, setRingAnimation] = useState(0);
 
-    const parsedId = Array.isArray(id) ? id[0] : id;
-    const habitude = HABITUDES.find(h => h.id === parsedId);
-    const tier = getScoreTier(parsedScore);
+    const habitude = HABITUDES.find((h) => h.id === parsedID);
+
+    const key = parsedID?.toLowerCase() as keyof AssessmentResultsData;
+    const habitudeResult = resultData?.[key];
+
+    const score = habitudeResult?.thats_me ?? 0;
+    const sometimesMe = habitudeResult?.sometimes_me ?? 0;
+    const notMe = habitudeResult?.not_me ?? 0;
+
+    const percent = Math.round((score / 9) * 100);
+    const tier = getScoreTier(score);
     const content = habitude?.scoreContent[tier];
+  
+    useFocusEffect(
+        useCallback(() => {
+            setRingAnimation(Date.now());
+            if(!loading && hasFetched && !resultData)
+            {
+                router.replace("/account/preAssessment");
+            }
+        }, [loading,hasFetched,resultData])
+    );
 
-    if (!habitude || !content) return null;
+    if(!parsedID)
+        return null;
+
+    if (loading || !hasFetched)
+    {
+        return <AssessmentSkeleton/>;
+    }
+
+    if(!habitude || !content || !resultData)
+        return null;
+
 
     return (
         <>
@@ -31,7 +66,7 @@ const HabitudeReport = () => {
         >
             <View style={styles.headerContainer}>
                 <TouchableOpacity
-                    onPress={() => router.replace("/account/assessment")}
+                    onPress={() => router.replace("/account/assessmentResult")}
                     style={styles.backButton}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
@@ -49,8 +84,9 @@ const HabitudeReport = () => {
 
             <View style={styles.ringRow}>
                 <SingleRing
-                    percent={parsedPercent}
-                    color={parsedColor}
+                    percent={percent}
+                    color={habitude.color}
+                    animatedKey={ringAnimation}
                 />
                 <View style={styles.forYou}>
                     <Text style={styles.forYouText}>{content.forYou}</Text>
@@ -61,32 +97,32 @@ const HabitudeReport = () => {
                 <Text style={styles.cardHeader}>Your Personal Combination</Text>
                 <View style={styles.cardStackRow}>
                 <View style={styles.cardColumn}>
-                    <Text style={[styles.cardLabel, { color: parsedColor }]}>THAT{"'"}S ME</Text>
+                    <Text style={[styles.cardLabel, { color: habitude.color }]}>THAT{"'"}S ME</Text>
                     <CardStack
-                    count={parsedScore}
-                    color={parsedColor}
-                    secondaryColor={parsedDarkColor}
-                    num={parsedScore}
+                    count={score}
+                    color={habitude.color}
+                    secondaryColor={habitude.secondaryColor}
+                    num={score}
                     />
                 </View>
 
                 <View style={styles.cardColumn}>
-                    <Text style={[styles.cardLabel, { color: parsedColor }]}>SOMETIMES</Text>
+                    <Text style={[styles.cardLabel, { color: habitude.color }]}>SOMETIMES</Text>
                     <CardStack
-                    count={parsedSometimesMe}
-                    color={parsedColor}
-                    secondaryColor={parsedDarkColor}
-                    num={parsedSometimesMe}
+                    count={sometimesMe}
+                    color={habitude.color}
+                    secondaryColor={habitude.secondaryColor}
+                    num={sometimesMe}
                     />
                 </View>
 
                 <View style={styles.cardColumn}>
-                    <Text style={[styles.cardLabel, { color: parsedColor }]}>NOT ME</Text>
+                    <Text style={[styles.cardLabel, { color: habitude.color }]}>NOT ME</Text>
                     <CardStack
-                    count={parsedNotMe}
-                    color={parsedColor}
-                    secondaryColor={parsedDarkColor}
-                    num={parsedNotMe}
+                    count={notMe}
+                    color={habitude.color}
+                    secondaryColor={habitude.secondaryColor}
+                    num={notMe}
                     />
                 </View>
                 </View>
@@ -137,7 +173,7 @@ const HabitudeReport = () => {
         </>
     );
 };
-
+const CARD_PADDING = scale(20);
 export default HabitudeReport;
 
 const styles = StyleSheet.create({
@@ -145,6 +181,7 @@ const styles = StyleSheet.create({
     {
         alignItems: "center",
         backgroundColor: "#F0EEEE",
+        marginTop: verticalScale(15),
         paddingHorizontal: scale(24),
         paddingBottom: verticalScale(20),
     },
@@ -185,13 +222,13 @@ const styles = StyleSheet.create({
         marginTop: verticalScale(20),
         flexDirection: "row",
         gap: 16,  
+        marginBottom: verticalScale(25),
     },
     forYou:
     {
         backgroundColor: "#FFFFFF",
         borderRadius: moderateScale(20),
-        paddingVertical: scale(25),
-        paddingHorizontal: scale(20),
+        padding: CARD_PADDING,
         flex:1,
     },
     forYouText:
@@ -204,18 +241,17 @@ const styles = StyleSheet.create({
     cardStackWrapper: 
     {
         width: "100%",
-        marginTop: verticalScale(10),
         backgroundColor: "#FFFFFF",
         borderRadius: moderateScale(20),
-        padding: scale(20),
+        padding: CARD_PADDING,
         alignItems: "center",
-        marginBottom: verticalScale(10),
+        marginBottom: verticalScale(25),
     },
     cardHeader: 
     {
         fontSize: moderateScale(15),
         fontWeight: "600",
-        marginBottom: verticalScale(10),
+        margin: verticalScale(8),
         textAlign:"center"
     },
     cardLabel:
@@ -226,6 +262,7 @@ const styles = StyleSheet.create({
     },
     cardStackRow: 
     {
+        marginTop: verticalScale(8),
         flexDirection: "row",
         justifyContent: "space-between",
         width: "100%",
@@ -239,14 +276,16 @@ const styles = StyleSheet.create({
     {
         backgroundColor: "#FFFFFF",
         borderRadius: moderateScale(20),
-        padding: verticalScale(12),
-        marginBottom: verticalScale(10),
+        padding: CARD_PADDING,
+        marginBottom: verticalScale(25),
         width: "100%",
     },
     habitsHeader: 
     {
         fontSize: moderateScale(15),
         fontWeight: "600",
+        margin: verticalScale(8),
+        color: "#202020",
         textAlign:"center"
     },
     cardBody: 
@@ -254,12 +293,15 @@ const styles = StyleSheet.create({
         fontSize: moderateScale(13),
         color: "#3D3D3D",
         lineHeight: moderateScale(22),
-        padding: scale(10),
+        paddingHorizontal: 0,
+        paddingVertical: 0,
     },
     expand:
     {
-        alignItems: "center",
-        marginTop: verticalScale(5),
+        width: scale(20),
+        height: scale(20),
+        alignSelf: "center",
+        
     },
     infoHeader: 
     {
@@ -270,7 +312,8 @@ const styles = StyleSheet.create({
     bulletContainer: 
     {
         marginTop: verticalScale(4),
-        padding: scale(10),
+        paddingRight: scale(9),
+        paddingVertical: 0,
     },
     bulletRow: 
     {

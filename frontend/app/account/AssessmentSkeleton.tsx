@@ -3,8 +3,8 @@ import {scale, verticalScale, moderateScale} from "../../utils/scale";
 import { LinearGradient } from "expo-linear-gradient";
 import React from 'react';
 
-const ROW_HEIGHT = verticalScale(16);
-const SKELETON_COLOR = "#E5E7EB";
+const ROW_HEIGHT = verticalScale(21);
+const SKELETON_COLOR = "#D9D9D9";
 
 const SkeletonBox = ({style}: {style: object}) => (
     <View style={[{ backgroundColor:SKELETON_COLOR}, style]}/>
@@ -58,28 +58,29 @@ const styles = StyleSheet.create({
       left: 0,
       right: 0,
       width: "100%",
-      height: verticalScale(200),
+      height: verticalScale(550),
     },
     heading: 
     {
+      marginTop: verticalScale(45),
       width: scale(200),
-      height: verticalScale(22),
+      height: verticalScale(34),
       borderRadius: moderateScale(8),
       marginBottom: verticalScale(5),
     },
     subheading: 
     {
       width: scale(160),
-      height: verticalScale(8),
+      height: verticalScale(11),
       borderRadius: moderateScale(8),
-      marginBottom: verticalScale(8),
+      marginBottom: verticalScale(12),
     },
     ring: 
     {
-      width: scale(220),
-      height: scale(220),
+      width: scale(200),
+      height: scale(200),
       borderRadius: scale(130),
-      marginBottom: verticalScale(8),
+      marginBottom: verticalScale(12),
       
     },
     habitudeSection: 
@@ -94,6 +95,7 @@ const styles = StyleSheet.create({
       alignItems: "center",
       marginBottom: verticalScale(10),
       gap: scale(10),
+      padding: verticalScale(15),
     },
     colorBox: 
     {
