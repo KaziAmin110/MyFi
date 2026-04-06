@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -39,14 +39,16 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const SWIPE_THRESHOLD = 100;
 
 const CARD_WIDTH = SCREEN_WIDTH * 0.85;
-const CARD_HEIGHT = CARD_WIDTH * (400 / 336);
+const CARD_HEIGHT = CARD_WIDTH * 1.25;
+// Container height: paddingTop(28) + front card top(24) + card height + 10px buffer
+const CARD_CONTAINER_HEIGHT = CARD_HEIGHT + 62;
 
 const CARD_BORDER_COLORS = [
-  "#43A047",
-  "#1E88E5",
-  "#E53935",
-  "#FFD600",
-  "#8E24AA",
+  "#3A8F3F",
+  "#21428F",
+  "#C81220",
+  "#E5A800",
+  "#7B1FA2",
 ];
 
 function answerToValue(answer: Answer): number {
@@ -99,6 +101,8 @@ export default function AssessmentScreen() {
 
   // Animation position for current card
   const position = useRef(new Animated.ValueXY()).current;
+  // 0→1 as front card is dragged toward swipe threshold (drives back card animations)
+  const dragProgress = useRef(new Animated.Value(0)).current;
 
   // Refs for latest values so panResponder doesn't read stale state
   const currentIndexRef = useRef(currentIndex);
@@ -106,10 +110,11 @@ export default function AssessmentScreen() {
   const totalQuestionsRef = useRef(questions.length);
   const answersMapRef = useRef(answersMap);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     currentIndexRef.current = currentIndex;
     position.setValue({ x: 0, y: 0 });
-  }, [currentIndex, position]);
+    dragProgress.setValue(0);
+  }, [currentIndex]);
 
   useEffect(() => {
     questionsRef.current = questions;
@@ -271,13 +276,22 @@ export default function AssessmentScreen() {
 
   const swipeCard = useCallback(
     (answer: Answer, toX: number, toY: number) => {
-      Animated.timing(position, {
-        toValue: { x: toX, y: toY },
-        duration: 250,
-        useNativeDriver: false,
-      }).start(() => recordAnswer(answer));
+      Animated.parallel([
+        Animated.timing(position, {
+          toValue: { x: toX, y: toY },
+          duration: 250,
+          useNativeDriver: false,
+        }),
+        Animated.timing(dragProgress, {
+          toValue: 1,
+          duration: 250,
+          useNativeDriver: false,
+        }),
+      ]).start(() => {
+        recordAnswer(answer);
+      });
     },
-    [position, recordAnswer],
+    [position, dragProgress, recordAnswer],
   );
 
   const panResponder = useRef(
@@ -285,6 +299,10 @@ export default function AssessmentScreen() {
       onStartShouldSetPanResponder: () => true,
       onPanResponderMove: (_, gesture) => {
         position.setValue({ x: gesture.dx, y: gesture.dy });
+        const absDx = Math.abs(gesture.dx);
+        const absDy = Math.max(0, -gesture.dy); // only upward drag counts
+        const progress = Math.min(Math.max(absDx, absDy) / SWIPE_THRESHOLD, 1);
+        dragProgress.setValue(progress);
       },
       onPanResponderRelease: (_, gesture) => {
         if (gesture.dx < -SWIPE_THRESHOLD) {
@@ -292,24 +310,36 @@ export default function AssessmentScreen() {
             toValue: { x: -SCREEN_WIDTH * 1.5, y: 0 },
             duration: 250,
             useNativeDriver: false,
-          }).start(() => recordAnswer("not_me"));
+          }).start(() => {
+            recordAnswer("not_me");
+          });
         } else if (gesture.dx > SWIPE_THRESHOLD) {
           Animated.timing(position, {
             toValue: { x: SCREEN_WIDTH * 1.5, y: 0 },
             duration: 250,
             useNativeDriver: false,
-          }).start(() => recordAnswer("thats_me"));
+          }).start(() => {
+            recordAnswer("thats_me");
+          });
         } else if (gesture.dy < -SWIPE_THRESHOLD) {
           Animated.timing(position, {
             toValue: { x: 0, y: -SCREEN_HEIGHT },
             duration: 250,
             useNativeDriver: false,
-          }).start(() => recordAnswer("sometimes"));
+          }).start(() => {
+            recordAnswer("sometimes");
+          });
         } else {
-          Animated.spring(position, {
-            toValue: { x: 0, y: 0 },
-            useNativeDriver: false,
-          }).start();
+          Animated.parallel([
+            Animated.spring(position, {
+              toValue: { x: 0, y: 0 },
+              useNativeDriver: false,
+            }),
+            Animated.spring(dragProgress, {
+              toValue: 0,
+              useNativeDriver: false,
+            }),
+          ]).start();
         }
       },
     }),
@@ -457,6 +487,27 @@ export default function AssessmentScreen() {
   const backBorderColor =
     CARD_BORDER_COLORS[(currentIndex + 2) % CARD_BORDER_COLORS.length];
 
+  // Back card animated styles — driven by drag progress (0 = resting, 1 = swiped)
+  const back1Top = dragProgress.interpolate({ inputRange: [0, 1], outputRange: [12, 24] });
+  const back1Width = dragProgress.interpolate({ inputRange: [0, 1], outputRange: [CARD_WIDTH * 0.92, CARD_WIDTH] });
+  const back1Height = dragProgress.interpolate({ inputRange: [0, 1], outputRange: [CARD_HEIGHT * 0.92, CARD_HEIGHT] });
+  const back1Opacity = dragProgress.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] });
+
+  const back2Top = dragProgress.interpolate({ inputRange: [0, 1], outputRange: [2, 12] });
+  const back2Width = dragProgress.interpolate({ inputRange: [0, 1], outputRange: [CARD_WIDTH * 0.84, CARD_WIDTH * 0.92] });
+  const back2Height = dragProgress.interpolate({ inputRange: [0, 1], outputRange: [CARD_HEIGHT * 0.84, CARD_HEIGHT * 0.92] });
+  const back2Opacity = dragProgress.interpolate({ inputRange: [0, 1], outputRange: [0.75, 0.9] });
+
+  // 3rd back card fades in from nothing as the front card is dragged
+  const back3Opacity = dragProgress.interpolate({ inputRange: [0, 1], outputRange: [0, 0.75] });
+
+  // Smoothly animate back card text from back-card size to front-card size
+  const backCardTextScale = dragProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [19 / 24, 1],
+    extrapolate: "clamp",
+  });
+
   return (
     <SafeAreaView style={styles.container}>
       {/* ── Header ── */}
@@ -475,44 +526,65 @@ export default function AssessmentScreen() {
       </View>
 
       {/* ── Progress Bar ── */}
+      <Text style={styles.questionCount}>
+        Question {currentIndex + 1} of {totalQuestions}
+      </Text>
       <View style={styles.progressBarBg}>
         <Animated.View
           style={[styles.progressBarFill, { width: `${progressPercent}%` }]}
         />
       </View>
-      <Text style={styles.questionCount}>
-        Question {currentIndex + 1} of {totalQuestions}
-      </Text>
 
       <Text style={styles.subtitle}>How well does this describe you?</Text>
 
       {/* ── Card Stack ── */}
       <View style={styles.cardContainer}>
+        {/* 3rd back card — invisible at rest, fades in during swipe */}
+        {currentIndex + 3 < totalQuestions && (
+          <Animated.View
+            style={[
+              styles.card,
+              styles.cardBack2,
+              { borderColor: CARD_BORDER_COLORS[(currentIndex + 3) % CARD_BORDER_COLORS.length] },
+              { top: 2, width: CARD_WIDTH * 0.84, height: CARD_HEIGHT * 0.84, opacity: back3Opacity },
+            ]}
+          />
+        )}
+
         {/* Back card */}
         {currentIndex + 2 < totalQuestions && (
-          <View
+          <Animated.View
             style={[
               styles.card,
               styles.cardBack2,
               { borderColor: backBorderColor },
+              { top: back2Top, width: back2Width, height: back2Height, opacity: back2Opacity },
             ]}
           />
         )}
 
-        {/* Middle card */}
+        {/* Middle card — shows next question and animates toward front as card is dragged */}
         {currentIndex + 1 < totalQuestions && (
-          <View
+          <Animated.View
             style={[
               styles.card,
               styles.cardBack1,
               { borderColor: middleBorderColor },
+              { top: back1Top, width: back1Width, height: back1Height, opacity: back1Opacity },
             ]}
-          />
+          >
+            <LogoBadge style={styles.logoTopLeft} />
+            <Animated.View style={[styles.cardTextContainer, { transform: [{ scale: backCardTextScale }] }]}>
+              <Text style={styles.cardText}>
+                {questions[currentIndex + 1]?.text}
+              </Text>
+            </Animated.View>
+            <LogoBadge style={styles.logoBottomRight} />
+          </Animated.View>
         )}
 
         {/* Front / active card */}
         <Animated.View
-          key={currentIndex}
           style={[
             styles.card,
             styles.cardFront,
@@ -527,35 +599,6 @@ export default function AssessmentScreen() {
           ]}
           {...panResponder.panHandlers}
         >
-          {/* Swipe direction overlays */}
-          <Animated.View
-            style={[
-              styles.swipeHint,
-              styles.swipeHintLeft,
-              { opacity: leftOpacity },
-            ]}
-          >
-            <Text style={styles.swipeHintTextRed}>✕</Text>
-          </Animated.View>
-          <Animated.View
-            style={[
-              styles.swipeHint,
-              styles.swipeHintRight,
-              { opacity: rightOpacity },
-            ]}
-          >
-            <Text style={styles.swipeHintTextGreen}>✓</Text>
-          </Animated.View>
-          <Animated.View
-            style={[
-              styles.swipeHint,
-              styles.swipeHintUp,
-              { opacity: upOpacity },
-            ]}
-          >
-            <Text style={styles.swipeHintTextYellow}>?</Text>
-          </Animated.View>
-
           {/* Revisiting badge */}
           {isRevisiting && (
             <View style={styles.revisitBadge}>
@@ -623,8 +666,8 @@ export default function AssessmentScreen() {
             style={[
               styles.btnLabel,
               {
-                color: currentAnswer === "not_me" ? "#E53935" : "#AAB2C0",
-                fontWeight: currentAnswer === "not_me" ? "800" : "600",
+                color: "#E53935",
+                fontWeight: "800",
               },
             ]}
           >
@@ -682,8 +725,8 @@ export default function AssessmentScreen() {
             style={[
               styles.btnLabel,
               {
-                color: currentAnswer === "sometimes" ? "#F5A623" : "#AAB2C0",
-                fontWeight: currentAnswer === "sometimes" ? "800" : "600",
+                color: "#F5A623",
+                fontWeight: "800",
               },
             ]}
           >
@@ -741,8 +784,8 @@ export default function AssessmentScreen() {
             style={[
               styles.btnLabel,
               {
-                color: currentAnswer === "thats_me" ? "#43A047" : "#AAB2C0",
-                fontWeight: currentAnswer === "thats_me" ? "800" : "600",
+                color: "#43A047",
+                fontWeight: "800",
               },
             ]}
           >
@@ -751,7 +794,6 @@ export default function AssessmentScreen() {
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.hint}>← Swipe left, right, or up →</Text>
     </SafeAreaView>
   );
 }
@@ -799,35 +841,37 @@ const styles = StyleSheet.create({
   // ── Progress Bar ─────────────────────────────────────────────────────────
   progressBarBg: {
     width: "88%",
-    height: 6,
+    height: 9,
     backgroundColor: "#E2E7F0",
-    borderRadius: 3,
+    borderRadius: 5,
+    marginBottom: 6,
   },
   progressBarFill: {
-    height: 6,
+    height: 9,
     backgroundColor: "#43A047",
-    borderRadius: 3,
+    borderRadius: 5,
   },
   questionCount: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#8E99AE",
-    marginTop: 6,
-    marginBottom: 4,
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#1A2E50",
+    marginTop: 4,
+    marginBottom: 5,
   },
 
   subtitle: {
-    fontSize: 15,
-    color: "#7A869A",
-    marginBottom: 6,
-    fontWeight: "500",
+    fontSize: 16,
+    color: "#1A2E50",
+    marginTop: 8,
+    marginBottom: 20,
+    fontWeight: "700",
     letterSpacing: 0.1,
   },
 
   // ── Card Stack ───────────────────────────────────────────────────────────
   cardContainer: {
-    flex: 1,
     width: "100%",
+    height: CARD_CONTAINER_HEIGHT,
     alignItems: "center",
     justifyContent: "flex-start",
     paddingTop: 28,
@@ -838,7 +882,7 @@ const styles = StyleSheet.create({
     height: CARD_HEIGHT,
     backgroundColor: "#FFFFFF",
     borderRadius: 20,
-    borderWidth: 6,
+    borderWidth: 14,
     position: "absolute",
     shadowColor: "#1A2E50",
     shadowOpacity: 0.08,
@@ -854,17 +898,10 @@ const styles = StyleSheet.create({
 
   cardBack1: {
     zIndex: 5,
-    top: 12,
-    width: CARD_WIDTH * 0.92,
-    height: CARD_HEIGHT * 0.92,
-    opacity: 0.6,
+    overflow: "hidden",
   },
   cardBack2: {
     zIndex: 1,
-    top: 2,
-    width: CARD_WIDTH * 0.84,
-    height: CARD_HEIGHT * 0.84,
-    opacity: 0.3,
   },
 
   cardTextContainer: {
@@ -884,12 +921,19 @@ const styles = StyleSheet.create({
     lineHeight: 34,
     letterSpacing: -0.3,
   },
+  cardBackText: {
+    fontSize: 19,
+    fontWeight: "600",
+    textAlign: "center",
+    color: "#1A2E50",
+    lineHeight: 28,
+    letterSpacing: -0.3,
+  },
 
   logoBadge: {
     width: 30,
     height: 30,
     resizeMode: "contain",
-    opacity: 0.5,
   },
   logoTopLeft: {
     position: "absolute",
@@ -920,48 +964,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 
-  // ── Swipe hint overlays on card ────────────────────────────────────────
-  swipeHint: {
-    position: "absolute",
-    zIndex: 20,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  swipeHintLeft: {
-    top: 14,
-    left: 14,
-    backgroundColor: "rgba(229, 57, 53, 0.15)",
-  },
-  swipeHintRight: {
-    top: 14,
-    right: 14,
-    backgroundColor: "rgba(67, 160, 71, 0.15)",
-  },
-  swipeHintUp: {
-    top: 14,
-    alignSelf: "center",
-    left: CARD_WIDTH / 2 - 25,
-    backgroundColor: "rgba(245, 166, 35, 0.15)",
-  },
-  swipeHintTextRed: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#E53935",
-  },
-  swipeHintTextGreen: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#43A047",
-  },
-  swipeHintTextYellow: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#F5A623",
-  },
-
   // ── Buttons ──────────────────────────────────────────────────────────────
   buttonsSection: {
     flexDirection: "row",
@@ -972,59 +974,52 @@ const styles = StyleSheet.create({
   },
 
   actionBtn: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 68,
+    height: 68,
+    borderRadius: 34,
     justifyContent: "center",
     alignItems: "center",
     shadowColor: "#1A2E50",
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
-    borderWidth: 2,
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 8,
+    borderWidth: 2.5,
     alignSelf: "center",
   },
   btnNotMe: {
     backgroundColor: "#FFFFFF",
-    borderColor: "#F0D0D0",
+    borderColor: "#E8B4B2",
   },
   btnNotMeActive: {
-    backgroundColor: "#E53935",
-    borderColor: "#E53935",
+    backgroundColor: "#C81220",
+    borderColor: "#C81220",
   },
   btnSometimes: {
     backgroundColor: "#FFFFFF",
-    borderColor: "#F5E0B8",
+    borderColor: "#E5C87A",
   },
   btnSometimesActive: {
-    backgroundColor: "#F5A623",
-    borderColor: "#F5A623",
+    backgroundColor: "#E5A800",
+    borderColor: "#E5A800",
   },
   btnThatsMe: {
     backgroundColor: "#FFFFFF",
-    borderColor: "#C8E6C9",
+    borderColor: "#A5D6A7",
   },
   btnThatsMeActive: {
-    backgroundColor: "#43A047",
-    borderColor: "#43A047",
+    backgroundColor: "#3A8F3F",
+    borderColor: "#3A8F3F",
   },
-  btnImg: { width: 26, height: 26, resizeMode: "contain" },
+  btnImg: { width: 32, height: 32, resizeMode: "contain" },
   btnImgOverlay: { position: "absolute" },
   btnLabel: {
-    fontSize: 11,
-    fontWeight: "600",
+    fontSize: 12,
+    fontWeight: "700",
     textAlign: "center",
-    marginTop: 6,
+    marginTop: 7,
     letterSpacing: 0.2,
     color: "#AAB2C0",
-  },
-
-  hint: {
-    fontSize: 12,
-    color: "#B0B8C9",
-    marginBottom: 14,
-    fontWeight: "500",
   },
 
   // ── Loading / Error states ─────────────────────────────────────────────

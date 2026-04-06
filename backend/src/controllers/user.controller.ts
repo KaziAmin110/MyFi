@@ -29,9 +29,9 @@ export const getUserContext = async (
       (session) => session.assessment_id == ONBOARDING_ASSESSMENT_ID,
     );
 
-    const isOnboardingCompleted = onboardingSessions?.some(
-      (session) => session.status === "completed",
-    ) ?? false;
+    const isOnboardingCompleted =
+      onboardingSessions?.some((session) => session.status === "completed") ??
+      false;
 
     const activeOnboardingSession = onboardingSessions?.find(
       (session) => session.status === "in_progress",
@@ -98,6 +98,47 @@ export const updateProfile = async (
     return res.status(200).json({
       success: true,
       message: "Profile updated successfully",
+      data: {
+        user: updatedUserData,
+      },
+    });
+  } catch (error: any) {
+    return res
+      .status(error.statusCode || 500)
+      .json({ success: false, message: error.message || "Server Error" });
+  }
+};
+
+// Updates User's Expo Push Token
+export const updateExpoPushToken = async (
+  req: Request & { user?: string },
+  res: Response,
+): Promise<Response | void> => {
+  try {
+    const user_id = req.user;
+    const { expo_push_token } = req.body;
+
+    if (!expo_push_token) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Expo push token is required" });
+    }
+
+    const updatedUserData = await updateUserProfile(
+      user_id as string,
+      "expo_push_token",
+      expo_push_token,
+    );
+
+    if (!updatedUserData) {
+      return res
+        .status(500)
+        .json({ success: false, message: "Failed to update expo push token" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Expo push token updated successfully",
       data: {
         user: updatedUserData,
       },

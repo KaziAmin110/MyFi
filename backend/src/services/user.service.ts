@@ -4,7 +4,7 @@ export const getUserProfile = async (user_id: string) => {
   try {
     const { data, error } = await supabase
       .from("users")
-      .select("id, name, email, provider_id, avatar_url")
+      .select("id, name, email, provider_id, avatar_url, expo_push_token")
       .eq("id", user_id)
       .single();
 
@@ -31,7 +31,7 @@ export const updateUserProfile = async (
       .from("users")
       .update({ [attribute]: value })
       .eq("id", user_id)
-      .select("id, name, email, provider_id, avatar_url")
+      .select("id, name, email, provider_id, avatar_url, expo_push_token")
       .single();
 
     if (error) {

@@ -17,6 +17,7 @@ export const {
   ACCESS_EXPIRES_IN,
   REFRESH_EXPIRES_IN,
   GEMINI_API_KEY,
+  GOOGLE_CLIENT_ID,
 } = process.env as {
   PORT?: string;
   NODE_ENV?: string;
@@ -30,4 +31,5 @@ export const {
   ACCESS_EXPIRES_IN?: string;
   REFRESH_EXPIRES_IN?: string;
   GEMINI_API_KEY?: string;
+  GOOGLE_CLIENT_ID?: string;
 };

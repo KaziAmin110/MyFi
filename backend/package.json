@@ -22,11 +22,12 @@
     "dotenv": "^17.2.3",
     "express": "^4.19.2",
     "get-tsconfig": "^4.13.7",
+    "google-auth-library": "^10.6.2",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
     "node-cron": "^4.2.1",
     "node-fetch": "^2.7.0",
-    "nodemailer": "^7.0.10",
+    "nodemailer": "^8.0.4",
     "resolve-pkg-maps": "^1.0.0"
   },
   "devDependencies": {

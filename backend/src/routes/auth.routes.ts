@@ -8,6 +8,7 @@ import {
   signUp,
   verifyResetToken,
   refreshAccess,
+  googleSignIn,
 } from "../controllers/auth.controller";
 
 const authRouter = Router();
@@ -19,5 +20,6 @@ authRouter.post("/forgot-password", forgotPassword);
 authRouter.post("/verify-token", verifyResetToken);
 authRouter.post("/reset-password", resetPassword);
 authRouter.post("/refresh-token", refreshAccess);
+authRouter.post("/google-signin", googleSignIn);
 
 export default authRouter;

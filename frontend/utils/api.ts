@@ -35,7 +35,7 @@ async function refreshTokens() {
   await SecureStore.setItemAsync("token", json.accessToken);
   // Backend returns accessToken on refresh, we keep the original refreshToken or backend might rotate it.
   // In our case, the backend doesn't seem to rotate it in the refreshAccess controller.
-  
+
   return json.accessToken;
 }
 
@@ -47,9 +47,12 @@ export async function getAuthenticatedHeader() {
   };
 }
 
-export async function apiFetch(endpoint: string, options: RequestInit = {}): Promise<any> {
+export async function apiFetch(
+  endpoint: string,
+  options: RequestInit = {},
+): Promise<any> {
   const headers = await getAuthenticatedHeader();
-  
+
   try {
     const response = await fetch(`${API_URL}${endpoint}`, {
       ...options,
@@ -60,41 +63,79 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}): Pro
     });
 
     if (response.status === 401) {
-      if (!isRefreshing) {
-        isRefreshing = true;
-        try {
-          const newToken = await refreshTokens();
-          isRefreshing = false;
-          onRefreshed(newToken);
-        } catch (error) {
-          isRefreshing = false;
-          await SecureStore.deleteItemAsync("token");
-          await SecureStore.deleteItemAsync("refreshToken");
-          await SecureStore.deleteItemAsync("user");
-          router.replace("/login");
-          throw error;
-        }
+      // A refresh is already in progress from another concurrent call — queue behind it
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          subscribeTokenRefresh(async (token) => {
+            try {
+              const retryResponse = await fetch(`${API_URL}${endpoint}`, {
+                ...options,
+                headers: {
+                  ...headers,
+                  ...options.headers,
+                  Authorization: `Bearer ${token}`,
+                },
+              });
+              const retryJson = await retryResponse.json();
+              if (!retryResponse.ok) {
+                const err = new Error(
+                  retryJson.message || "Something went wrong",
+                ) as any;
+                if (retryJson.code) err.code = retryJson.code;
+                reject(err);
+              } else {
+                resolve(retryJson);
+              }
+            } catch (err) {
+              reject(err);
+            }
+          });
+        });
       }
 
-      return new Promise((resolve) => {
-        subscribeTokenRefresh(async (token) => {
-          const retryHeaders = {
-            ...headers,
-            ...options.headers,
-            Authorization: `Bearer ${token}`,
-          };
-          const retryResponse = await fetch(`${API_URL}${endpoint}`, {
-            ...options,
-            headers: retryHeaders,
-          });
-          resolve(await retryResponse.json());
-        });
+      // First caller to hit 401 — kick off refresh, then retry own request directly
+      isRefreshing = true;
+      let newToken: string;
+      try {
+        newToken = await refreshTokens();
+      } catch (refreshError) {
+        isRefreshing = false;
+        refreshSubscribers = [];
+        await SecureStore.deleteItemAsync("token");
+        await SecureStore.deleteItemAsync("refreshToken");
+        await SecureStore.deleteItemAsync("user");
+        router.replace("/login");
+        throw refreshError;
+      }
+
+      isRefreshing = false;
+      onRefreshed(newToken); // notify any queued concurrent callers
+
+      // Retry this request with the fresh token
+      const retryResponse = await fetch(`${API_URL}${endpoint}`, {
+        ...options,
+        headers: {
+          ...headers,
+          ...options.headers,
+          Authorization: `Bearer ${newToken}`,
+        },
       });
+      const retryJson = await retryResponse.json();
+      if (!retryResponse.ok) {
+        const retryErr = new Error(
+          retryJson.message || "Something went wrong",
+        ) as any;
+        if (retryJson.code) retryErr.code = retryJson.code;
+        throw retryErr;
+      }
+      return retryJson;
     }
 
     const json = await response.json();
     if (!response.ok) {
-      throw new Error(json.message || "Something went wrong");
+      const error = new Error(json.message || "Something went wrong") as any;
+      if (json.code) error.code = json.code;
+      throw error;
     }
     return json;
   } catch (error) {
@@ -121,5 +162,28 @@ export const appointmentsApi = {
       method: "DELETE",
     }),
   getCalendar: (startDate: string, endDate: string) =>
-    apiFetch(`/appointments/calendar?startDate=${startDate}&endDate=${endDate}`),
+    apiFetch(
+      `/appointments/calendar?startDate=${startDate}&endDate=${endDate}`,
+    ),
+};
+
+export const userApi = {
+  updateProfile: (data: any) =>
+    apiFetch("/users/me/profile", {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  updateAvatar: (formData: FormData) =>
+    apiFetch("/users/me/avatar", {
+      method: "PUT",
+      body: JSON.stringify(formData),
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }),
+  updateExpoPushToken: (token: string) =>
+    apiFetch("/users/me/expo-push-token", {
+      method: "PUT",
+      body: JSON.stringify({ expo_push_token: token }),
+    }),
 };
