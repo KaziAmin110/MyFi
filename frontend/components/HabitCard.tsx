@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { useRef, useCallback } from "react";
 import * as Haptics from "expo-haptics";
-import { moderateScale } from "../utils/scale";
+import { moderateScale, moderateVerticalScale } from "./../utils/scale";
 
 type Habit = {
   id: string;
@@ -31,10 +31,9 @@ const AnimatedCard = ({ item, onSelect }: { item: Habit; onSelect: (habit: Habit
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const { width, height } = useWindowDimensions();
   
-  // Calculate responsive dimensions
-  const isTablet = width > 500;
-  const cardWidth = isTablet ? 180 : Math.min(135, width * 0.35);
-  const cardHeight = isTablet ? 250 : Math.min(170, height * 0.21);
+  
+  const cardWidth = moderateScale(125);
+  const cardHeight = moderateVerticalScale(185);
 
   const handlePressIn = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

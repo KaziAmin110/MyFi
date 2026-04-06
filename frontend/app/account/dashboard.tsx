@@ -19,7 +19,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import HabitCard from "../../components/HabitCard";
 import { Ionicons } from "@expo/vector-icons";
 import { appointmentsApi  } from "../../utils/api";
-import { moderateScale } from "../../utils/scale";
+import { moderateScale,moderateVerticalScale, scale, verticalScale } from "../../utils/scale";
 import * as Haptics from "expo-haptics";
 
 
@@ -477,23 +477,29 @@ const styles = StyleSheet.create({
     flex: 1.4,
     width: "100%",
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "flex-start",
     paddingBottom: moderateScale(5),
+    gap:moderateVerticalScale(12),
   },
 
   title: {
-    paddingTop: 0,
+
     fontSize: moderateScale(32),
     fontWeight: "700",
     textAlign: "center",
+    paddingHorizontal: moderateScale(16),
   },
-  subtitle: {
-    paddingTop: 0,
+  subtitle: 
+  {
     color: "#3D3D3D",
     fontSize: moderateScale(13),
     fontWeight: "600",
+    paddingVertical: moderateVerticalScale(6),
+    paddingHorizontal: moderateScale(20),
+    marginBottom: moderateVerticalScale(10),
   },
-  tackle: {
+  tackle: 
+  {
     color: "#06BE00",
   },
   calendar: {
@@ -568,10 +574,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderRadius: 24,
     width: "92%",
-    paddingVertical: moderateScale(10),
+    paddingVertical: moderateScale(15),
     paddingHorizontal: moderateScale(24),
+    margin: verticalScale(15),
     flexShrink: 1,
-    // Add subtle shadow for premium feel
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -582,7 +588,7 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(14),
     fontWeight: "600",
     color: "#3D3D3D",
-    marginBottom: 4,
+    marginBottom: moderateVerticalScale(8),
   },
   sliderRow: {
     flexDirection: "row",
@@ -616,12 +622,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderRadius: 24,
     width: "92%",
+    height: moderateVerticalScale(100),
     paddingVertical: moderateScale(12),
     paddingHorizontal: moderateScale(24),
     flexDirection: "row",
     alignItems: "center",
     flexShrink: 1,
-    // Add subtle shadow
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -656,14 +662,16 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 32,
   },
   cardTitle: {
-    fontSize: moderateScale(14),
-    fontWeight: "600",
+    fontSize: scale(16),
+    fontWeight: "500",
     paddingTop: 4,
-    paddingBottom: 0,
+    marginBottom: verticalScale(5),
+    
   },
   cardSubtTitle: {
-    fontSize: moderateScale(10),
+    fontSize: moderateScale(12),
     color: "#3D3D3D",
+     marginBottom: verticalScale(10),
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
