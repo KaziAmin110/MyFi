@@ -3,20 +3,26 @@ import * as SecureStore from "expo-secure-store";
 import MaskedView from "@react-native-masked-view/masked-view";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  Modal, 
-  TextInput, 
-  Alert, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Modal,
+  TextInput,
+  Alert,
   ActivityIndicator,
-  Image
+  Image,
 } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
-import { getUserContext, updateProfile, changePassword, updateAvatar, UserData } from "../../services/user.service";
+import {
+  getUserContext,
+  updateProfile,
+  changePassword,
+  updateAvatar,
+  UserData,
+} from "../../services/user.service";
 import { Ionicons } from "@expo/vector-icons";
 
 export const API_URL = "http://localhost:5500/api/auth";
@@ -56,7 +62,7 @@ export default function Profile() {
   const insets = useSafeAreaInsets();
   const [user, setUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
-  
+
   // Modals Visibility
   const [isUpdateModalVisible, setIsUpdateModalVisible] = useState(false);
   const [isPasswordModalVisible, setIsPasswordModalVisible] = useState(false);
@@ -88,7 +94,7 @@ export default function Profile() {
   useFocusEffect(
     useCallback(() => {
       loadUser();
-    }, [])
+    }, []),
   );
 
   const handleUpdateProfile = async () => {
@@ -142,9 +148,13 @@ export default function Profile() {
   const handleEditAvatar = async () => {
     try {
       // Request permissions
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== "granted") {
-        Alert.alert("Permission Denied", "We need access to your photos to update your profile picture.");
+        Alert.alert(
+          "Permission Denied",
+          "We need access to your photos to update your profile picture.",
+        );
         return;
       }
 
@@ -158,7 +168,7 @@ export default function Profile() {
 
       if (!result.canceled && result.assets && result.assets[0]) {
         const selectedImage = result.assets[0];
-        
+
         // Prepare FormData
         const formData = new FormData();
         const uriParts = selectedImage.uri.split(".");
@@ -174,14 +184,17 @@ export default function Profile() {
         setUploadingAvatar(true);
         const updatedUser = await updateAvatar(formData);
         setUser(updatedUser);
-        
+
         // Update local storage
         await SecureStore.setItemAsync("user", JSON.stringify(updatedUser));
         Alert.alert("Success", "Profile picture updated successfully!");
       }
     } catch (error: any) {
       console.error("Avatar upload error:", error);
-      Alert.alert("Error", error.message || "Failed to update profile picture.");
+      Alert.alert(
+        "Error",
+        error.message || "Failed to update profile picture.",
+      );
     } finally {
       setUploadingAvatar(false);
     }
@@ -195,7 +208,6 @@ export default function Profile() {
     );
   }
 
-
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom + 90 }]}>
       {/* Avatar Section */}
@@ -208,20 +220,23 @@ export default function Profile() {
         {/* Avatar */}
         <View style={styles.avatarContainer}>
           {user?.avatar_url ? (
-            <Image source={{ uri: user.avatar_url }} style={styles.avatarImage} />
+            <Image
+              source={{ uri: user.avatar_url }}
+              style={styles.avatarImage}
+            />
           ) : (
             <View style={styles.avatarPlaceholder}>
               <Ionicons name="person" size={50} color="#3059AD" />
             </View>
           )}
-          
+
           {uploadingAvatar ? (
             <View style={styles.uploadingOverlay}>
               <ActivityIndicator color="#fff" />
             </View>
           ) : (
-            <TouchableOpacity 
-              style={styles.editAvatarButton} 
+            <TouchableOpacity
+              style={styles.editAvatarButton}
               onPress={handleEditAvatar}
               activeOpacity={0.8}
             >
@@ -249,10 +264,10 @@ export default function Profile() {
             onPress={() => setIsPasswordModalVisible(true)}
           />
 
-          <ProfileItem 
-            label="Log Out" 
+          <ProfileItem
+            label="Log Out"
             icon="log-out-outline"
-            onPress={handleLogout} 
+            onPress={handleLogout}
             isDestructive
           />
         </View>
@@ -268,7 +283,7 @@ export default function Profile() {
         <View style={styles.modalBackdrop}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Update Profile</Text>
-            
+
             <Text style={styles.inputLabel}>Full Name</Text>
             <TextInput
               style={styles.input}
@@ -279,15 +294,15 @@ export default function Profile() {
             />
 
             <View style={styles.modalButtons}>
-              <TouchableOpacity 
-                style={[styles.modalButton, styles.cancelButton]} 
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => setIsUpdateModalVisible(false)}
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={[styles.modalButton, styles.saveButton]} 
+
+              <TouchableOpacity
+                style={[styles.modalButton, styles.saveButton]}
                 onPress={handleUpdateProfile}
                 disabled={actionLoading}
               >
@@ -312,7 +327,7 @@ export default function Profile() {
         <View style={styles.modalBackdrop}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Change Password</Text>
-            
+
             <Text style={styles.inputLabel}>Old Password</Text>
             <TextInput
               style={styles.input}
@@ -341,15 +356,15 @@ export default function Profile() {
             />
 
             <View style={styles.modalButtons}>
-              <TouchableOpacity 
-                style={[styles.modalButton, styles.cancelButton]} 
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => setIsPasswordModalVisible(false)}
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={[styles.modalButton, styles.saveButton]} 
+
+              <TouchableOpacity
+                style={[styles.modalButton, styles.saveButton]}
                 onPress={handleChangePassword}
                 disabled={actionLoading}
               >
@@ -397,11 +412,11 @@ function ProfileItem({
   return (
     <TouchableOpacity style={styles.item} onPress={onPress}>
       <View style={styles.itemLeft}>
-        <Ionicons 
-          name={icon} 
-          size={20} 
-          color={isDestructive ? "#EF4444" : "#404040"} 
-          style={{ marginRight: 12 }} 
+        <Ionicons
+          name={icon}
+          size={20}
+          color={isDestructive ? "#EF4444" : "#404040"}
+          style={{ marginRight: 12 }}
         />
         <Text style={[styles.itemText, isDestructive && { color: "#EF4444" }]}>
           {label}
