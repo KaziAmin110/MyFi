@@ -1,5 +1,5 @@
 import * as SecureStore from "expo-secure-store";
-import { apiFetch } from "../utils/api";
+import { apiFetch, API_URL } from "../utils/api";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -48,7 +48,7 @@ export async function updateAvatar(formData: FormData): Promise<UserData> {
   
   // Note: We don't use apiFetch here because we need to let the runtime
   // set the Content-Type header with the multipart boundary for FormData.
-  const response = await fetch(`http://localhost:5500/api/users/me/avatar`, {
+  const response = await fetch(`${API_URL}/users/me/avatar`, {
     method: "PUT",
     headers: {
       Authorization: `Bearer ${token}`,
