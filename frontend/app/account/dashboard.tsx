@@ -7,6 +7,7 @@ import {
   Pressable,
   ScrollView,
   Animated,
+  PanResponder,
   useWindowDimensions,
 } from "react-native";
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -56,6 +57,47 @@ const Dashboard = () => {
   const [selectedHabit, setSelectedHabit] = useState<any>(null);
   const [habitOpen, setHabitOpen] = useState(false);
   const pendingHabitude = useRef<string | null>(null);
+
+  // ── Swipe-to-close gesture ──────────────────
+  const modalTranslateY = useRef(new Animated.Value(0)).current;
+
+  // Reset position every time the modal opens
+  useEffect(() => {
+    if (habitOpen) {
+      modalTranslateY.setValue(0);
+    }
+  }, [habitOpen]);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gs) =>
+        gs.dy > 8 && Math.abs(gs.dy) > Math.abs(gs.dx),
+      onPanResponderMove: (_, gs) => {
+        if (gs.dy > 0) modalTranslateY.setValue(gs.dy);
+      },
+      onPanResponderRelease: (_, gs) => {
+        if (gs.dy > 120 || gs.vy > 0.6) {
+          // Fast dismiss — slide the sheet out first, then close
+          Animated.timing(modalTranslateY, {
+            toValue: 800,
+            duration: 220,
+            useNativeDriver: true,
+          }).start(() => {
+            modalTranslateY.setValue(0);
+            setHabitOpen(false);
+            setSelectedHabit(null);
+          });
+        } else {
+          // Not far enough — snap back
+          Animated.spring(modalTranslateY, {
+            toValue: 0,
+            useNativeDriver: true,
+            bounciness: 6,
+          }).start();
+        }
+      },
+    }),
+  ).current;
 
   const doShake = (rotation: Animated.Value, scale: Animated.Value) => {
     Animated.parallel([
@@ -203,7 +245,9 @@ const Dashboard = () => {
         bounces={true}
       >
         {/* ── Hero ── */}
-        <View style={[styles.hero, { width: contentWidth, alignSelf: "center" }]}>
+        <View
+          style={[styles.hero, { width: contentWidth, alignSelf: "center" }]}
+        >
           <MaskedView
             maskElement={<Text style={styles.title}>Hello {firstName}!</Text>}
           >
@@ -388,7 +432,9 @@ const Dashboard = () => {
         </Pressable>
 
         {/* ── Habit Cards Section ── */}
-        <View style={[styles.cardsSection, { paddingBottom: insets.bottom + 58 }]}>
+        <View
+          style={[styles.cardsSection, { paddingBottom: insets.bottom + 58 }]}
+        >
           {/* Drag handle pill */}
           <View style={styles.dragHandle} />
 
@@ -421,86 +467,104 @@ const Dashboard = () => {
         {/* Dimmed backdrop */}
         <Pressable style={styles.backdrop} onPress={closeHabit} />
 
-        {/* Bottom sheet */}
+        {/* Bottom sheet — swipeable */}
         <View style={styles.modalCenter}>
-          <View style={[styles.habitModal, { borderColor: selectedHabit?.borderColor || "#ccc" }]}>
+          <Animated.View
+            style={[
+              styles.habitModal,
+              {
+                borderColor: selectedHabit?.borderColor || "#ccc",
+                transform: [{ translateY: modalTranslateY }],
+                // Explicit height so flex:1 children can resolve their size
+                height: height * 0.88,
+              },
+            ]}
+          >
+            {/* Drag handle — attach pan responder here so scroll still works */}
+            <View style={styles.modalDragZone} {...panResponder.panHandlers}>
+              <View style={styles.modalDragHandle} />
 
-            {/* Drag handle */}
-            <View style={styles.modalDragHandle} />
-
-            {/* Header row: title + close */}
-            <View style={styles.modalHeader}>
-              <View style={[styles.modalAccentDot, { backgroundColor: selectedHabit?.borderColor || "#ccc" }]} />
-              <Text style={[styles.modalTitle, { color: selectedHabit?.borderColor || "#333" }]}>
-                {selectedHabit?.title}
-              </Text>
-              <Pressable onPress={closeHabit} style={styles.closeBtn} hitSlop={12}>
-                <Ionicons name="close" size={22} color="#9A9A9A" />
-              </Pressable>
+              {/* Header: [spacer] [Title] [X] */}
+              <View style={styles.modalHeader}>
+                <View style={styles.modalHeaderSpacer} />
+                <Text style={styles.modalTitle}>{selectedHabit?.title}</Text>
+                <Pressable
+                  onPress={closeHabit}
+                  style={styles.closePressable}
+                  hitSlop={12}
+                >
+                  <Text style={styles.closeX}>×</Text>
+                </Pressable>
+              </View>
             </View>
 
-            {/* Thin accent divider */}
-            <View style={[styles.modalDivider, { backgroundColor: selectedHabit?.borderColor || "#ccc" }]} />
-
-            {/* Scrollable body */}
-            <ScrollView
-              contentContainerStyle={[styles.modalBody, { paddingBottom: insets.bottom + 16 }]}
-              showsVerticalScrollIndicator={false}
+            {/* Inner border wraps all body content */}
+            <View
+              style={[
+                styles.habitModalInner,
+                { borderColor: selectedHabit?.borderColor || "#ccc" },
+              ]}
             >
-              {/* Icon + tagline hero */}
-              <View style={styles.modalHero}>
+              <ScrollView
+                contentContainerStyle={[
+                  styles.modalBody,
+                  { paddingBottom: insets.bottom + 20 },
+                ]}
+                showsVerticalScrollIndicator={false}
+                bounces={false}
+              >
+                {/* Icon */}
                 <Image
                   source={selectedHabit?.image}
                   style={styles.modalIcon}
                   resizeMode="contain"
                 />
-                <Text style={[styles.tagLine, { color: selectedHabit?.borderColor || "#555" }]}>
-                  {selectedHabit?.tagLine}
+
+                {/* Tagline */}
+                <Text style={styles.tagLine}>{selectedHabit?.tagLine}</Text>
+
+                <Text style={styles.paragraph}>
+                  {selectedHabit?.description}
                 </Text>
-              </View>
 
-              {/* Description */}
-              <Text style={styles.paragraph}>{selectedHabit?.description}</Text>
+                {/* Advantages */}
+                <Text style={styles.sectionTitle}>Advantages</Text>
+                {selectedHabit?.advantages?.map((a: string, idx: number) => (
+                  <View key={idx} style={styles.bulletRow}>
+                    <Text style={styles.bullet}>•</Text>
+                    <Text style={styles.bulletText}>{a}</Text>
+                  </View>
+                ))}
 
-              {/* Advantages */}
-              <View style={styles.sectionHeader}>
-                <Ionicons name="checkmark-circle" size={18} color="#06BE00" />
-                <Text style={[styles.sectionTitle, { color: "#1A1A1A" }]}>Advantages</Text>
-              </View>
-              {selectedHabit?.advantages?.map((a: string, idx: number) => (
-                <View key={idx} style={styles.bulletRow}>
-                  <Ionicons name="checkmark" size={15} color="#06BE00" style={styles.bulletIcon} />
-                  <Text style={styles.bulletText}>{a}</Text>
-                </View>
-              ))}
+                <View style={styles.sectionDivider} />
 
-              <View style={styles.sectionDivider} />
+                {/* Disadvantages */}
+                <Text style={styles.sectionTitle}>Disadvantages</Text>
+                {selectedHabit?.disadvantages?.map((d: string, idx: number) => (
+                  <View key={idx} style={styles.bulletRow}>
+                    <Text style={styles.bullet}>•</Text>
+                    <Text style={styles.bulletText}>{d}</Text>
+                  </View>
+                ))}
 
-              {/* Disadvantages */}
-              <View style={styles.sectionHeader}>
-                <Ionicons name="alert-circle" size={18} color="#E05252" />
-                <Text style={[styles.sectionTitle, { color: "#1A1A1A" }]}>Disadvantages</Text>
-              </View>
-              {selectedHabit?.disadvantages?.map((d: string, idx: number) => (
-                <View key={idx} style={styles.bulletRow}>
-                  <Ionicons name="close" size={15} color="#E05252" style={styles.bulletIcon} />
-                  <Text style={styles.bulletText}>{d}</Text>
-                </View>
-              ))}
-
-              {/* CTA */}
-              <Pressable
-                style={[styles.cta, { backgroundColor: selectedHabit?.borderColor || "#3A7DFF" }]}
-                onPress={() => {
-                  pendingHabitude.current = selectedHabit?.title;
-                  closeHabit();
-                }}
-              >
-                <Ionicons name="chatbubble-ellipses-outline" size={18} color="#FFF" style={{ marginRight: 8 }} />
-                <Text style={styles.ctaText}>Ask AI Coach</Text>
-              </Pressable>
-            </ScrollView>
-          </View>
+                {/* CTA */}
+                <Pressable
+                  style={[
+                    styles.cta,
+                    {
+                      backgroundColor: selectedHabit?.borderColor || "#3A7DFF",
+                    },
+                  ]}
+                  onPress={() => {
+                    pendingHabitude.current = selectedHabit?.title;
+                    closeHabit();
+                  }}
+                >
+                  <Text style={styles.ctaText}>Ask AI Coach</Text>
+                </Pressable>
+              </ScrollView>
+            </View>
+          </Animated.View>
         </View>
       </Modal>
     </LinearGradient>
@@ -757,7 +821,7 @@ const styles = StyleSheet.create({
     marginBottom: moderateVerticalScale(8),
   },
 
-  // ── Modal ─────────────────────────────────
+  // ── Modal ──────────────────────────────────
   backdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0,0,0,0.5)",
@@ -767,132 +831,150 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
 
-  // Clean single-surface bottom sheet (no nested borders)
+  // Outer thick border — full bottom sheet
   habitModal: {
     width: "100%",
     maxHeight: "92%",
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     backgroundColor: "#FFFFFF",
-    borderTopWidth: 3,
-    borderLeftWidth: 3,
-    borderRightWidth: 3,
+    borderTopWidth: 4,
+    borderLeftWidth: 4,
+    borderRightWidth: 4,
     borderBottomWidth: 0,
-    paddingHorizontal: 20,
-    paddingTop: 10,
+    // padding is handled by inner zones
   },
 
-  // Drag handle at the very top
+  // The draggable zone at the top (drag handle + header)
+  modalDragZone: {
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 8,
+  },
+
+  // Drag handle pill (inside drag zone)
   modalDragHandle: {
     width: 40,
     height: 4,
     borderRadius: 2,
     backgroundColor: "#E0E0E0",
     alignSelf: "center",
-    marginBottom: 14,
+    marginBottom: 12,
   },
 
-  // Header: accent dot + title + close button
+  // Header: [spacer] | [centered title] | [X button]
   modalHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
+    justifyContent: "space-between",
   },
-  modalAccentDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginRight: 10,
+  modalHeaderSpacer: {
+    width: 36, // same width as X button to keep title centered
   },
   modalTitle: {
     flex: 1,
     fontSize: moderateScale(22),
     fontWeight: "700",
+    color: "#3D3D3D",
+    textAlign: "center",
   },
-  closeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#F2F2F2",
-    alignItems: "center",
-    justifyContent: "center",
+  closePressable: {
+    width: 36,
+    alignItems: "flex-end",
   },
-  // Thin accent rule under the header
-  modalDivider: {
-    height: 2,
-    borderRadius: 1,
-    opacity: 0.35,
-    marginBottom: 4,
+  closeX: {
+    fontSize: 30,
+    lineHeight: 32,
+    color: "#9A9A9A",
+    fontWeight: "300",
   },
 
-  // Body scroll content
+  // Inner thin border wrapping the body
+  habitModalInner: {
+    borderTopWidth: 2,
+    borderLeftWidth: 2,
+    borderRightWidth: 2,
+    borderBottomWidth: 0,
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    marginHorizontal: 8,
+    flexGrow: 1,
+    flexShrink: 1,
+    overflow: "hidden",
+  },
+
+  // Scrollable body
   modalBody: {
-    paddingTop: 8,
+    paddingHorizontal: 18,
+    paddingTop: 16,
+    alignItems: "center",
   },
 
-  // Icon + tagline in a compact hero block
-  modalHero: {
-    alignItems: "center",
-    marginBottom: 16,
-  },
+  // Icon
   modalIcon: {
-    width: moderateScale(90),
-    height: moderateScale(90),
-    marginBottom: 10,
+    width: moderateScale(100),
+    height: moderateScale(100),
+    marginBottom: 12,
   },
+
+  // Tagline — grey, centered, normal weight (matches reference)
   tagLine: {
     textAlign: "center",
-    fontSize: moderateScale(14),
-    fontStyle: "italic",
-    fontWeight: "500",
-    lineHeight: moderateScale(20),
-    paddingHorizontal: 20,
+    fontSize: moderateScale(15),
+    color: "#6A6A6A",
+    fontWeight: "400",
+    lineHeight: moderateScale(22),
+    marginBottom: 16,
   },
 
-  // Description paragraph
   paragraph: {
+    alignSelf: "stretch",
     fontSize: moderateScale(14),
     lineHeight: moderateScale(22),
-    color: "#333",
-    marginBottom: 20,
+    color: "#222",
+    marginBottom: 18,
+
+    textDecorationColor: "#3A7DFF",
+    textDecorationStyle: "solid",
   },
 
-  // Section headers (Advantages / Disadvantages)
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 10,
-    marginTop: 4,
-  },
+  // Section title (Advantages / Disadvantages)
   sectionTitle: {
-    fontSize: moderateScale(15),
+    alignSelf: "stretch",
+    fontSize: moderateScale(16),
     fontWeight: "700",
+    color: "#1A1A1A",
+    marginBottom: 10,
   },
   sectionDivider: {
+    alignSelf: "stretch",
     height: 1,
     backgroundColor: "#F0F0F0",
-    marginVertical: 14,
+    marginVertical: 12,
   },
 
-  // Bullet rows
+  // Bullet rows — plain bullets matching reference
   bulletRow: {
     flexDirection: "row",
     alignItems: "flex-start",
+    alignSelf: "stretch",
     marginBottom: 8,
   },
-  bulletIcon: {
-    marginRight: 8,
-    marginTop: 2,
+  bullet: {
+    fontSize: moderateScale(14),
+    lineHeight: moderateScale(22),
+    color: "#3D3D3D",
+    marginRight: 6,
+    width: 14,
   },
   bulletText: {
     flex: 1,
-    fontSize: moderateScale(13),
-    lineHeight: moderateScale(20),
-    color: "#444",
+    fontSize: moderateScale(14),
+    lineHeight: moderateScale(22),
+    color: "#3D3D3D",
   },
 
-  // CTA button — uses habit accent color via inline style
+  // CTA button — habit accent color, kept as previous design
   cta: {
     marginTop: 20,
     flexDirection: "row",
