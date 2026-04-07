@@ -30,10 +30,12 @@ type HabitCardsProps = {
 const AnimatedCard = ({ item, onSelect }: { item: Habit; onSelect: (habit: Habit) => void }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const { width, height } = useWindowDimensions();
-  
-  
-  const cardWidth = moderateScale(125);
-  const cardHeight = moderateVerticalScale(185);
+
+  // Responsive: ~20% of screen height, capped between 140–165pt
+  // Smaller cap prevents the cards crowding the tab bar on iPhone SE
+  const cardHeight = Math.min(Math.max(height * 0.20, 110), 165);
+  // Width proportional to height
+  const cardWidth = cardHeight * 0.72;
 
   const handlePressIn = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -254,17 +256,16 @@ export default HabitCard;
 const styles = StyleSheet.create({
   row: {
     paddingLeft: 16,
-    marginTop: 12,
-    marginBottom: 16,
+    paddingRight: 8,
+    marginTop: 8,
+    marginBottom: 8,
   },
   pressable: {
     marginRight: 12,
   },
   outerCard: {
-    width: 140,
-    height: 200,
     borderWidth: 3,
-    borderRadius: 10,
+    borderRadius: 12,
     padding: 5,
   },
   innerBorder: {
@@ -276,14 +277,14 @@ const styles = StyleSheet.create({
   cardContent: {
     flex: 1,
     backgroundColor: "#FFFFFF",
-    borderRadius: 12,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "space-between",
     paddingVertical: 8,
   },
   title: {
     width: "100%",
-    fontSize: moderateScale(14),
+    fontSize: moderateScale(13),
     fontWeight: "700",
     color: "#5A5A5A",
     textAlign: "center",
