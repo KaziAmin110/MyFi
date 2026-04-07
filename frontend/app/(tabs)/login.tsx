@@ -13,12 +13,11 @@ import * as WebBrowser from "expo-web-browser";
 import * as AuthSession from "expo-auth-session";
 import { supabase } from "../../lib/supabase";
 import { getUserContext } from "../../services/user.service";
+import { API_URL as BASE_URL } from "../../utils/api";
 
 WebBrowser.maybeCompleteAuthSession();
 
-// NOTE: Use your computer's local IP address (e.g., 192.168.x.x) instead of localhost 
-// so the simulator can connect to your backend server.
-export const API_URL = "http://localhost:5500/api/auth";
+export const API_URL = `${BASE_URL}/auth`;
 
 export async function signIn(data: { email: string; password: string }) {
   const res = await fetch(`${API_URL}/sign-in`, {

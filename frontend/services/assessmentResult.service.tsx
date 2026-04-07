@@ -7,8 +7,7 @@ import React, {
   useState,
 } from "react";
 import { getUserContext } from "./user.service";
-
-const API_BASE_URL = "http://localhost:5500/api";
+import { API_URL as API_BASE_URL } from "../utils/api";
 
 export interface HabitudeResult {
   not_me: number;

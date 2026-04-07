@@ -2,6 +2,8 @@ import * as SecureStore from "expo-secure-store";
 import { router } from "expo-router";
 
 export const API_URL = "http://localhost:5500/api";
+// For using backend on render, use the following line instead of the above line:
+// export const API_URL = "https://myfi-wr2c.onrender.com/api";
 
 let isRefreshing = false;
 let refreshSubscribers: ((token: string) => void)[] = [];

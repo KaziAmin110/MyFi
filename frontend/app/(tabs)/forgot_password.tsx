@@ -12,6 +12,7 @@ import { Link } from "expo-router";
 import React, { useState } from "react";
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import { API_URL } from "../../utils/api";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
@@ -36,7 +37,7 @@ const ForgotPassword = () => {
     setIsLoading(true);
     try {
       const response = await fetch(
-        "http://localhost:5500/api/auth/forgot-password",
+        `${API_URL}/auth/forgot-password`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

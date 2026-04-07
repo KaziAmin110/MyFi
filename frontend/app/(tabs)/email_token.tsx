@@ -13,6 +13,7 @@ import React, { useState } from "react";
 import OTPTextInput from "react-native-otp-textinput";
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import { API_URL } from "../../utils/api";
 
 const EmailToken = () => {
   const [token, setToken] = useState("");
@@ -35,7 +36,7 @@ const EmailToken = () => {
     setIsLoading(true);
     try {
       const response = await fetch(
-        "http://localhost:5500/api/auth/verify-token",
+        `${API_URL}/auth/verify-token`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

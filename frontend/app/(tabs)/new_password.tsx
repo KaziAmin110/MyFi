@@ -13,6 +13,7 @@ import { Link } from "expo-router";
 import React, { useState } from "react";
 import { router } from "expo-router";
 import { useLocalSearchParams } from "expo-router";
+import { API_URL } from "../../utils/api";
 import { Feather } from "@expo/vector-icons";
 
 const NewPassword = () => {
@@ -47,7 +48,7 @@ const NewPassword = () => {
     console.log("Reset token:", token);
     try {
       const response = await fetch(
-        "http://localhost:5500/api/auth/reset-password",
+        `${API_URL}/auth/reset-password`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

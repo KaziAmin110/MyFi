@@ -7,9 +7,11 @@ import * as AuthSession from "expo-auth-session";
 import { supabase } from "../../lib/supabase";
 import { signIn } from "./login";
 
+import { API_URL as BASE_URL } from "../../utils/api";
+
 WebBrowser.maybeCompleteAuthSession();
 
-export const API_URL = "http://localhost:5500/api/auth";
+export const API_URL = `${BASE_URL}/auth`;
 
 export async function signUp(data: {
   name: string;

@@ -18,8 +18,9 @@ import { router, useFocusEffect } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { getUserContext, updateProfile, changePassword, updateAvatar, UserData } from "../../services/user.service";
 import { Ionicons } from "@expo/vector-icons";
+import { API_URL as BASE_URL } from "../../utils/api";
 
-export const API_URL = "http://localhost:5500/api/auth";
+export const API_URL = `${BASE_URL}/auth`;
 
 export const signOut = async () => {
   const token = await SecureStore.getItemAsync("token");
