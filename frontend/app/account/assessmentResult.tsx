@@ -1,110 +1,115 @@
-import { Text, View, StyleSheet, ScrollView, TouchableOpacity} from "react-native";
-import {scale, verticalScale, moderateScale} from "../../utils/scale";
+import { Text, View, StyleSheet, TouchableOpacity, FlatList } from "react-native";
+import { scale, verticalScale, moderateScale, SCREEN_HEIGHT } from "../../utils/scale";
 import MultiRing from "../../components/MultiRing";
 import { HABITUDES } from "../../constants/habitudes";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect } from "expo-router";
-import React, {useState, useCallback} from 'react';
+import React, { useState, useCallback } from "react";
 import AssessmentSkeleton from "./AssessmentSkeleton";
 import { AssessmentResultsData, useAssessmentResults } from "@/services/assessmentResult.service";
 
+// Ring is 22% of screen height — shrinks on small devices, grows on large
+const RING_SIZE    = SCREEN_HEIGHT * 0.22;
+const STROKE_WIDTH = RING_SIZE * 0.14;   // proportional stroke
+
 const AssessmentResult = () => {
-
- 
     const [animatekey, setAnimateKey] = useState(0);
-    const {resultData, loading, hasFetched} = useAssessmentResults();
+    const { resultData, loading, hasFetched } = useAssessmentResults();
 
-
-    const habitudes = HABITUDES.map(h => {
+    const habitudes = HABITUDES.map((h) => {
         const key = h.id.toLowerCase() as keyof AssessmentResultsData;
         const habitudeResult = resultData?.[key];
-
         const score = habitudeResult?.thats_me ?? 0;
-        const percent = Math.round((score / 54) * 100);
-        return { ...h, score, percent };
+        return { ...h, score };
     });
-    
+
     const totalThatsMe = habitudes.reduce((sum, item) => sum + item.score, 0);
-    const sortedHabitudes = [...habitudes].sort((a, b) => b.percent - a.percent);
+
+    const habitudesWithPercent = habitudes.map((h) => ({
+        ...h,
+        percent: totalThatsMe > 0 ? Math.round((h.score / totalThatsMe) * 100) : 0,
+    }));
+
+    const sortedHabitudes = [...habitudesWithPercent].sort((a, b) => b.percent - a.percent);
+    const topPercent = sortedHabitudes[0]?.percent ?? 0;
 
     useFocusEffect(
         useCallback(() => {
             setAnimateKey(Date.now());
-
-            if (!loading && hasFetched&& !resultData) 
-            {
+            if (!loading && hasFetched && !resultData) {
                 router.replace("/account/preAssessment");
             }
-        }, [loading, hasFetched,resultData])
+        }, [loading, hasFetched, resultData])
     );
 
-    if (loading || !hasFetched)
-        return <AssessmentSkeleton/>;
-
-    if(!resultData)
-    {
-        return null;
-    }
+    if (loading || !hasFetched) return <AssessmentSkeleton />;
+    if (!resultData) return null;
 
     return (
         <View style={styles.container}>
-            <View style={styles.gradient}>
-                <LinearGradient
-                    colors={["#BCD1F0", 'rgba(255,255,255,0)']}
-                    start={{ x: 0.5, y: 0 }}
-                    end={{ x: 0.5, y: 1 }}
-                    style={styles.gradient}
-                />
+            <LinearGradient
+                colors={["#C5D8EE", "#D8E6F3", "#E8EFF7"]}
+                start={{ x: 0.5, y: 0 }}
+                end={{ x: 0.5, y: 1 }}
+                style={StyleSheet.absoluteFill}
+            />
+
+            {/* ── Header (fixed, compact) ── */}
+            <View style={styles.header}>
+                <Text style={styles.heading}>Habitude Results</Text>
+                <Text style={styles.subheading}>Your results at a glance</Text>
             </View>
 
-            <View style={styles.topSection}>
-                <Text style={styles.heading} adjustsFontSizeToFit numberOfLines={1}>Habitude Results</Text>
-                <Text style={styles.subheading}>Your results at a glance</Text>
-                <View style={styles.ringView}>
-                    <MultiRing
-                        animatedKey={animatekey}
-                        segments={habitudes.map((item) => ({
-                            value: item.percent,
-                            color: item.color,
-                        }))}
-                    />
-                    <View style={styles.centerText}>
-                        <Text style={styles.totalNum}>{totalThatsMe}</Text>
-                    </View>
+            {/* ── Ring (flex shrinkable) ── */}
+            <View style={styles.ringWrapper}>
+                <MultiRing
+                    animatedKey={animatekey}
+                    size={RING_SIZE}
+                    strokeWidth={STROKE_WIDTH}
+                    segments={habitudesWithPercent.map((item) => ({
+                        value: item.percent,
+                        color: item.color,
+                    }))}
+                />
+                <View style={styles.centerText}>
+                    <Text
+                        style={[styles.centerNum, { fontSize: RING_SIZE * 0.24 }]}
+                        adjustsFontSizeToFit
+                        numberOfLines={1}
+                    >
+                        {topPercent}%
+                    </Text>
                 </View>
             </View>
 
-            <ScrollView
-                style={styles.habitudeSection}
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: verticalScale(20) }} 
-            >
-                {sortedHabitudes.map((item, index) => (
-                    <View key={item.id}>
-                        <TouchableOpacity 
+            {/* ── List — takes all remaining space, never scrolls ── */}
+            <View style={styles.listWrapper}>
+                <FlatList
+                    data={sortedHabitudes}
+                    keyExtractor={(item) => item.id}
+                    scrollEnabled={false}
+                    ItemSeparatorComponent={() => <View style={styles.divider} />}
+                    renderItem={({ item }) => (
+                        <TouchableOpacity
                             style={styles.row}
-                            onPress={() => router.push({
-                                pathname: "/account/HabitudeReport",
-                                params: {
-                                    id: item.id,
-                                },
-                            })}
+                            activeOpacity={0.65}
+                            onPress={() =>
+                                router.push({
+                                    pathname: "/account/HabitudeReport",
+                                    params: { id: item.id },
+                                })
+                            }
                         >
-                            <View style={styles.left}>
-                                <View style={[styles.colorBox, { backgroundColor: item.color }]} />
-                                <Text style={styles.score}>{item.score}</Text>
-                                <Text style={styles.percent}>{item.percent}%</Text>
-                                <Text style={styles.label}>{item.id}</Text>
-                            </View>
-
+                            <View style={[styles.colorBox, { backgroundColor: item.color }]} />
+                            <Text style={styles.score}>{item.score}</Text>
+                            <Text style={styles.percent}>{item.percent}%</Text>
+                            <Text style={styles.label}>{item.id}</Text>
+                            <View style={{ flex: 1 }} />
                             <Text style={styles.arrow}>›</Text>
                         </TouchableOpacity>
-                        
-
-                        {index !== sortedHabitudes.length - 1 && <View style={styles.divider} />}
-                    </View>
-                ))}
-            </ScrollView>
+                    )}
+                />
+            </View>
         </View>
     );
 };
@@ -112,126 +117,97 @@ const AssessmentResult = () => {
 export default AssessmentResult;
 
 const styles = StyleSheet.create({
-    container:
-    {
-        flex:1,
+    container: {
+        flex: 1,
         alignItems: "center",
-        paddingTop: verticalScale(10),
-        paddingBottom: verticalScale(30),
-    
     },
-    topSection:
-    {
-        alignItems:"center",
-        flexShrink: 1,
-        paddingHorizontal: scale(20),
-        marginTop: verticalScale(45), 
-    },
-    heading:
-    {
-        fontSize: moderateScale(28),
-        fontWeight:"600",
-        marginBottom: verticalScale(4),
-        textAlign: "center",
-        width: scale(200),
-  
-    },
-    subheading:
-    {
-        fontSize: moderateScale(13),
-        color: "#484848",
-        marginBottom: verticalScale(10),
 
+    // ── Header ────────────────────────────────────────────────────────────────
+    header: {
+        alignItems: "center",
+        // Use a fraction of screen height so it stays proportional
+        marginTop: SCREEN_HEIGHT * 0.055,
+        marginBottom: SCREEN_HEIGHT * 0.005,
     },
-    gradient:
-    {
-        position: "absolute",
-        top: 0,
-        left: 0,
-        right: 0,
-        width: "100%",
-        height: verticalScale(550),
-        
+    heading: {
+        fontSize: moderateScale(24),
+        fontWeight: "700",
+        color: "#111111",
+        letterSpacing: -0.3,
+        marginBottom: verticalScale(2),
     },
-    ringView: 
-    {
+    subheading: {
+        fontSize: moderateScale(12),
+        color: "#666666",
+        fontWeight: "400",
+    },
+
+    // ── Ring ──────────────────────────────────────────────────────────────────
+    ringWrapper: {
         justifyContent: "center",
-        alignItems:"center",
+        alignItems: "center",
+        // Vertical breathing room proportional to screen
+        marginVertical: SCREEN_HEIGHT * 0.012,
     },
-    centerText:
-    {
+    centerText: {
         position: "absolute",
         justifyContent: "center",
-        alignItems:"center",
+        alignItems: "center",
     },
-    totalNum:
-    {
-        fontSize: moderateScale(55),
-        color: "#3D3D3D",
+    // fontSize set inline as proportion of RING_SIZE
+    centerNum: {
+        fontWeight: "700",
+        color: "#111111",
+        letterSpacing: -1,
     },
-    habitudeSection:
-    {
-        flex:1,
+
+    // ── List ──────────────────────────────────────────────────────────────────
+    listWrapper: {
+        flex: 1,          // fill whatever space remains after ring + header
         width: "100%",
-        paddingHorizontal: scale(20),
-        marginTop: verticalScale(8),
-        marginBottom: verticalScale(10),
-        
+        paddingHorizontal: scale(22),
+        justifyContent: "center",  // vertically center the rows in remaining space
     },
-   row: 
-   {
-    padding: verticalScale(10),
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    
-  },
-  left: 
-  {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
-  colorBox: 
-  {
-    width: scale(24),
-    height: scale(24),
-    borderRadius: moderateScale(6),
-    marginRight: scale(18),
-  },
-  score: 
-  {
-    fontSize: moderateScale(18),
-    fontWeight: "500",
-    color: "#3B3B3B",
-    width: scale(24),
-    marginRight: scale(12),
-  },
-  percent: 
-  {
-    fontSize: moderateScale(16),
-    color: "#B7B7B7",
-    width: scale(52),
-    marginRight: scale(5),
-    
-  },
-  label: 
-  {
-    fontSize: moderateScale(15),
-    fontWeight: "600",
-    color: "#111111",
-  },
-  arrow: 
-  {
-    fontSize: moderateScale(30),
-    color: "#8F96A3",
-    marginLeft: scale(10),
-  },
-  divider: 
-  {
-    height: 1,
-    backgroundColor: "#D3D3D3",
-    marginVertical: verticalScale(5),
-    opacity: 0.6,
-  },
+    row: {
+        flexDirection: "row",
+        alignItems: "center",
+        // Vertical padding derived from screen height — shrinks on small devices
+        paddingVertical: SCREEN_HEIGHT * 0.013,
+    },
+    colorBox: {
+        width: scale(20),
+        height: scale(20),
+        borderRadius: moderateScale(5),
+        marginRight: scale(12),
+    },
+    score: {
+        fontSize: moderateScale(16),
+        fontWeight: "600",
+        color: "#222222",
+        marginRight: scale(8),
+        minWidth: scale(16),
+    },
+    percent: {
+        fontSize: moderateScale(14),
+        color: "#AAAAAA",
+        marginRight: scale(12),
+        minWidth: scale(36),
+        fontWeight: "400",
+    },
+    label: {
+        fontSize: moderateScale(15),
+        fontWeight: "600",
+        color: "#111111",
+    },
+    arrow: {
+        fontSize: moderateScale(24),
+        color: "#BBBBBB",
+        lineHeight: moderateScale(26),
+    },
+    divider: {
+        height: 1,
+        borderTopWidth: 1,
+        borderStyle: "dashed",
+        borderColor: "#C8C8C8",
+    },
 });
