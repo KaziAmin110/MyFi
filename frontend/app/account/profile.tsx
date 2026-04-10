@@ -168,6 +168,11 @@ export default function Profile() {
 
       if (!result.canceled && result.assets && result.assets[0]) {
         const selectedImage = result.assets[0];
+        
+        // Optimistically update the UI with the local URI
+        if (user) {
+          setUser({ ...user, avatar_url: selectedImage.uri });
+        }
 
         // Prepare FormData
         const formData = new FormData();
@@ -187,7 +192,6 @@ export default function Profile() {
 
         // Update local storage
         await SecureStore.setItemAsync("user", JSON.stringify(updatedUser));
-        Alert.alert("Success", "Profile picture updated successfully!");
       }
     } catch (error: any) {
       console.error("Avatar upload error:", error);
@@ -218,23 +222,29 @@ export default function Profile() {
         />
 
         {/* Avatar */}
+        {/* Avatar */}
         <View style={styles.avatarContainer}>
-          {user?.avatar_url ? (
-            <Image
-              source={{ uri: user.avatar_url }}
-              style={styles.avatarImage}
-            />
-          ) : (
-            <View style={styles.avatarPlaceholder}>
-              <Ionicons name="person" size={68} color="#3059AD" />
-            </View>
-          )}
+          <View style={styles.avatarInside}>
+            {user?.avatar_url ? (
+              <Image
+                source={{ uri: user.avatar_url }}
+                style={styles.avatarImage}
+                fadeDuration={0}
+              />
+            ) : (
+              <View style={styles.avatarPlaceholder}>
+                <Ionicons name="person" size={68} color="#3059AD" />
+              </View>
+            )}
 
-          {uploadingAvatar ? (
-            <View style={styles.uploadingOverlay}>
-              <ActivityIndicator color="#fff" />
-            </View>
-          ) : (
+            {uploadingAvatar && (
+              <View style={styles.uploadingOverlay}>
+                <ActivityIndicator color="#fff" />
+              </View>
+            )}
+          </View>
+
+          {!uploadingAvatar && (
             <TouchableOpacity
               style={styles.editAvatarButton}
               onPress={handleEditAvatar}
@@ -463,10 +473,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  avatarInside: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 80,
+    overflow: "hidden", // Force all children (image, overlay) to be circular
+    backgroundColor: "#F3F4F6", // Consistent background color
+  },
   avatarImage: {
     width: "100%",
     height: "100%",
-    borderRadius: 80, // Ensure image itself is also rounded
   },
   avatarPlaceholder: {
     width: "100%",
@@ -499,6 +515,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.4)",
     alignItems: "center",
     justifyContent: "center",
+    borderRadius: 80,
   },
   card: {
     marginTop: 110, // Push below the avatar (which is -80)
@@ -515,7 +532,7 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
   },
   name: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: "700",
     marginBottom: 32,
     textAlign: "center",
