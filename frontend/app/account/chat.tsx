@@ -467,7 +467,12 @@ const Chat = () => {
               </View>
             </TouchableOpacity>
             <View style={styles.headerCenter}>
-              <Text style={styles.headerTitle}>
+              <Text
+                style={styles.headerTitle}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.7}
+              >
                 {currentSession ? currentSession.title : "AI Coach"}
               </Text>
               {currentSession && (
