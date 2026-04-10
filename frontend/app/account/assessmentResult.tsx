@@ -23,6 +23,7 @@ const STROKE_WIDTH = RING_SIZE * 0.14; // proportional stroke
 
 const AssessmentResult = () => {
   const [animatekey, setAnimateKey] = useState(0);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const { resultData, loading, hasFetched } = useAssessmentResults();
 
   const habitudes = HABITUDES.map((h) => {
@@ -42,7 +43,10 @@ const AssessmentResult = () => {
   const sortedHabitudes = [...habitudesWithPercent].sort(
     (a, b) => b.percent - a.percent,
   );
-  const topPercent = sortedHabitudes[0]?.percent ?? 0;
+  const activeHabitude =
+    selectedIndex !== null
+      ? habitudesWithPercent[selectedIndex]
+      : sortedHabitudes[0];
 
   useFocusEffect(
     useCallback(() => {
@@ -81,14 +85,22 @@ const AssessmentResult = () => {
             value: item.percent,
             color: item.color,
           }))}
+          onPressSegment={(index) => setSelectedIndex(index)}
         />
-        <View style={styles.centerText}>
+        <View style={styles.centerText} pointerEvents="none">
+          <Text
+            style={styles.centerLabel}
+            adjustsFontSizeToFit
+            numberOfLines={1}
+          >
+            {activeHabitude?.id?.toUpperCase()}
+          </Text>
           <Text
             style={[styles.centerNum, { fontSize: RING_SIZE * 0.24 }]}
             adjustsFontSizeToFit
             numberOfLines={1}
           >
-            {topPercent}%
+            {activeHabitude?.percent ?? 0}%
           </Text>
         </View>
       </View>
@@ -166,11 +178,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  centerLabel: {
+    fontSize: moderateScale(13),
+    fontWeight: "800",
+    color: "#5A738E", // A rich, deep slate blue that complements the light blue background
+    letterSpacing: 2, // Wide tracking for premium label look
+    marginBottom: verticalScale(-2), // Tighter spacing to the giant number below
+  },
   // fontSize set inline as proportion of RING_SIZE
   centerNum: {
-    fontWeight: "500", // removed bold
-    color: "#111111",
-    letterSpacing: -1,
+    fontWeight: "700", // Strong visual weight for the main data point
+    color: "#111111", // Kept standard color for maximum readability and contrast
+    letterSpacing: -1.5, // Tighter tracking for large numbers
   },
 
   // ── List ──────────────────────────────────────────────────────────────────
