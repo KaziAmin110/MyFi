@@ -1,4 +1,10 @@
-import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useLayoutEffect,
+  useCallback,
+} from "react";
 import {
   View,
   Text,
@@ -38,17 +44,27 @@ type Answer = "not_me" | "sometimes" | "thats_me";
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const SWIPE_THRESHOLD = 100;
 
-const CARD_WIDTH = SCREEN_WIDTH * 0.85;
+const CARD_WIDTH = SCREEN_WIDTH * 0.88;
 const CARD_HEIGHT = CARD_WIDTH * 1.25;
-// Container height: paddingTop(28) + front card top(24) + card height + 10px buffer
-const CARD_CONTAINER_HEIGHT = CARD_HEIGHT + 62;
+// Container height: paddingTop(28) + front card translateY + card height + safe buffers
+const CARD_CONTAINER_HEIGHT = CARD_HEIGHT + 70;
+
+const COLORS = {
+  primary: "#3059AD",
+  green: "#34C759", // Modern Apple green
+  red: "#FF3B30", // Modern Apple red
+  yellow: "#FFCC00",
+  bg: "#F9FAFC", // Clean off-white
+  textPrimary: "#1C1C1E", // Dark high-contrast for readability
+  textSecondary: "#8E8E93",
+};
 
 const CARD_BORDER_COLORS = [
-  "#3A8F3F",
-  "#21428F",
-  "#C81220",
-  "#E5A800",
-  "#7B1FA2",
+  "#3A8F3F", // Green
+  "#21428F", // Blue
+  "#C81220", // Red
+  "#E5A800", // Yellow
+  "#7B1FA2", // Purple
 ];
 
 function answerToValue(answer: Answer): number {
@@ -197,7 +213,9 @@ export default function AssessmentScreen() {
 
           setAnswersMap(restored);
           setCurrentIndex(firstUnanswered);
-          setFurthestIndex(Math.max(firstUnanswered, data.previously_answered.length));
+          setFurthestIndex(
+            Math.max(firstUnanswered, data.previously_answered.length),
+          );
         }
       } catch (err: any) {
         console.error("Failed to load onboarding assessment:", err);
@@ -401,12 +419,14 @@ export default function AssessmentScreen() {
           <View style={styles.backBtn} />
         </View>
 
-        <View style={styles.progressBarBg}>
-          <View style={[styles.progressBarFill, { width: "100%" }]} />
+        <View style={styles.topProgressContainer}>
+          <Text style={styles.questionCountText}>
+            QUESTION {totalQuestions} OF {totalQuestions}
+          </Text>
+          <View style={styles.progressBarBg}>
+            <View style={[styles.progressBarFill, { width: "100%" }]} />
+          </View>
         </View>
-        <Text style={styles.questionCount}>
-          {totalQuestions} / {totalQuestions}
-        </Text>
 
         <View style={completionStyles.content}>
           {/* Title */}
@@ -480,31 +500,62 @@ export default function AssessmentScreen() {
     totalQuestions > 0
       ? (Math.max(furthestIndex, currentIndex) / totalQuestions) * 100
       : 0;
+
   const frontBorderColor =
     CARD_BORDER_COLORS[currentIndex % CARD_BORDER_COLORS.length];
   const middleBorderColor =
     CARD_BORDER_COLORS[(currentIndex + 1) % CARD_BORDER_COLORS.length];
   const backBorderColor =
     CARD_BORDER_COLORS[(currentIndex + 2) % CARD_BORDER_COLORS.length];
+  const back3BorderColor =
+    CARD_BORDER_COLORS[(currentIndex + 3) % CARD_BORDER_COLORS.length];
 
   // Back card animated styles — driven by drag progress (0 = resting, 1 = swiped)
-  const back1Top = dragProgress.interpolate({ inputRange: [0, 1], outputRange: [12, 24] });
-  const back1Width = dragProgress.interpolate({ inputRange: [0, 1], outputRange: [CARD_WIDTH * 0.92, CARD_WIDTH] });
-  const back1Height = dragProgress.interpolate({ inputRange: [0, 1], outputRange: [CARD_HEIGHT * 0.92, CARD_HEIGHT] });
-  const back1Opacity = dragProgress.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] });
+  // Instead of updating width/height (which causes layout reflows), we use transforms for silky smooth 60fps animations
+  const back1Scale = dragProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.95, 1],
+  });
+  const back1TranslateY = dragProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-16, 0],
+  });
+  const back1Opacity = dragProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.9, 1],
+  });
 
-  const back2Top = dragProgress.interpolate({ inputRange: [0, 1], outputRange: [2, 12] });
-  const back2Width = dragProgress.interpolate({ inputRange: [0, 1], outputRange: [CARD_WIDTH * 0.84, CARD_WIDTH * 0.92] });
-  const back2Height = dragProgress.interpolate({ inputRange: [0, 1], outputRange: [CARD_HEIGHT * 0.84, CARD_HEIGHT * 0.92] });
-  const back2Opacity = dragProgress.interpolate({ inputRange: [0, 1], outputRange: [0.75, 0.9] });
+  const back2Scale = dragProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.9, 0.95],
+  });
+  const back2TranslateY = dragProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-32, -16],
+  });
+  const back2Opacity = dragProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.65, 0.9],
+  });
 
+  const back3Scale = dragProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.85, 0.9],
+  });
+  const back3TranslateY = dragProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-48, -32],
+  });
   // 3rd back card fades in from nothing as the front card is dragged
-  const back3Opacity = dragProgress.interpolate({ inputRange: [0, 1], outputRange: [0, 0.75] });
+  const back3Opacity = dragProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 0.65],
+  });
 
   // Smoothly animate back card text from back-card size to front-card size
   const backCardTextScale = dragProgress.interpolate({
     inputRange: [0, 1],
-    outputRange: [19 / 24, 1],
+    outputRange: [0.9, 1],
     extrapolate: "clamp",
   });
 
@@ -517,22 +568,22 @@ export default function AssessmentScreen() {
           onPress={goBack}
           disabled={currentIndex === 0}
         >
-          {currentIndex > 0 && (
-            <Text style={styles.backArrow}>‹</Text>
-          )}
+          {currentIndex > 0 && <Text style={styles.backArrow}>‹</Text>}
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Money Habitudes</Text>
         <View style={styles.backBtn} />
       </View>
 
       {/* ── Progress Bar ── */}
-      <Text style={styles.questionCount}>
-        Question {currentIndex + 1} of {totalQuestions}
-      </Text>
-      <View style={styles.progressBarBg}>
-        <Animated.View
-          style={[styles.progressBarFill, { width: `${progressPercent}%` }]}
-        />
+      <View style={styles.topProgressContainer}>
+        <Text style={styles.questionCountText}>
+          QUESTION {currentIndex + 1} OF {totalQuestions}
+        </Text>
+        <View style={styles.progressBarBg}>
+          <Animated.View
+            style={[styles.progressBarFill, { width: `${progressPercent}%` }]}
+          />
+        </View>
       </View>
 
       <Text style={styles.subtitle}>How well does this describe you?</Text>
@@ -545,8 +596,15 @@ export default function AssessmentScreen() {
             style={[
               styles.card,
               styles.cardBack2,
-              { borderColor: CARD_BORDER_COLORS[(currentIndex + 3) % CARD_BORDER_COLORS.length] },
-              { top: 2, width: CARD_WIDTH * 0.84, height: CARD_HEIGHT * 0.84, opacity: back3Opacity },
+              {
+                borderColor: back3BorderColor,
+                shadowColor: back3BorderColor,
+                opacity: back3Opacity,
+                transform: [
+                  { scale: back3Scale },
+                  { translateY: back3TranslateY },
+                ],
+              },
             ]}
           />
         )}
@@ -557,8 +615,15 @@ export default function AssessmentScreen() {
             style={[
               styles.card,
               styles.cardBack2,
-              { borderColor: backBorderColor },
-              { top: back2Top, width: back2Width, height: back2Height, opacity: back2Opacity },
+              {
+                borderColor: backBorderColor,
+                shadowColor: backBorderColor,
+                opacity: back2Opacity,
+                transform: [
+                  { scale: back2Scale },
+                  { translateY: back2TranslateY },
+                ],
+              },
             ]}
           />
         )}
@@ -569,17 +634,30 @@ export default function AssessmentScreen() {
             style={[
               styles.card,
               styles.cardBack1,
-              { borderColor: middleBorderColor },
-              { top: back1Top, width: back1Width, height: back1Height, opacity: back1Opacity },
+              {
+                borderColor: middleBorderColor,
+                shadowColor: middleBorderColor,
+                opacity: back1Opacity,
+                transform: [
+                  { scale: back1Scale },
+                  { translateY: back1TranslateY },
+                ],
+              },
             ]}
           >
-            <LogoBadge style={styles.logoTopLeft} />
-            <Animated.View style={[styles.cardTextContainer, { transform: [{ scale: backCardTextScale }] }]}>
-              <Text style={styles.cardText}>
-                {questions[currentIndex + 1]?.text}
-              </Text>
-            </Animated.View>
-            <LogoBadge style={styles.logoBottomRight} />
+            <View style={styles.cardContentWrapper}>
+              <LogoBadge style={styles.logoBadgeCenter} />
+              <Animated.View
+                style={[
+                  styles.cardTextContainer,
+                  { transform: [{ scale: backCardTextScale }] },
+                ]}
+              >
+                <Text style={styles.cardText}>
+                  {questions[currentIndex + 1]?.text}
+                </Text>
+              </Animated.View>
+            </View>
           </Animated.View>
         )}
 
@@ -588,8 +666,9 @@ export default function AssessmentScreen() {
           style={[
             styles.card,
             styles.cardFront,
-            { borderColor: frontBorderColor },
             {
+              borderColor: frontBorderColor,
+              shadowColor: frontBorderColor,
               transform: [
                 { translateX: position.x },
                 { translateY: position.y },
@@ -602,15 +681,18 @@ export default function AssessmentScreen() {
           {/* Revisiting badge */}
           {isRevisiting && (
             <View style={styles.revisitBadge}>
-              <Text style={styles.revisitBadgeText}>Previously Answered</Text>
+              <Text style={styles.revisitBadgeText}>PREVIOUSLY ANSWERED</Text>
             </View>
           )}
 
-          <LogoBadge style={styles.logoTopLeft} />
-          <View style={styles.cardTextContainer}>
-            <Text style={styles.cardText}>{questions[currentIndex]?.text}</Text>
+          <View style={styles.cardContentWrapper}>
+            <LogoBadge style={styles.logoBadgeCenter} />
+            <View style={styles.cardTextContainer}>
+              <Text style={styles.cardText}>
+                {questions[currentIndex]?.text}
+              </Text>
+            </View>
           </View>
-          <LogoBadge style={styles.logoBottomRight} />
         </Animated.View>
       </View>
 
@@ -620,21 +702,19 @@ export default function AssessmentScreen() {
         <TouchableOpacity
           onPress={() => handleButton("not_me")}
           activeOpacity={0.8}
+          style={styles.actionItem}
         >
           <Animated.View
             style={[
               styles.actionBtn,
-              currentAnswer === "not_me"
-                ? styles.btnNotMeActive
-                : styles.btnNotMe,
               {
                 transform: [{ scale: btnNotMeScale }],
                 backgroundColor:
                   currentAnswer === "not_me"
-                    ? "#E53935"
+                    ? COLORS.red
                     : leftOpacity.interpolate({
                         inputRange: [0, 1],
-                        outputRange: ["#FFFFFF", "#E53935"],
+                        outputRange: ["#FFFFFF", COLORS.red],
                       }),
               },
             ]}
@@ -662,38 +742,26 @@ export default function AssessmentScreen() {
               ]}
             />
           </Animated.View>
-          <Text
-            style={[
-              styles.btnLabel,
-              {
-                color: "#E53935",
-                fontWeight: "800",
-              },
-            ]}
-          >
-            Not Me
-          </Text>
+          <Text style={[styles.btnLabel, { color: COLORS.red }]}>NOT ME</Text>
         </TouchableOpacity>
 
         {/* Sometimes */}
         <TouchableOpacity
           onPress={() => handleButton("sometimes")}
           activeOpacity={0.8}
+          style={[styles.actionItem, { marginTop: 12 }]} // Displace middle button slightly downward for aesthetic curve
         >
           <Animated.View
             style={[
               styles.actionBtn,
-              currentAnswer === "sometimes"
-                ? styles.btnSometimesActive
-                : styles.btnSometimes,
               {
                 transform: [{ scale: btnSometimesScale }],
                 backgroundColor:
                   currentAnswer === "sometimes"
-                    ? "#F5A623"
+                    ? COLORS.yellow
                     : upOpacity.interpolate({
                         inputRange: [0, 1],
-                        outputRange: ["#FFFFFF", "#F5A623"],
+                        outputRange: ["#FFFFFF", COLORS.yellow],
                       }),
               },
             ]}
@@ -721,16 +789,8 @@ export default function AssessmentScreen() {
               ]}
             />
           </Animated.View>
-          <Text
-            style={[
-              styles.btnLabel,
-              {
-                color: "#F5A623",
-                fontWeight: "800",
-              },
-            ]}
-          >
-            Sometimes
+          <Text style={[styles.btnLabel, { color: COLORS.yellow }]}>
+            SOMETIMES
           </Text>
         </TouchableOpacity>
 
@@ -738,21 +798,19 @@ export default function AssessmentScreen() {
         <TouchableOpacity
           onPress={() => handleButton("thats_me")}
           activeOpacity={0.8}
+          style={styles.actionItem}
         >
           <Animated.View
             style={[
               styles.actionBtn,
-              currentAnswer === "thats_me"
-                ? styles.btnThatsMeActive
-                : styles.btnThatsMe,
               {
                 transform: [{ scale: btnThatsMeScale }],
                 backgroundColor:
                   currentAnswer === "thats_me"
-                    ? "#43A047"
+                    ? COLORS.green
                     : rightOpacity.interpolate({
                         inputRange: [0, 1],
-                        outputRange: ["#FFFFFF", "#43A047"],
+                        outputRange: ["#FFFFFF", COLORS.green],
                       }),
               },
             ]}
@@ -780,20 +838,11 @@ export default function AssessmentScreen() {
               ]}
             />
           </Animated.View>
-          <Text
-            style={[
-              styles.btnLabel,
-              {
-                color: "#43A047",
-                fontWeight: "800",
-              },
-            ]}
-          >
-            That&apos;s Me
+          <Text style={[styles.btnLabel, { color: COLORS.green }]}>
+            THAT&apos;S ME
           </Text>
         </TouchableOpacity>
       </View>
-
     </SafeAreaView>
   );
 }
@@ -805,7 +854,7 @@ export default function AssessmentScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F7FB",
+    backgroundColor: COLORS.bg,
     alignItems: "center",
   },
 
@@ -815,57 +864,63 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     width: "100%",
-    paddingHorizontal: 20,
-    paddingTop: 4,
-    paddingBottom: 8,
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    paddingBottom: 4,
   },
   headerTitle: {
-    fontSize: 19,
-    fontWeight: "700",
-    color: "#1A2E50",
-    letterSpacing: -0.3,
+    fontSize: 20,
+    fontWeight: "800",
+    color: COLORS.textPrimary,
+    letterSpacing: -0.4,
   },
   backBtn: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     justifyContent: "center",
     alignItems: "center",
   },
   backArrow: {
     fontSize: 32,
-    color: "#3059AD",
+    color: COLORS.textPrimary,
     fontWeight: "300",
     marginTop: -2,
   },
 
   // ── Progress Bar ─────────────────────────────────────────────────────────
+  topProgressContainer: {
+    width: "100%",
+    paddingHorizontal: 32,
+    marginBottom: 8,
+    alignItems: "center",
+  },
+  questionCountText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: COLORS.textSecondary,
+    letterSpacing: 1.2,
+    marginBottom: 8,
+    marginTop: 4,
+  },
   progressBarBg: {
-    width: "88%",
-    height: 9,
-    backgroundColor: "#E2E7F0",
-    borderRadius: 5,
-    marginBottom: 6,
+    width: "100%",
+    height: 5,
+    backgroundColor: "#E5E5EA",
+    borderRadius: 3,
   },
   progressBarFill: {
-    height: 9,
-    backgroundColor: "#43A047",
-    borderRadius: 5,
-  },
-  questionCount: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#1A2E50",
-    marginTop: 4,
-    marginBottom: 5,
+    height: 5,
+    backgroundColor: COLORS.primary,
+    borderRadius: 3,
   },
 
   subtitle: {
-    fontSize: 16,
-    color: "#1A2E50",
-    marginTop: 8,
+    fontSize: 20,
+    color: COLORS.textPrimary,
+    marginTop: 12,
     marginBottom: 20,
-    fontWeight: "700",
-    letterSpacing: 0.1,
+    fontWeight: "600",
+    letterSpacing: -0.2,
   },
 
   // ── Card Stack ───────────────────────────────────────────────────────────
@@ -881,14 +936,14 @@ const styles = StyleSheet.create({
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
     backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    borderWidth: 14,
+    borderRadius: 28,
     position: "absolute",
-    shadowColor: "#1A2E50",
-    shadowOpacity: 0.08,
+    shadowColor: "#000000",
+    shadowOpacity: 0.15,
     shadowRadius: 20,
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: 10 },
     elevation: 10,
+    borderWidth: 4.5,
   },
 
   cardFront: {
@@ -898,52 +953,45 @@ const styles = StyleSheet.create({
 
   cardBack1: {
     zIndex: 5,
-    overflow: "hidden",
+    top: 24,
   },
   cardBack2: {
     zIndex: 1,
+    top: 24,
   },
 
+  cardContentWrapper: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+  },
   cardTextContainer: {
     position: "absolute",
-    width: CARD_WIDTH - 56,
+    width: CARD_WIDTH - 64,
     alignSelf: "center",
-    top: 0,
-    bottom: 0,
     justifyContent: "center",
     alignItems: "center",
   },
   cardText: {
-    fontSize: 24,
-    fontWeight: "700",
-    textAlign: "center",
-    color: "#1A2E50",
-    lineHeight: 34,
-    letterSpacing: -0.3,
-  },
-  cardBackText: {
-    fontSize: 19,
+    fontSize: 26,
     fontWeight: "600",
     textAlign: "center",
-    color: "#1A2E50",
-    lineHeight: 28,
-    letterSpacing: -0.3,
+    color: COLORS.textPrimary,
+    lineHeight: 36,
+    letterSpacing: -0.5,
   },
 
   logoBadge: {
-    width: 30,
-    height: 30,
+    width: 32,
+    height: 32,
     resizeMode: "contain",
   },
-  logoTopLeft: {
+  logoBadgeCenter: {
     position: "absolute",
-    top: 12,
-    left: 12,
-  },
-  logoBottomRight: {
-    position: "absolute",
-    bottom: 12,
-    right: 12,
+    top: 28,
+    alignSelf: "center",
+    opacity: 0.8,
   },
 
   // ── Revisiting badge ──────────────────────────────────────────────────
@@ -951,75 +999,58 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: -14,
     alignSelf: "center",
-    backgroundColor: "#3059AD",
-    paddingHorizontal: 14,
-    paddingVertical: 4,
-    borderRadius: 12,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 14,
     zIndex: 30,
+    shadowColor: COLORS.primary,
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
   },
   revisitBadgeText: {
     color: "#FFFFFF",
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 0.3,
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 0.8,
   },
 
   // ── Buttons ──────────────────────────────────────────────────────────────
   buttonsSection: {
     flexDirection: "row",
-    justifyContent: "space-around",
+    justifyContent: "center",
     alignItems: "center",
-    width: "82%",
+    width: "100%",
     paddingVertical: 10,
+    gap: 32, // Gives clean space between the floating buttons
+  },
+  actionItem: {
+    alignItems: "center",
   },
 
   actionBtn: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#1A2E50",
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 5 },
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
     elevation: 8,
-    borderWidth: 2.5,
-    alignSelf: "center",
+    borderWidth: 1,
+    borderColor: "#E5E5EA",
   },
-  btnNotMe: {
-    backgroundColor: "#FFFFFF",
-    borderColor: "#E8B4B2",
-  },
-  btnNotMeActive: {
-    backgroundColor: "#C81220",
-    borderColor: "#C81220",
-  },
-  btnSometimes: {
-    backgroundColor: "#FFFFFF",
-    borderColor: "#E5C87A",
-  },
-  btnSometimesActive: {
-    backgroundColor: "#E5A800",
-    borderColor: "#E5A800",
-  },
-  btnThatsMe: {
-    backgroundColor: "#FFFFFF",
-    borderColor: "#A5D6A7",
-  },
-  btnThatsMeActive: {
-    backgroundColor: "#3A8F3F",
-    borderColor: "#3A8F3F",
-  },
-  btnImg: { width: 32, height: 32, resizeMode: "contain" },
+  btnImg: { width: 34, height: 34, resizeMode: "contain" },
   btnImgOverlay: { position: "absolute" },
   btnLabel: {
-    fontSize: 12,
-    fontWeight: "700",
+    fontSize: 11,
+    fontWeight: "800",
     textAlign: "center",
-    marginTop: 7,
-    letterSpacing: 0.2,
-    color: "#AAB2C0",
+    marginTop: 10,
+    letterSpacing: 0.5,
   },
 
   // ── Loading / Error states ─────────────────────────────────────────────
