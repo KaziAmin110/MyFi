@@ -1,4 +1,4 @@
-import { View, StyleSheet, Animated, Easing} from "react-native";
+import { View, StyleSheet, Animated, Easing, GestureResponderEvent } from "react-native";
 import Svg, {Circle, G} from 'react-native-svg';
 import React, {useEffect, useRef, useState} from 'react';
 import { moderateScale,scale } from "../utils/scale";
@@ -13,6 +13,7 @@ type RingProps={
     strokeWidth?: number;
     segments?: Segment[];
     animatedKey?: number;
+    onPressSegment?: (index: number) => void;
 };
 
 const Ring = ({
@@ -20,6 +21,7 @@ const Ring = ({
     strokeWidth = moderateScale(28),
     segments = [] ,
     animatedKey = 0,
+    onPressSegment,
 }: RingProps) => {
     const radius = (size - strokeWidth) / 2;
     const circumference = 2 * Math.PI * radius;
@@ -48,10 +50,47 @@ const Ring = ({
 }, [animatedKey, animation]);
 
    let totalPercent = 0;
+
+   const handleTouch = (evt: GestureResponderEvent) => {
+       if (!onPressSegment) return;
+       const { locationX, locationY } = evt.nativeEvent;
+       const dx = locationX - size / 2;
+       const dy = locationY - size / 2;
+       
+       const distance = Math.sqrt(dx * dx + dy * dy);
+       // Generous touch target range based on strokeWidth
+       const innerRadius = radius - strokeWidth / 2 - 30; 
+       const outerRadius = radius + strokeWidth / 2 + 30;
+       
+       if (distance >= innerRadius && distance <= outerRadius) {
+           let angle = Math.atan2(dy, dx);
+           if (angle < 0) angle += 2 * Math.PI;
+           
+           // Rotate angle by 180 degrees (PI radians) because our SVG <G> has rotation="180" 
+           // and thus starts drawing from the 9 o'clock position (which is Math.PI)
+           let shiftedAngle = angle - Math.PI;
+           if (shiftedAngle < 0) shiftedAngle += 2 * Math.PI;
+           
+           const touchPercent = shiftedAngle / (2 * Math.PI);
+           let accumulated = 0;
+           for (let i = 0; i < segments.length; i++) {
+               const percent = total === 0 ? 0 : segments[i].value / total;
+               if (touchPercent >= accumulated && touchPercent <= accumulated + percent) {
+                   onPressSegment(i);
+                   break;
+               }
+               accumulated += percent;
+           }
+       }
+   };
     
     return (
-        <View style={styles.container}>
-            <Svg width={size} height={size}>
+        <View 
+            style={[styles.container, { width: size, height: size }]}
+            onStartShouldSetResponder={() => true}
+            onResponderRelease={handleTouch}
+        >
+            <Svg width={size} height={size} pointerEvents="none">
                 <G rotation="180" origin={`${size / 2}, ${size / 2}`}>
                     <Circle
                     cx={size / 2}

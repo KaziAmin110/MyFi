@@ -39,6 +39,8 @@
     "@types/node": "^20.12.12",
     "@types/node-cron": "^3.0.11",
     "@types/nodemailer": "^7.0.3",
+    "@types/strip-bom": "^3.0.0",
+    "@types/strip-json-comments": "^0.0.30",
     "tsx": "^4.21.0",
     "typescript": "^5.4.5"
   },

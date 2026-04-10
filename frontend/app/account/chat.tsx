@@ -6,6 +6,7 @@ import {
   ScrollView,
   StyleSheet,
   KeyboardAvoidingView,
+  Keyboard,
   Platform,
   ActivityIndicator,
   Animated,
@@ -14,7 +15,6 @@ import {
   PanResponder,
   Image,
   AppState,
-  SafeAreaView,
 } from "react-native";
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -100,6 +100,7 @@ const Chat = () => {
   const sidebarAnim = useRef(new Animated.Value(-SIDEBAR_WIDTH)).current;
   const sendButtonScale = useRef(new Animated.Value(1)).current;
   const sendingRef = useRef(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   // When habitude param arrives, prep for the auto-send flow
   useEffect(() => {
@@ -119,8 +120,32 @@ const Chat = () => {
     return () => sub.remove();
   }, []);
 
+  // Track keyboard visibility to fix bottom padding gap
   useEffect(() => {
-    scrollViewRef.current?.scrollToEnd({ animated: true });
+    const showSub = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
+      () => setKeyboardVisible(true)
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
+      () => setKeyboardVisible(false)
+    );
+    return () => { showSub.remove(); hideSub.remove(); };
+  }, []);
+
+  // Scroll to bottom whenever messages change.
+  // On initial load we jump instantly (no animation) so the user doesn't
+  // see a visible scroll. For new messages sent during the session we animate.
+  const hasScrolledOnLoad = useRef(false);
+  useEffect(() => {
+    if (!hasScrolledOnLoad.current) {
+      // First render with messages — instant jump, no animation
+      scrollViewRef.current?.scrollToEnd({ animated: false });
+      hasScrolledOnLoad.current = true;
+    } else {
+      // Subsequent message additions — smooth scroll
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }
   }, [messages]);
 
   useEffect(() => {
@@ -423,14 +448,14 @@ const Chat = () => {
         style={styles.topGradient}
         resizeMode="stretch"
       />
-      <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.keyboardView}
+        keyboardVerticalOffset={0}
+      >
       <View style={{ flex: 1 }} {...panResponder.panHandlers}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.keyboardView}
-        >
           {/* Header */}
-          <View style={styles.header}>
+          <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
             <TouchableOpacity
               style={styles.menuButton}
               onPress={() => setShowSessions(true)}
@@ -442,7 +467,12 @@ const Chat = () => {
               </View>
             </TouchableOpacity>
             <View style={styles.headerCenter}>
-              <Text style={styles.headerTitle}>
+              <Text
+                style={styles.headerTitle}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.7}
+              >
                 {currentSession ? currentSession.title : "AI Coach"}
               </Text>
               {currentSession && (
@@ -467,6 +497,9 @@ const Chat = () => {
             ref={scrollViewRef}
             style={styles.messagesContainer}
             contentContainerStyle={styles.messagesContent}
+            onContentSizeChange={() =>
+              scrollViewRef.current?.scrollToEnd({ animated: false })
+            }
           >
             {messages.map((msg) => (
               <View key={msg.id}>{renderMessage({ item: msg })}</View>
@@ -505,7 +538,7 @@ const Chat = () => {
         {/* Input or Read-Only Banner */}
         {currentSession && (
           currentSession.isReadOnly ? (
-            <View style={styles.readOnlyBanner}>
+            <View style={[styles.readOnlyBanner, { paddingBottom: keyboardVisible ? 14 : (insets.bottom || 14) }]}>
               <Ionicons name="lock-closed" size={14} color="#5D5D5D" />
               <Text style={styles.readOnlyText}>This session has ended</Text>
               <TouchableOpacity
@@ -518,31 +551,35 @@ const Chat = () => {
               </TouchableOpacity>
             </View>
           ) : (
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={styles.input}
-                value={inputText}
-                onChangeText={setInputText}
-                placeholder="Ask MyFi..."
-                placeholderTextColor="#BABABA"
-                multiline
-                maxLength={1000}
-                editable={!sending}
-              />
-              <Pressable
-                onPress={() => handleSendMessage()}
-                disabled={!inputText.trim() || sending}
-              >
-                <Animated.View
-                  style={[
-                    styles.sendButton,
-                    (!inputText.trim() || sending) && styles.sendButtonDisabled,
-                    { transform: [{ scale: sendButtonScale }] },
-                  ]}
-                >
-                  <Ionicons name="send" size={20} color="#FFFFFF" />
-                </Animated.View>
-              </Pressable>
+            <View style={[styles.inputContainer, { paddingBottom: keyboardVisible ? 8 : (insets.bottom || 0) + 16 }]}>
+              <View style={styles.inputCard}>
+                <TextInput
+                  style={styles.input}
+                  value={inputText}
+                  onChangeText={setInputText}
+                  placeholder="Ask MyFi..."
+                  placeholderTextColor="#BABABA"
+                  multiline
+                  maxLength={1000}
+                  editable={!sending}
+                />
+                <View style={styles.inputActions}>
+                  <Pressable
+                    onPress={() => handleSendMessage()}
+                    disabled={!inputText.trim() || sending}
+                  >
+                    <Animated.View
+                      style={[
+                        styles.sendButton,
+                        (!inputText.trim() || sending) && styles.sendButtonDisabled,
+                        { transform: [{ scale: sendButtonScale }] },
+                      ]}
+                    >
+                      <Ionicons name="send" size={18} color="#FFFFFF" />
+                    </Animated.View>
+                  </Pressable>
+                </View>
+              </View>
             </View>
           )
         )}
@@ -565,9 +602,8 @@ const Chat = () => {
             </View>
           </View>
         )}
+      </View>
       </KeyboardAvoidingView>
-    </View>
-    </SafeAreaView>
 
         {/* Sessions Sidebar Overlay — outside SafeAreaView to cover status bar */}
         {showSessions && (
@@ -703,7 +739,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingBottom: 12,
     backgroundColor: "transparent",
     borderBottomWidth: 0,
     zIndex: 10,
@@ -862,14 +898,14 @@ const styles = StyleSheet.create({
   userBubble: {
     maxWidth: "75%",
     alignSelf: "flex-end",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#3059AD",
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
-    shadowColor: "#000",
+    shadowColor: "#3059AD",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
     elevation: 3,
   },
   assistantWrapper: {
@@ -878,7 +914,7 @@ const styles = StyleSheet.create({
   },
   messageText: {
     fontSize: 15,
-    color: "#0D0D0D",
+    color: "#FFFFFF",
     letterSpacing: -0.3,
     lineHeight: 22,
     fontWeight: "400",
@@ -929,23 +965,39 @@ const styles = StyleSheet.create({
     marginLeft: 2,
   },
   inputContainer: {
-    flexDirection: "row",
-    padding: 16,
+    paddingHorizontal: 12,
+    paddingTop: 10,
     backgroundColor: "transparent",
-    borderTopWidth: 0,
-    alignItems: "flex-end",
+  },
+  inputCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    borderWidth: 1.5,
+    borderColor: "#D8E3F0",
+    shadowColor: "#3059AD",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+    paddingTop: 12,
+    paddingHorizontal: 16,
+    paddingBottom: 10,
   },
   input: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 50,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
     fontSize: 16,
-    maxHeight: 120,
-    marginRight: 8,
+    maxHeight: 160,
+    minHeight: 24,
     letterSpacing: -0.3,
     color: "#000000",
+    lineHeight: 22,
+    paddingTop: 0,
+    paddingBottom: 0,
+  },
+  inputActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    alignItems: "center",
+    marginTop: 8,
   },
   sendButton: {
     backgroundColor: "#3059AD",
