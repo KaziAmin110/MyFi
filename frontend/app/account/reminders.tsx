@@ -14,6 +14,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useFocusEffect, useLocalSearchParams } from "expo-router";
 import * as Notifications from "expo-notifications";
+import Constants from "expo-constants";
 import { appointmentsApi, userApi } from "../../utils/api";
 
 const RemindersScreen = () => {
@@ -120,8 +121,20 @@ const RemindersScreen = () => {
 
     // Get the token and save it to the backend
     try {
+      const projectId =
+        Constants?.expoConfig?.extra?.eas?.projectId ??
+        Constants?.easConfig?.projectId;
+
+      if (!projectId) {
+        console.warn(
+          "Push notifications are not configured: Missing EAS project ID in app.json"
+        );
+        // We still return true to allow the user to proceed without push notifications
+        return true;
+      }
+
       const tokenData = await Notifications.getExpoPushTokenAsync({
-        projectId: "your-expo-project-id", // You should replace this with your actual Expo project ID from app.json
+        projectId,
       });
       await userApi.updateExpoPushToken(tokenData.data);
     } catch (error) {
@@ -188,71 +201,91 @@ const RemindersScreen = () => {
           </View>
         ) : (
           <ScrollView contentContainerStyle={styles.scrollContent}>
-            {filteredReminders.map((reminder) => (
-              <View
-                key={`${reminder.type}-${reminder.id}`}
-                style={[
-                  styles.reminderCard,
-                  !reminder.active && styles.inactiveCard,
-                  highlightDate === reminder.date && styles.highlightedCard,
-                ]}
-              >
-                <View style={styles.cardHeader}>
-                  <View style={styles.timeInfo}>
-                    <Text style={styles.timeText}>{reminder.time}</Text>
-                    <Text
-                      style={[
-                        styles.reminderTitle,
-                        reminder.active
-                          ? styles.activeTitle
-                          : styles.inactiveTitle,
-                      ]}
-                    >
-                      {reminder.title}
-                    </Text>
-                    {reminder.description && (
-                      <Text style={styles.descriptionText}>
-                        {reminder.description}
-                      </Text>
-                    )}
+            {filteredReminders.length === 0 ? (
+              <View style={styles.emptyStateContainer}>
+                <View style={styles.emptyStateCard}>
+                  <View style={styles.emptyStateIconContainer}>
+                    <Ionicons
+                      name="calendar-outline"
+                      size={40}
+                      color="#3B66C5"
+                    />
                   </View>
+                  <Text style={styles.emptyStateTitle}>No Reminders</Text>
+                  <Text style={styles.emptyStateSubtitle}>
+                    {activeTab === "All"
+                      ? "You haven't created any reminders yet. Tap the + button below to get started."
+                      : "You don't have any upcoming reminders. Tap the + button below to add one."}
+                  </Text>
+                </View>
+              </View>
+            ) : (
+              filteredReminders.map((reminder) => (
+                <View
+                  key={`${reminder.type}-${reminder.id}`}
+                  style={[
+                    styles.reminderCard,
+                    !reminder.active && styles.inactiveCard,
+                    highlightDate === reminder.date && styles.highlightedCard,
+                  ]}
+                >
+                  <View style={styles.cardHeader}>
+                    <View style={styles.timeInfo}>
+                      <Text style={styles.timeText}>{reminder.time}</Text>
+                      <Text
+                        style={[
+                          styles.reminderTitle,
+                          reminder.active
+                            ? styles.activeTitle
+                            : styles.inactiveTitle,
+                        ]}
+                      >
+                        {reminder.title}
+                      </Text>
+                      {reminder.description && (
+                        <Text style={styles.descriptionText}>
+                          {reminder.description}
+                        </Text>
+                      )}
+                    </View>
 
-                  <View
-                    style={[
-                      styles.calendarBadge,
-                      !reminder.active && styles.inactiveBadge,
-                    ]}
-                  >
                     <View
                       style={[
-                        styles.monthStrip,
-                        !reminder.active && styles.inactiveMonthStrip,
+                        styles.calendarBadge,
+                        !reminder.active && styles.inactiveBadge,
                       ]}
                     >
-                      <Text style={styles.monthText}>{reminder.month}</Text>
+                      <View
+                        style={[
+                          styles.monthStrip,
+                          !reminder.active && styles.inactiveMonthStrip,
+                        ]}
+                      >
+                        <Text style={styles.monthText}>{reminder.month}</Text>
+                      </View>
+                      <Text style={styles.dayText}>{reminder.day}</Text>
                     </View>
-                    <Text style={styles.dayText}>{reminder.day}</Text>
                   </View>
-                </View>
 
-                {reminder.active && (
-                  <View style={styles.cardFooter}>
-                    <TouchableOpacity
-                      style={styles.cancelButton}
-                      onPress={() => handleDelete(reminder.id)}
-                    >
-                      <Text style={styles.cancelText}>Cancel</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.editButton}
-                      onPress={() => handleEdit(reminder)}
-                    >
-                      <Text style={styles.editText}>Edit</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-              </View>
-            ))}
+                  {reminder.active && (
+                    <View style={styles.cardFooter}>
+                      <TouchableOpacity
+                        style={styles.cancelButton}
+                        onPress={() => handleDelete(reminder.id)}
+                      >
+                        <Text style={styles.cancelText}>Cancel</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.editButton}
+                        onPress={() => handleEdit(reminder)}
+                      >
+                        <Text style={styles.editText}>Edit</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+              ))
+            )}
           </ScrollView>
         )}
 
@@ -332,6 +365,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
     paddingBottom: 100,
+    flexGrow: 1,
   },
   reminderCard: {
     backgroundColor: "white",
@@ -457,6 +491,46 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 5,
     elevation: 8,
+  },
+  emptyStateContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 60,
+  },
+  emptyStateCard: {
+    backgroundColor: "white",
+    borderRadius: 24,
+    paddingVertical: 40,
+    paddingHorizontal: 24,
+    alignItems: "center",
+    width: "100%",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  emptyStateIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "rgba(59, 102, 197, 0.1)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 24,
+  },
+  emptyStateTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#333",
+    marginBottom: 12,
+  },
+  emptyStateSubtitle: {
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
+    lineHeight: 24,
   },
 });
 

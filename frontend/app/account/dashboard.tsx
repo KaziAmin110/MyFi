@@ -238,7 +238,6 @@ const Dashboard = () => {
           styles.scrollContent,
           {
             paddingTop: insets.top + (isTablet ? 20 : 12),
-            paddingBottom: insets.bottom + 16,
           },
         ]}
         showsVerticalScrollIndicator={false}
@@ -442,9 +441,12 @@ const Dashboard = () => {
           <Ionicons name="chevron-forward" size={18} color="#AAAAAA" />
         </Pressable>
 
+        {/* Spacer to push the habitude section down */}
+        <View style={{ flexGrow: 1, minHeight: 16 }} />
+
         {/* ── Habit Cards Section ── */}
         <View
-          style={[styles.cardsSection, { paddingBottom: insets.bottom + 58 }]}
+          style={[styles.cardsSection, { paddingBottom: insets.bottom + 90 }]}
         >
           {/* Drag handle pill */}
           <View style={styles.dragHandle} />
@@ -635,7 +637,7 @@ const styles = StyleSheet.create({
   hero: {
     alignItems: "center",
     paddingHorizontal: moderateScale(16),
-    marginBottom: moderateVerticalScale(4),
+    marginBottom: moderateVerticalScale(16),
   },
   title: {
     fontSize: moderateScale(32),
@@ -658,7 +660,7 @@ const styles = StyleSheet.create({
   calendar: {
     paddingVertical: moderateVerticalScale(6),
     paddingHorizontal: moderateScale(20),
-    marginBottom: moderateVerticalScale(8),
+    marginBottom: moderateVerticalScale(24),
   },
   calendarHeader: {
     flexDirection: "row",
@@ -728,7 +730,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderRadius: 20,
     marginHorizontal: moderateScale(16),
-    marginBottom: moderateVerticalScale(10),
+    marginBottom: moderateVerticalScale(24),
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
