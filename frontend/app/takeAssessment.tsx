@@ -212,10 +212,21 @@ export default function AssessmentScreen() {
           });
 
           setAnswersMap(restored);
-          setCurrentIndex(firstUnanswered);
-          setFurthestIndex(
-            Math.max(firstUnanswered, data.previously_answered.length),
-          );
+
+          if (
+            mappedQuestions.length > 0 &&
+            firstUnanswered >= mappedQuestions.length
+          ) {
+            // All questions answered, show completion screen
+            setCompleted(true);
+            setCurrentIndex(mappedQuestions.length - 1);
+            setFurthestIndex(mappedQuestions.length);
+          } else {
+            setCurrentIndex(firstUnanswered);
+            setFurthestIndex(
+              Math.max(firstUnanswered, data.previously_answered.length),
+            );
+          }
         }
       } catch (err: any) {
         console.error("Failed to load onboarding assessment:", err);
@@ -402,7 +413,6 @@ export default function AssessmentScreen() {
     return (
       <SafeAreaView style={[styles.container, { justifyContent: "center" }]}>
         <ActivityIndicator size="large" color="#43A047" />
-        <Text style={styles.loadingText}>Submitting your assessment...</Text>
       </SafeAreaView>
     );
   }
@@ -411,65 +421,41 @@ export default function AssessmentScreen() {
 
   if (completed) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: "#EEF2FA" }]}>
-        {/* Header with full progress */}
-        <View style={styles.header}>
-          <View style={styles.backBtn} />
-          <Text style={styles.headerTitle}>Money Habitudes</Text>
-          <View style={styles.backBtn} />
-        </View>
-
-        <View style={styles.topProgressContainer}>
-          <Text style={styles.questionCountText}>
-            QUESTION {totalQuestions} OF {totalQuestions}
-          </Text>
-          <View style={styles.progressBarBg}>
-            <View style={[styles.progressBarFill, { width: "100%" }]} />
-          </View>
-        </View>
-
+      <SafeAreaView style={[styles.container, completionStyles.container]}>
         <View style={completionStyles.content}>
-          {/* Title */}
-          <Text style={completionStyles.title}>Great Job! 🎉</Text>
-          <Text style={completionStyles.subtitle}>
-            You have completed the{"\n"}Money Habitudes Assessment!
-          </Text>
-
-          {/* Confetti area */}
-          <View style={completionStyles.confettiArea}>
-            {/* Decorative shapes */}
-            <View style={[completionStyles.shape, completionStyles.star1]} />
-            <View style={[completionStyles.shape, completionStyles.star2]} />
-            <View style={[completionStyles.shape, completionStyles.star3]} />
-            <View style={[completionStyles.shape, completionStyles.dot1]} />
-            <View style={[completionStyles.shape, completionStyles.dot2]} />
-            <View style={[completionStyles.shape, completionStyles.dot3]} />
-            <View style={[completionStyles.shape, completionStyles.square1]} />
-            <View style={[completionStyles.shape, completionStyles.square2]} />
-            <View style={[completionStyles.shape, completionStyles.diamond1]} />
-            <View style={[completionStyles.shape, completionStyles.diamond2]} />
-
+          <View style={completionStyles.successCard}>
             {/* Center illustration */}
-            <Image
-              source={require("../assets/images/MH_cards.png")}
-              style={completionStyles.centerLogo}
-            />
+            <View style={completionStyles.logoContainer}>
+              <View style={completionStyles.glowHalo} />
+              <Image
+                source={require("../assets/images/MH_cards.png")}
+                style={completionStyles.centerLogo}
+              />
+            </View>
+
+            {/* Title */}
+            <Text style={completionStyles.title}>Great Job!</Text>
+            <Text style={completionStyles.subtitle}>
+              You have completed the{"\n"}Money Habitudes Assessment!
+            </Text>
           </View>
         </View>
 
         {/* View Results button */}
-        <TouchableOpacity
-          style={completionStyles.viewResultsBtn}
-          activeOpacity={0.85}
-          onPress={() => {
-            const sessionId = sessionIdRef.current;
-            if (sessionId) handleSubmitAssessment(sessionId);
-          }}
-        >
-          <Text style={completionStyles.viewResultsBtnText}>View Results</Text>
-        </TouchableOpacity>
-
-        <View style={{ height: 24 }} />
+        <View style={completionStyles.buttonContainer}>
+          <TouchableOpacity
+            style={completionStyles.viewResultsBtn}
+            activeOpacity={0.85}
+            onPress={() => {
+              const sessionId = sessionIdRef.current;
+              if (sessionId) handleSubmitAssessment(sessionId);
+            }}
+          >
+            <Text style={completionStyles.viewResultsBtnText}>
+              View Results
+            </Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Confetti cannons — placed at bottom of JSX to render on top of everything */}
         <ConfettiCannon
@@ -1086,6 +1072,9 @@ const styles = StyleSheet.create({
 // ─────────────────────────────────────────────────────────────────────────────
 
 const completionStyles = StyleSheet.create({
+  container: {
+    backgroundColor: "#F9FAFC",
+  },
   content: {
     flex: 1,
     alignItems: "center",
@@ -1093,147 +1082,66 @@ const completionStyles = StyleSheet.create({
     width: "100%",
     paddingHorizontal: 24,
   },
+  successCard: {
+    width: "100%",
+    paddingVertical: 48,
+    paddingHorizontal: 24,
+    alignItems: "center",
+  },
+  logoContainer: {
+    position: "relative",
+    width: 140,
+    height: 140,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 40,
+  },
+  glowHalo: {
+    position: "absolute",
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: "#3B7BF6",
+    opacity: 0.1,
+    transform: [{ scale: 1.5 }],
+  },
+  centerLogo: {
+    width: 100,
+    height: 100,
+    resizeMode: "contain",
+    zIndex: 2,
+  },
   title: {
-    fontSize: 32,
+    fontSize: 34,
     fontWeight: "800",
-    color: "#1A2E50",
+    color: COLORS.textPrimary,
     textAlign: "center",
-    marginBottom: 8,
+    marginBottom: 12,
     letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 16,
-    color: "#7A869A",
+    fontSize: 20,
+    color: COLORS.textSecondary,
     textAlign: "center",
     lineHeight: 24,
     fontWeight: "500",
-    marginBottom: 32,
   },
-
-  // ── Confetti area ─────────────────────────────────────────────────────
-  confettiArea: {
-    width: 280,
-    height: 280,
-    position: "relative",
-    alignItems: "center",
-    justifyContent: "center",
+  buttonContainer: {
+    width: "100%",
+    paddingHorizontal: 24,
+    paddingBottom: 32,
   },
-  centerLogo: {
-    width: 80,
-    height: 80,
-    resizeMode: "contain",
-  },
-  shape: {
-    position: "absolute",
-  },
-
-  // Stars (4-pointed via rotated squares)
-  star1: {
-    width: 18,
-    height: 18,
-    backgroundColor: "#B39DDB",
-    borderRadius: 3,
-    top: 30,
-    left: 30,
-    transform: [{ rotate: "45deg" }],
-  },
-  star2: {
-    width: 14,
-    height: 14,
-    backgroundColor: "#FFB74D",
-    borderRadius: 2,
-    top: 20,
-    right: 60,
-    transform: [{ rotate: "45deg" }],
-  },
-  star3: {
-    width: 16,
-    height: 16,
-    backgroundColor: "#4FC3F7",
-    borderRadius: 3,
-    bottom: 60,
-    right: 30,
-    transform: [{ rotate: "45deg" }],
-  },
-
-  // Dots
-  dot1: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: "#F48FB1",
-    top: 50,
-    right: 90,
-  },
-  dot2: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: "#81C784",
-    bottom: 90,
-    left: 50,
-  },
-  dot3: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#FFD54F",
-    top: 80,
-    right: 30,
-  },
-
-  // Squares
-  square1: {
-    width: 20,
-    height: 20,
-    backgroundColor: "#66BB6A",
-    borderRadius: 5,
-    bottom: 50,
-    right: 70,
-    transform: [{ rotate: "15deg" }],
-  },
-  square2: {
-    width: 16,
-    height: 16,
-    backgroundColor: "#FF8A65",
-    borderRadius: 4,
-    top: 100,
-    left: 20,
-    transform: [{ rotate: "-10deg" }],
-  },
-
-  // Diamonds
-  diamond1: {
-    width: 14,
-    height: 14,
-    backgroundColor: "#CE93D8",
-    borderRadius: 2,
-    bottom: 30,
-    left: 80,
-    transform: [{ rotate: "45deg" }],
-  },
-  diamond2: {
-    width: 12,
-    height: 12,
-    backgroundColor: "#4DD0E1",
-    borderRadius: 2,
-    top: 40,
-    left: 100,
-    transform: [{ rotate: "45deg" }],
-  },
-
-  // ── View Results Button ─────────────────────────────────────────────
   viewResultsBtn: {
-    width: "80%",
-    paddingVertical: 16,
-    borderRadius: 14,
-    backgroundColor: "#3B7BF6",
+    width: "100%",
+    paddingVertical: 18,
+    borderRadius: 16,
+    backgroundColor: COLORS.primary,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#3B7BF6",
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
     elevation: 8,
   },
   viewResultsBtnText: {

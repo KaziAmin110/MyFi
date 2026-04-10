@@ -226,7 +226,7 @@ export default function Profile() {
             />
           ) : (
             <View style={styles.avatarPlaceholder}>
-              <Ionicons name="person" size={50} color="#3059AD" />
+              <Ionicons name="person" size={68} color="#3059AD" />
             </View>
           )}
 
@@ -240,7 +240,7 @@ export default function Profile() {
               onPress={handleEditAvatar}
               activeOpacity={0.8}
             >
-              <Ionicons name="camera" size={22} color="#fff" />
+              <Ionicons name="camera" size={24} color="#fff" />
             </TouchableOpacity>
           )}
         </View>
@@ -413,7 +413,10 @@ function ProfileItem({
   hideBorder?: boolean;
 }) {
   return (
-    <TouchableOpacity style={[styles.item, hideBorder && { borderBottomWidth: 0 }]} onPress={onPress}>
+    <TouchableOpacity
+      style={[styles.item, hideBorder && { borderBottomWidth: 0 }]}
+      onPress={onPress}
+    >
       <View style={styles.itemLeft}>
         <Ionicons
           name={icon}
@@ -444,12 +447,12 @@ const styles = StyleSheet.create({
   },
   avatarContainer: {
     position: "absolute",
-    bottom: -65, // Sits half-way out of the header
-    width: 130,
-    height: 130,
-    borderRadius: 65,
+    bottom: -80, // Sits half-way out of the header
+    width: 160,
+    height: 160,
+    borderRadius: 80,
     backgroundColor: "#fff",
-    borderWidth: 5, // Increased border thickness
+    borderWidth: 6, // Increased border thickness
     borderColor: "#fff",
     elevation: 12,
     shadowColor: "#000",
@@ -463,7 +466,7 @@ const styles = StyleSheet.create({
   avatarImage: {
     width: "100%",
     height: "100%",
-    borderRadius: 65, // Ensure image itself is also rounded
+    borderRadius: 80, // Ensure image itself is also rounded
   },
   avatarPlaceholder: {
     width: "100%",
@@ -471,16 +474,16 @@ const styles = StyleSheet.create({
     backgroundColor: "#F3F4F6",
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 65,
+    borderRadius: 80,
   },
   editAvatarButton: {
     position: "absolute",
-    bottom: 0,
-    right: 0,
+    bottom: 4,
+    right: 4,
     backgroundColor: "#3059AD",
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 4,
@@ -498,7 +501,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   card: {
-    marginTop: 90, // Push below the avatar (which is -65)
+    marginTop: 110, // Push below the avatar (which is -80)
     marginHorizontal: 20,
     backgroundColor: "#fff",
     borderRadius: 32,
