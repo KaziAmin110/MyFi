@@ -12,12 +12,13 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter, useFocusEffect } from "expo-router";
+import { useRouter, useFocusEffect, useLocalSearchParams } from "expo-router";
 import * as Notifications from "expo-notifications";
 import { appointmentsApi, userApi } from "../../utils/api";
 
 const RemindersScreen = () => {
   const router = useRouter();
+  const { highlightDate } = useLocalSearchParams<{ highlightDate?: string }>();
   const [activeTab, setActiveTab] = useState("All");
   const [loading, setLoading] = useState(true);
   const [upcomingReminders, setUpcomingReminders] = useState<any[]>([]);
@@ -193,6 +194,7 @@ const RemindersScreen = () => {
                 style={[
                   styles.reminderCard,
                   !reminder.active && styles.inactiveCard,
+                  highlightDate === reminder.date && styles.highlightedCard,
                 ]}
               >
                 <View style={styles.cardHeader}>
@@ -345,6 +347,10 @@ const styles = StyleSheet.create({
   inactiveCard: {
     backgroundColor: "#E8E8E8",
     shadowOpacity: 0,
+  },
+  highlightedCard: {
+    borderColor: "#3B66C5",
+    borderWidth: 2,
   },
   cardHeader: {
     flexDirection: "row",

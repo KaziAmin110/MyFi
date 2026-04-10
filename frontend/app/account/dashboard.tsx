@@ -309,7 +309,18 @@ const Dashboard = () => {
               const dateStr = day.toISOString().split("T")[0];
               const hasReminder = appointmentDates.includes(dateStr);
               return (
-                <View key={day.toISOString()} style={styles.day}>
+                <Pressable 
+                  key={day.toISOString()} 
+                  style={styles.day}
+                  onPress={() => {
+                    if (hasReminder) {
+                      router.push({
+                        pathname: "/account/reminders",
+                        params: { highlightDate: dateStr }
+                      });
+                    }
+                  }}
+                >
                   <Text
                     style={[
                       styles.dayLabel,
@@ -331,7 +342,7 @@ const Dashboard = () => {
                     </Text>
                   </View>
                   {hasReminder && <View style={styles.blueDot} />}
-                </View>
+                </Pressable>
               );
             })}
           </View>
@@ -579,6 +590,9 @@ export default Dashboard;
 const getStart = (date: Date) => {
   const obj = new Date(date);
   obj.setHours(0, 0, 0, 0);
+  const dayOfWeek = obj.getDay();
+  const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  obj.setDate(obj.getDate() - diff);
   return obj;
 };
 
