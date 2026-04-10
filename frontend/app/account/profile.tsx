@@ -269,6 +269,7 @@ export default function Profile() {
             icon="log-out-outline"
             onPress={handleLogout}
             isDestructive
+            hideBorder
           />
         </View>
       </View>
@@ -403,26 +404,28 @@ function ProfileItem({
   icon,
   onPress,
   isDestructive = false,
+  hideBorder = false,
 }: {
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
   onPress: () => void;
   isDestructive?: boolean;
+  hideBorder?: boolean;
 }) {
   return (
-    <TouchableOpacity style={styles.item} onPress={onPress}>
+    <TouchableOpacity style={[styles.item, hideBorder && { borderBottomWidth: 0 }]} onPress={onPress}>
       <View style={styles.itemLeft}>
         <Ionicons
           name={icon}
-          size={20}
-          color={isDestructive ? "#EF4444" : "#404040"}
-          style={{ marginRight: 12 }}
+          size={24}
+          color={isDestructive ? "#EF4444" : "#4B5563"}
+          style={{ marginRight: 16 }}
         />
         <Text style={[styles.itemText, isDestructive && { color: "#EF4444" }]}>
           {label}
         </Text>
       </View>
-      <Text style={styles.chevron}>›</Text>
+      <Ionicons name="chevron-forward" size={20} color="#D1D5DB" />
     </TouchableOpacity>
   );
 }
@@ -433,26 +436,26 @@ const styles = StyleSheet.create({
     backgroundColor: "#BCD1F0",
   },
   header: {
-    height: 200, // Reduced height now that title is gone
+    height: 210, // Slightly taller for more presence
     alignItems: "center",
     justifyContent: "center",
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+    borderBottomLeftRadius: 40,
+    borderBottomRightRadius: 40,
   },
   avatarContainer: {
     position: "absolute",
-    bottom: -60, // Sits half-way out of the header
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    bottom: -65, // Sits half-way out of the header
+    width: 130,
+    height: 130,
+    borderRadius: 65,
     backgroundColor: "#fff",
-    borderWidth: 4, // Increased border thickness
+    borderWidth: 5, // Increased border thickness
     borderColor: "#fff",
-    elevation: 10,
+    elevation: 12,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
     overflow: "visible", // To allow button to show clearly
     alignItems: "center",
     justifyContent: "center",
@@ -460,7 +463,7 @@ const styles = StyleSheet.create({
   avatarImage: {
     width: "100%",
     height: "100%",
-    borderRadius: 60, // Ensure image itself is also rounded
+    borderRadius: 65, // Ensure image itself is also rounded
   },
   avatarPlaceholder: {
     width: "100%",
@@ -468,25 +471,25 @@ const styles = StyleSheet.create({
     backgroundColor: "#F3F4F6",
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 60,
+    borderRadius: 65,
   },
   editAvatarButton: {
     position: "absolute",
     bottom: 0,
     right: 0,
     backgroundColor: "#3059AD",
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 3,
+    borderWidth: 4,
     borderColor: "#fff",
     elevation: 8,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
   },
   uploadingOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -495,28 +498,31 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   card: {
-    marginTop: 80, // Explicitly push below the avatar (which is -60)
-    marginHorizontal: 16,
+    marginTop: 90, // Push below the avatar (which is -65)
+    marginHorizontal: 20,
     backgroundColor: "#fff",
-    borderRadius: 24,
-    padding: 24,
-    elevation: 5,
+    borderRadius: 32,
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 16,
+    elevation: 8,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
   },
   name: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: "700",
-    marginBottom: 24,
+    marginBottom: 32,
     textAlign: "center",
+    letterSpacing: -0.5,
   },
   item: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 16,
+    paddingVertical: 18,
     borderBottomWidth: 1,
     borderBottomColor: "#F3F4F6",
   },
@@ -525,13 +531,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   itemText: {
-    fontSize: 16,
-    color: "#404040",
-    fontWeight: "500",
-  },
-  chevron: {
-    fontSize: 22,
-    color: "#9CA3AF",
+    fontSize: 17,
+    color: "#1F2937",
+    fontWeight: "600",
   },
   // Modal Styles
   modalBackdrop: {
