@@ -1,10 +1,17 @@
 import React from "react";
-import { View, Text, StyleSheet, Animated, Dimensions, PanResponderInstance } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Animated,
+  Dimensions,
+  PanResponderInstance,
+} from "react-native";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = SCREEN_WIDTH * 0.88;
-const CARD_HEIGHT = CARD_WIDTH * 1.15;
-const CARD_CONTAINER_HEIGHT = CARD_HEIGHT + 70;
+const CARD_HEIGHT = CARD_WIDTH * 1.2; // Slightly reduced from 1.35 to prevent overflow
+const CARD_CONTAINER_HEIGHT = CARD_HEIGHT + 60;
 
 interface Question {
   id: string;
@@ -46,41 +53,41 @@ const QuestionCardStack: React.FC<QuestionCardStackProps> = ({
   // Back card animated styles
   const back1Scale = dragProgress.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.95, 1],
+    outputRange: [0.94, 1],
   });
   const back1TranslateY = dragProgress.interpolate({
     inputRange: [0, 1],
-    outputRange: [-16, 0],
+    outputRange: [-18, 0], // Compacted from -24
   });
   const back1Opacity = dragProgress.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.9, 1],
+    outputRange: [1, 1],
   });
 
   const back2Scale = dragProgress.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.9, 0.95],
+    outputRange: [0.88, 0.94],
   });
   const back2TranslateY = dragProgress.interpolate({
     inputRange: [0, 1],
-    outputRange: [-32, -16],
+    outputRange: [-36, -18], // Compacted from -48
   });
   const back2Opacity = dragProgress.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.65, 0.9],
+    outputRange: [1, 1],
   });
 
   const back3Scale = dragProgress.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.85, 0.9],
+    outputRange: [0.82, 0.88],
   });
   const back3TranslateY = dragProgress.interpolate({
     inputRange: [0, 1],
-    outputRange: [-48, -32],
+    outputRange: [-54, -36], // Compacted from -72
   });
   const back3Opacity = dragProgress.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, 0.65],
+    outputRange: [0, 1],
   });
 
   const backCardTextScale = dragProgress.interpolate({
@@ -88,6 +95,22 @@ const QuestionCardStack: React.FC<QuestionCardStackProps> = ({
     outputRange: [0.9, 1],
     extrapolate: "clamp",
   });
+
+  const renderInnerCard = (text: string, opacity?: any) => (
+    <View style={styles.innerCard}>
+      <LogoBadge style={styles.logoTopLeft} />
+      <Animated.View
+        style={[
+          styles.cardTextContainer,
+          opacity && { opacity },
+          { transform: [{ scale: backCardTextScale }] },
+        ]}
+      >
+        <Text style={styles.cardText}>{text}</Text>
+      </Animated.View>
+      <LogoBadge style={styles.logoBottomRight} />
+    </View>
+  );
 
   return (
     <View style={styles.cardContainer}>
@@ -98,7 +121,7 @@ const QuestionCardStack: React.FC<QuestionCardStackProps> = ({
             styles.card,
             styles.cardBack2,
             {
-              borderColor: back3BorderColor,
+              backgroundColor: back3BorderColor,
               shadowColor: back3BorderColor,
               opacity: back3Opacity,
               transform: [
@@ -117,7 +140,7 @@ const QuestionCardStack: React.FC<QuestionCardStackProps> = ({
             styles.card,
             styles.cardBack2,
             {
-              borderColor: backBorderColor,
+              backgroundColor: backBorderColor,
               shadowColor: backBorderColor,
               opacity: back2Opacity,
               transform: [
@@ -136,7 +159,7 @@ const QuestionCardStack: React.FC<QuestionCardStackProps> = ({
             styles.card,
             styles.cardBack1,
             {
-              borderColor: middleBorderColor,
+              backgroundColor: middleBorderColor,
               shadowColor: middleBorderColor,
               opacity: back1Opacity,
               transform: [
@@ -146,19 +169,7 @@ const QuestionCardStack: React.FC<QuestionCardStackProps> = ({
             },
           ]}
         >
-          <View style={styles.cardContentWrapper}>
-            <LogoBadge style={styles.logoBadgeCenter} />
-            <Animated.View
-              style={[
-                styles.cardTextContainer,
-                { transform: [{ scale: backCardTextScale }] },
-              ]}
-            >
-              <Text style={styles.cardText}>
-                {questions[currentIndex + 1]?.text}
-              </Text>
-            </Animated.View>
-          </View>
+          {renderInnerCard(questions[currentIndex + 1]?.text)}
         </Animated.View>
       )}
 
@@ -168,7 +179,7 @@ const QuestionCardStack: React.FC<QuestionCardStackProps> = ({
           styles.card,
           styles.cardFront,
           {
-            borderColor: frontBorderColor,
+            backgroundColor: frontBorderColor,
             shadowColor: frontBorderColor,
             transform: [
               { translateX: position.x },
@@ -185,12 +196,7 @@ const QuestionCardStack: React.FC<QuestionCardStackProps> = ({
           </View>
         )}
 
-        <View style={styles.cardContentWrapper}>
-          <LogoBadge style={styles.logoBadgeCenter} />
-          <View style={styles.cardTextContainer}>
-            <Text style={styles.cardText}>{questions[currentIndex]?.text}</Text>
-          </View>
-        </View>
+        {renderInnerCard(questions[currentIndex]?.text)}
       </Animated.View>
     </View>
   );
@@ -202,20 +208,28 @@ const styles = StyleSheet.create({
     height: CARD_CONTAINER_HEIGHT,
     alignItems: "center",
     justifyContent: "flex-start",
-    paddingTop: 28,
+    paddingTop: 18, // Reduced from 48 for compactness
   },
   card: {
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 28,
+    borderRadius: 32,
     position: "absolute",
     shadowColor: "#000000",
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 10,
-    borderWidth: 4.5,
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 8,
+    padding: 12, // Reduced from 18 to 12 for a slimmer border look
+  },
+  innerCard: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+    overflow: "hidden",
   },
   cardFront: {
     zIndex: 10,
@@ -229,32 +243,35 @@ const styles = StyleSheet.create({
     zIndex: 1,
     top: 24,
   },
-  cardContentWrapper: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    position: "relative",
-  },
   cardTextContainer: {
-    position: "absolute",
-    width: CARD_WIDTH - 64,
+    width: "85%",
     alignSelf: "center",
     justifyContent: "center",
     alignItems: "center",
   },
   cardText: {
-    fontSize: 26,
+    fontSize: 32,
     fontWeight: "600",
     textAlign: "center",
     color: "#1C1C1E",
-    lineHeight: 36,
-    letterSpacing: -0.5,
+    lineHeight: 38,
+    letterSpacing: -0.6,
   },
-  logoBadgeCenter: {
+  logoTopLeft: {
     position: "absolute",
-    top: 28,
-    alignSelf: "center",
-    opacity: 0.8,
+    top: 14,
+    left: 14,
+    width: 26,
+    height: 26,
+    opacity: 0.9,
+  },
+  logoBottomRight: {
+    position: "absolute",
+    bottom: 14,
+    right: 14,
+    width: 26,
+    height: 26,
+    opacity: 0.9,
   },
   revisitBadge: {
     position: "absolute",

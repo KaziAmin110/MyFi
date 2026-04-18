@@ -514,7 +514,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "space-between",
-    paddingBottom: 24, // Increased from 12 to 24 for extra clearance
+    paddingBottom: 16, // Reduced from 24 for compactness
   },
   topSection: {
     width: "100%",
@@ -523,8 +523,8 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 20,
     color: COLORS.textPrimary,
-    marginTop: 12,
-    marginBottom: 20,
+    marginTop: 8, // Reduced from 12
+    marginBottom: 12, // Reduced from 20
     fontWeight: "600",
     letterSpacing: -0.2,
   },

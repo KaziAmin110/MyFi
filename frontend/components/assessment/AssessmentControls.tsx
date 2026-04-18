@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     width: "100%",
     paddingTop: 10,
-    paddingBottom: 44, // Increased further from 28 to 44 for better clearance
+    paddingBottom: 32, // Reduced from 44 for compactness
     gap: 32,
   },
   actionItem: {
