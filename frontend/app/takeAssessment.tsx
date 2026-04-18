@@ -384,7 +384,6 @@ export default function AssessmentScreen() {
     return (
       <SafeAreaView style={[styles.container, { justifyContent: "center" }]}>
         <ActivityIndicator size="large" color="#3059AD" />
-        <Text style={styles.loadingText}>Preparing your assessment...</Text>
       </SafeAreaView>
     );
   }
