@@ -69,8 +69,8 @@ const ForgotPassword = () => {
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
       >
-        <View className="flex-1 px-6 justify-center">
-          <View className="items-center mb-8">
+        <View className="flex-1 px-6 justify-center"style={{ paddingBottom: scale(90) }}>
+          <View className="items-center mb-4">
           <Image
             source={require("../../assets/images/logoGradient.png")}
             style={{
@@ -78,7 +78,8 @@ const ForgotPassword = () => {
               height: scale(150),
               resizeMode: "contain",
               alignSelf: "center",
-            
+              marginBottom: scale(24),
+             
             }}
           />
             <Text className="text-3xl font-bold text-gray-900 text-center mb-3">
