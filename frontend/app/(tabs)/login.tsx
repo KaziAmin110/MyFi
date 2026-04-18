@@ -220,7 +220,7 @@ const Login = () => {
       <TouchableOpacity
         disabled={loading}
         onPress={handleLogin}
-        className="py-4 mt-5 mb-20 bg-primary rounded-xl"
+        className="py-4 mt-5 mb-20 bg-primary rounded-xl shadow-md shadow-blue-200"
       >
         <Text className="text-lg font-medium text-center text-white">
           {loading ? "Logging in..." : "Log in"}
