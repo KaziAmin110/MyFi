@@ -69,12 +69,25 @@ export const generateSessionSummary = async (
     if (error) return { data: null, error: error.message };
     if (!messages || messages.length === 0) return { data: null, error: null };
 
-    // Get rolling summary if it exists (covers older messages)
+    // Get rolling summary and user_id from the session
     const { data: session } = await supabase
       .from("chat_sessions")
-      .select("rolling_summary")
+      .select("rolling_summary, user_id")
       .eq("id", sessionId)
       .single();
+
+    // Look up the user's first name
+    let firstName = "there";
+    if (session?.user_id) {
+      const { data: userRow } = await supabase
+        .from("users")
+        .select("name")
+        .eq("id", session.user_id)
+        .single();
+      if (userRow?.name) {
+        firstName = userRow.name.split(" ")[0];
+      }
+    }
 
     // Build the conversation text from the most recent messages
     const recentMessages = messages.slice(-20);
@@ -86,16 +99,24 @@ export const generateSessionSummary = async (
       ? `Earlier in this conversation (summarized):\n${session.rolling_summary}\n\nMost recent messages:\n`
       : "";
 
-    const summary = await callAI(
-      "You are summarizing a completed coaching session. Your summary will be used in future sessions so the coach remembers what happened. Be specific and preserve important details.",
-      `${contextPrefix}${messageText}\n\nSummarize this complete coaching session in 4-6 sentences. Include:\n- What topics were discussed and to what depth (briefly touched / partially explored / deeply discussed with breakthrough)\n- What the user revealed about themselves, their life, their feelings about money\n- Any breakthroughs, realizations, or emotional moments\n- What coaching areas remain unexplored or were only briefly touched\n- Any exercises suggested or commitments the user made\n- How comfortable the user seemed and areas they might have avoided`,
-      []
-    );
+    // Generate both summaries in parallel — AI-internal and user-facing
+    const [summary, userSummary] = await Promise.all([
+      callAI(
+        "You are summarizing a completed coaching session. Your summary will be used in future sessions so the coach remembers what happened. Be specific and preserve important details.",
+        `${contextPrefix}${messageText}\n\nSummarize this complete coaching session in 4-6 sentences. Include:\n- What topics were discussed and to what depth (briefly touched / partially explored / deeply discussed with breakthrough)\n- What the user revealed about themselves, their life, their feelings about money\n- Any breakthroughs, realizations, or emotional moments\n- What coaching areas remain unexplored or were only briefly touched\n- Any exercises suggested or commitments the user made\n- How comfortable the user seemed and areas they might have avoided`,
+        []
+      ),
+      callAI(
+        `You are writing a brief, warm recap that ${firstName} will read when they look back at this completed coaching session. Write in second person. Sound like a real person, not a report. This session is already over — write entirely in the past tense. Do not list everything that was discussed. Pick the most meaningful moments or insights from the conversation and say it simply. 4-8 sentences maximum.`,
+        `${contextPrefix}${messageText}\n\nWrite a 4-6 sentence recap. Focus on the things that mattered most — a realization, a connection they made, or something they uncovered about themselves. Be specific but brief. Sound warm and human, not clinical.`,
+        []
+      ),
+    ]);
 
     // Generate embedding for semantic search in future sessions
     const embedding = await generateEmbedding(summary, "RETRIEVAL_DOCUMENT");
 
-    // Store in chat_summaries
+    // Store AI-internal summary in chat_summaries (used for RAG)
     const { error: insertError } = await supabase
       .from("chat_summaries")
       .insert({
@@ -106,6 +127,16 @@ export const generateSessionSummary = async (
 
     if (insertError) {
       console.warn("[SESSION SUMMARY] Failed to store:", insertError.message);
+    }
+
+    // Store user-facing summary on the session row
+    const { error: userSummaryError } = await supabase
+      .from("chat_sessions")
+      .update({ user_summary: userSummary })
+      .eq("id", sessionId);
+
+    if (userSummaryError) {
+      console.warn("[USER SUMMARY] Failed to store:", userSummaryError.message);
     }
 
     return { data: summary, error: null };

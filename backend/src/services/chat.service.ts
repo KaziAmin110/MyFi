@@ -177,15 +177,28 @@ After your greeting, on a new line write exactly:
 PROMPTS:
 prompt1|prompt2|prompt3
 
-Each prompt is a SHORT reply the user might say back to you (6-12 words, under 50 chars). These are written in the USER's voice — first person, conversational. When the user taps one, it gets sent as their message in the chat, so it must read naturally as something a real person would type.
+Each prompt is something the USER would naturally type as their first message — an honest feeling, question, or thing on their mind. Write from inside their head, not from the outside looking in. They should feel impulsive and real, like a text someone sends without overthinking it.
 
-Examples of good prompts:
-- "I want to talk about my overspending habits"
-- "Let's dig into that exercise from last week"
-- "Tell me more about my status patterns"
-- "I've been thinking about how I save money"
+Rules:
+- 5-10 words each, max 55 characters
+- No generic category-speak — if you mention a habitude or pattern, use the user's SPECIFIC ones by name (e.g. "Security", "Spontaneous") from their assessment results above
+- Start with "I" or a direct action verb
+- Grounded in a real feeling or situation — not abstract buzzwords
+- Must flow naturally from YOUR opening message
 
-Make them specific to this user's assessment results and history, and make sure they connect to your opening message.`;
+Examples of good prompts (specific, human, emotionally grounded):
+- "I keep spending money I don't have"
+- "Why do I feel guilty when I save?"
+- "I've been avoiding looking at my bank account"
+- "I want to understand my Security patterns better"
+- "Can we talk about what happened last week?"
+
+Examples of bad prompts (avoid these):
+- "I want to explore my dominant habitudes" ← generic, could apply to anyone
+- "Let's discuss my financial behaviors" ← too formal, not specific
+- "Tell me more about my patterns" ← vague, no detail
+
+Make all 3 prompts feel distinct in tone — one can be vulnerable, one curious, one action-oriented.`;
 
     const aiResponse = await callAI(systemPrompt, "Generate opening message", []);
 
@@ -193,9 +206,9 @@ Make them specific to this user's assessment results and history, and make sure 
     const parts = aiResponse.split("PROMPTS:");
     const messageContent = parts[0].trim();
     let prompts = [
-      "I want to explore my dominant habitudes",
-      "Tell me about a recent money decision I made",
-      "What's been on my mind financially",
+      "I've been avoiding looking at my finances",
+      "Why do I feel guilty when I spend money?",
+      "I want to understand why I'm bad with money",
     ];
 
     if (parts[1]) {
@@ -283,6 +296,7 @@ export const getMessages = async (
       createdAt: msg.created_at,
     })),
     summary: summaryResult.data?.summary_text || null,
+    userSummary: session.user_summary || null,
     suggestedPrompts: session.suggested_prompts || [],
   };
 

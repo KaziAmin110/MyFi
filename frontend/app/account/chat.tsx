@@ -96,6 +96,7 @@ const Chat = () => {
   const [showSearch, setShowSearch] = useState(false);
   const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>([]);
   const [showThinking, setShowThinking] = useState(false);
+  const [sessionUserSummary, setSessionUserSummary] = useState<string | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const sidebarAnim = useRef(new Animated.Value(-SIDEBAR_WIDTH)).current;
   const sendButtonScale = useRef(new Animated.Value(1)).current;
@@ -172,6 +173,7 @@ const Chat = () => {
       setLoading(true);
       setCurrentSession(session);
       setSuggestedPrompts([]);
+      setSessionUserSummary(null);
       setInputText("");
       const data = await getSessionMessages(session.id);
 
@@ -200,6 +202,7 @@ const Chat = () => {
       }
 
       setMessages(data.messages);
+      setSessionUserSummary(data.userSummary || null);
     } catch (error: any) {
       console.error("Error loading messages:", error);
     } finally {
@@ -530,6 +533,15 @@ const Chat = () => {
             {sending && (
               <View style={styles.typingIndicator}>
                 <BouncingDots />
+              </View>
+            )}
+            {currentSession?.isReadOnly && sessionUserSummary && (
+              <View style={styles.weeklySummaryCard}>
+                <View style={styles.weeklySummaryHeader}>
+                  <Ionicons name="sparkles" size={15} color="#3059AD" />
+                  <Text style={styles.weeklySummaryHeaderText}>Your Week in Review</Text>
+                </View>
+                <Text style={styles.weeklySummaryBody}>{sessionUserSummary}</Text>
               </View>
             )}
           </ScrollView>
@@ -881,6 +893,32 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#345995",
     fontWeight: "500",
+  },
+  weeklySummaryCard: {
+    marginTop: 24,
+    borderRadius: 16,
+    backgroundColor: "#F0F5FF",
+    borderWidth: 1,
+    borderColor: "#C8D9F5",
+    padding: 16,
+    gap: 10,
+  },
+  weeklySummaryHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  weeklySummaryHeaderText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#3059AD",
+    letterSpacing: -0.2,
+  },
+  weeklySummaryBody: {
+    fontSize: 14,
+    color: "#1A1A2E",
+    lineHeight: 22,
+    letterSpacing: -0.2,
   },
   messagesContainer: {
     flex: 1,
