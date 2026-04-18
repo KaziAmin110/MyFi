@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Animated,
 } from "react-native";
+import { Image } from "expo-image";
 
 interface AssessmentHeaderProps {
   currentIndex: number;
@@ -29,7 +30,11 @@ const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
       {/* ── Header ── */}
       <View style={styles.header}>
         <View style={styles.backBtn} />
-        <Text style={styles.headerTitle}>Money Habitudes</Text>
+        <Image
+          source={require("../../assets/images/Money_Habitudes.svg")}
+          style={styles.headerLogo}
+          contentFit="contain"
+        />
         <View style={styles.backBtn} />
       </View>
 
@@ -75,11 +80,9 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 4,
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#1C1C1E",
-    letterSpacing: -0.4,
+  headerLogo: {
+    width: 240,
+    height: 42,
   },
   backBtn: {
     width: 44,
