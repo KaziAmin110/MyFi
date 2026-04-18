@@ -180,7 +180,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     width: "100%",
-    paddingVertical: 10,
+    paddingTop: 10,
+    paddingBottom: 44, // Increased further from 28 to 44 for better clearance
     gap: 32,
   },
   actionItem: {

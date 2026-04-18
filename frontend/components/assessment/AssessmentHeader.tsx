@@ -1,5 +1,11 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Animated } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Animated,
+} from "react-native";
 
 interface AssessmentHeaderProps {
   currentIndex: number;
@@ -22,22 +28,29 @@ const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
     <View style={styles.headerWrapper}>
       {/* ── Header ── */}
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backBtn}
-          onPress={onBack}
-          disabled={!canBack}
-        >
-          {canBack && <Text style={styles.backArrow}>‹</Text>}
-        </TouchableOpacity>
+        <View style={styles.backBtn} />
         <Text style={styles.headerTitle}>Money Habitudes</Text>
         <View style={styles.backBtn} />
       </View>
 
       {/* ── Progress Bar ── */}
       <View style={styles.topProgressContainer}>
-        <Text style={styles.questionCountText}>
-          QUESTION {currentIndex + 1} OF {totalQuestions}
-        </Text>
+        <View style={styles.questionRow}>
+          <TouchableOpacity
+            style={styles.backBtn}
+            onPress={onBack}
+            disabled={!canBack}
+          >
+            {canBack && <Text style={styles.backArrow}>‹</Text>}
+          </TouchableOpacity>
+
+          <Text style={styles.questionCountText}>
+            QUESTION {currentIndex + 1} OF {totalQuestions}
+          </Text>
+
+          <View style={styles.backBtn} />
+        </View>
+
         <View style={styles.progressBarBg}>
           <Animated.View
             style={[styles.progressBarFill, { width: `${progressPercent}%` }]}
@@ -64,7 +77,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: "800",
+    fontWeight: "700",
     color: "#1C1C1E",
     letterSpacing: -0.4,
   },
@@ -86,23 +99,28 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     alignItems: "center",
   },
+  questionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+    marginBottom: 4,
+  },
   questionCountText: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#8E8E93",
+    color: "#000000",
     letterSpacing: 1.2,
-    marginBottom: 8,
-    marginTop: 4,
   },
   progressBarBg: {
     width: "100%",
-    height: 5,
-    backgroundColor: "#E5E5EA",
+    height: 8,
+    backgroundColor: "#ffffff",
     borderRadius: 3,
   },
   progressBarFill: {
-    height: 5,
-    backgroundColor: "#3059AD",
+    height: 8,
+    backgroundColor: "#7ed957",
     borderRadius: 3,
   },
 });

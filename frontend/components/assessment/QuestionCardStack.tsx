@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Animated, Dimensions, PanResponderInstance } fr
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = SCREEN_WIDTH * 0.88;
-const CARD_HEIGHT = CARD_WIDTH * 1.25;
+const CARD_HEIGHT = CARD_WIDTH * 1.15;
 const CARD_CONTAINER_HEIGHT = CARD_HEIGHT + 70;
 
 interface Question {

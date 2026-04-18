@@ -6,6 +6,7 @@ import React, {
   useCallback,
 } from "react";
 import {
+  View,
   Text,
   StyleSheet,
   TouchableOpacity,
@@ -17,6 +18,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
 import {
   initializeOnboardingAssessment,
   submitAnswer as submitAnswerAPI,
@@ -446,61 +448,76 @@ export default function AssessmentScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <AssessmentHeader
-        currentIndex={currentIndex}
-        totalQuestions={totalQuestions}
-        progressPercent={progressPercent}
-        onBack={goBack}
-        canBack={currentIndex > 0}
-        colors={COLORS}
-      />
+    <LinearGradient
+      colors={["#DCE9F2", "#E8F0F7", "#F9FAFC"]}
+      style={styles.container}
+    >
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.topSection}>
+          <AssessmentHeader
+            currentIndex={currentIndex}
+            totalQuestions={totalQuestions}
+            progressPercent={progressPercent}
+            onBack={goBack}
+            canBack={currentIndex > 0}
+            colors={COLORS}
+          />
 
-      <Text style={styles.subtitle}>How well does this describe you?</Text>
+          <Text style={styles.subtitle}>How well does this describe you?</Text>
+        </View>
 
-      <QuestionCardStack
-        questions={questions}
-        currentIndex={currentIndex}
-        totalQuestions={totalQuestions}
-        position={position}
-        dragProgress={dragProgress}
-        panResponder={panResponder}
-        rotate={rotate}
-        isRevisiting={isRevisiting}
-        frontBorderColor={
-          CARD_BORDER_COLORS[currentIndex % CARD_BORDER_COLORS.length]
-        }
-        middleBorderColor={
-          CARD_BORDER_COLORS[(currentIndex + 1) % CARD_BORDER_COLORS.length]
-        }
-        backBorderColor={
-          CARD_BORDER_COLORS[(currentIndex + 2) % CARD_BORDER_COLORS.length]
-        }
-        back3BorderColor={
-          CARD_BORDER_COLORS[(currentIndex + 3) % CARD_BORDER_COLORS.length]
-        }
-        LogoBadge={LogoBadge}
-      />
+        <QuestionCardStack
+          questions={questions}
+          currentIndex={currentIndex}
+          totalQuestions={totalQuestions}
+          position={position}
+          dragProgress={dragProgress}
+          panResponder={panResponder}
+          rotate={rotate}
+          isRevisiting={isRevisiting}
+          frontBorderColor={
+            CARD_BORDER_COLORS[currentIndex % CARD_BORDER_COLORS.length]
+          }
+          middleBorderColor={
+            CARD_BORDER_COLORS[(currentIndex + 1) % CARD_BORDER_COLORS.length]
+          }
+          backBorderColor={
+            CARD_BORDER_COLORS[(currentIndex + 2) % CARD_BORDER_COLORS.length]
+          }
+          back3BorderColor={
+            CARD_BORDER_COLORS[(currentIndex + 3) % CARD_BORDER_COLORS.length]
+          }
+          LogoBadge={LogoBadge}
+        />
 
-      <AssessmentControls
-        handleButton={handleButton}
-        currentAnswer={currentAnswer}
-        leftOpacity={leftOpacity}
-        rightOpacity={rightOpacity}
-        upOpacity={upOpacity}
-        btnNotMeScale={btnNotMeScale}
-        btnThatsMeScale={btnThatsMeScale}
-        btnSometimesScale={btnSometimesScale}
-        colors={COLORS}
-      />
-    </SafeAreaView>
+        <AssessmentControls
+          handleButton={handleButton}
+          currentAnswer={currentAnswer}
+          leftOpacity={leftOpacity}
+          rightOpacity={rightOpacity}
+          upOpacity={upOpacity}
+          btnNotMeScale={btnNotMeScale}
+          btnThatsMeScale={btnThatsMeScale}
+          btnSometimesScale={btnSometimesScale}
+          colors={COLORS}
+        />
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.bg,
+  },
+  safeArea: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingBottom: 12, // Extra cushion for the bottom controls
+  },
+  topSection: {
+    width: "100%",
     alignItems: "center",
   },
   subtitle: {
