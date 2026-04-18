@@ -514,7 +514,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "space-between",
-    paddingBottom: 12, // Extra cushion for the bottom controls
+    paddingBottom: 24, // Increased from 12 to 24 for extra clearance
   },
   topSection: {
     width: "100%",
