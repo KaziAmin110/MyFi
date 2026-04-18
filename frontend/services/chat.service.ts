@@ -29,6 +29,7 @@ export interface SessionWithMessages {
   };
   messages: ChatMessage[];
   summary: string | null;
+  userSummary: string | null;
   suggestedPrompts?: string[];
 }
 
