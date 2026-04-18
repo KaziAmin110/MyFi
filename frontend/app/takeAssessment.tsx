@@ -372,6 +372,12 @@ export default function AssessmentScreen() {
   const currentAnswer = answersMap[currentIndex] ?? null;
   const isRevisiting = currentAnswer !== null;
 
+  // ── Pre-Assessment Screen ──────────────────────────────────────────────
+
+  if (showPreAssessment) {
+    return <PreAssessmentView onStart={() => setShowPreAssessment(false)} />;
+  }
+
   // ── Loading & Error states ─────────────────────────────────────────────
 
   if (loading) {
@@ -403,12 +409,6 @@ export default function AssessmentScreen() {
         <ActivityIndicator size="large" color="#43A047" />
       </SafeAreaView>
     );
-  }
-
-  // ── Pre-Assessment Screen ──────────────────────────────────────────────
-
-  if (showPreAssessment) {
-    return <PreAssessmentView onStart={() => setShowPreAssessment(false)} />;
   }
 
   // ── Completion Screen ──────────────────────────────────────────────────
