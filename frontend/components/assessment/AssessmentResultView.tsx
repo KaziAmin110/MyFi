@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Text, View, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
+import {
+  Text,
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+} from "react-native";
 import {
   scale,
   verticalScale,
@@ -12,8 +18,10 @@ import { HABITUDES } from "../../constants/habitudes";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { AssessmentResultsData } from "@/services/assessmentResult.service";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Feather } from "@expo/vector-icons";
 
-const RING_SIZE = Math.min(SCREEN_HEIGHT * 0.28, SCREEN_WIDTH * 0.6);
+const RING_SIZE = Math.min(SCREEN_HEIGHT * 0.23, SCREEN_WIDTH * 0.5);
 const STROKE_WIDTH = RING_SIZE * 0.14; // proportional stroke
 
 interface AssessmentResultViewProps {
@@ -27,6 +35,7 @@ const AssessmentResultView: React.FC<AssessmentResultViewProps> = ({
 }) => {
   const [animatekey, setAnimateKey] = useState(0);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     // Trigger animation explicitly on mount when passing results
@@ -58,13 +67,22 @@ const AssessmentResultView: React.FC<AssessmentResultViewProps> = ({
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={["#C5D8EE", "#D8E6F3", "#E8EFF7"]}
+        colors={["#E2EDF8", "#F0F5FA", "#FFFFFF"]}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
 
-      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContainer,
+          {
+            paddingTop: insets.top + verticalScale(20),
+            paddingBottom: insets.bottom + verticalScale(40),
+          },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
         {/* ── Header ── */}
         <View style={styles.header}>
           <Text style={styles.heading}>Habitude Results</Text>
@@ -92,7 +110,7 @@ const AssessmentResultView: React.FC<AssessmentResultViewProps> = ({
               {activeHabitude?.id?.toUpperCase()}
             </Text>
             <Text
-              style={[styles.centerNum, { fontSize: RING_SIZE * 0.24 }]}
+              style={[styles.centerNum, { fontSize: RING_SIZE * 0.28 }]}
               adjustsFontSizeToFit
               numberOfLines={1}
             >
@@ -103,7 +121,7 @@ const AssessmentResultView: React.FC<AssessmentResultViewProps> = ({
 
         {/* ── List ── */}
         <View style={styles.listWrapper}>
-          <View style={styles.listInner}>
+          <View style={styles.card}>
             {sortedHabitudes.map((item, index) => (
               <View key={item.id}>
                 <TouchableOpacity
@@ -123,7 +141,11 @@ const AssessmentResultView: React.FC<AssessmentResultViewProps> = ({
                   <Text style={styles.percent}>{item.percent}%</Text>
                   <Text style={styles.label}>{item.id}</Text>
                   <View style={{ flex: 1 }} />
-                  <Text style={styles.arrow}>›</Text>
+                  <Feather
+                    name="chevron-right"
+                    size={moderateScale(20)}
+                    color="#CCCCCC"
+                  />
                 </TouchableOpacity>
                 {index < sortedHabitudes.length - 1 && (
                   <View style={styles.divider} />
@@ -147,7 +169,9 @@ const AssessmentResultView: React.FC<AssessmentResultViewProps> = ({
                 end={{ x: 1, y: 0 }}
                 style={styles.continueButtonGradient}
               >
-                <Text style={styles.continueButtonText}>Continue to Dashboard</Text>
+                <Text style={styles.continueButtonText}>
+                  Continue to Dashboard
+                </Text>
               </LinearGradient>
             </TouchableOpacity>
           </View>
@@ -164,7 +188,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContainer: {
-    paddingVertical: SCREEN_HEIGHT * 0.04,
     alignItems: "center",
     justifyContent: "space-evenly",
     minHeight: "100%",
@@ -175,16 +198,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   heading: {
-    fontSize: moderateScale(32),
-    fontWeight: "600",
+    fontSize: moderateScale(34),
+    fontWeight: "700",
     color: "#111111",
-    letterSpacing: -0.5,
-    marginBottom: verticalScale(4),
+    letterSpacing: -1,
+    marginBottom: verticalScale(6),
   },
   subheading: {
-    fontSize: moderateScale(17),
-    color: "#666666",
+    fontSize: moderateScale(16),
+    color: "#7A8A9E",
     fontWeight: "500",
+    letterSpacing: -0.2,
   },
 
   // ── Ring ──────────────────────────────────────────────────────────────────
@@ -200,15 +224,15 @@ const styles = StyleSheet.create({
   },
   centerLabel: {
     fontSize: moderateScale(13),
-    fontWeight: "800",
-    color: "#5A738E",
-    letterSpacing: 2,
-    marginBottom: verticalScale(-2),
+    fontWeight: "700",
+    color: "#6D839C",
+    letterSpacing: 2.5,
+    marginBottom: verticalScale(2),
   },
   centerNum: {
-    fontWeight: "700",
-    color: "#111111",
-    letterSpacing: -1.5,
+    fontWeight: "800",
+    color: "#1A1A1A",
+    letterSpacing: -2,
   },
 
   // ── List ──────────────────────────────────────────────────────────────────
@@ -217,17 +241,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(22),
     alignItems: "stretch",
   },
-  listInner: {
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    paddingHorizontal: scale(20),
+    paddingVertical: scale(8),
+    shadowColor: "#000",
+    shadowOpacity: 0.04,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 4,
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: SCREEN_HEIGHT * 0.016,
+    paddingVertical: SCREEN_HEIGHT * 0.02,
   },
   colorBox: {
-    width: scale(22),
-    height: scale(22),
-    borderRadius: moderateScale(6),
+    width: scale(24),
+    height: scale(24),
+    borderRadius: moderateScale(8),
     marginRight: scale(14),
   },
   score: {
@@ -249,16 +282,9 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#111111",
   },
-  arrow: {
-    fontSize: moderateScale(24),
-    color: "#BBBBBB",
-    lineHeight: moderateScale(26),
-  },
   divider: {
     height: 1,
-    borderTopWidth: 1,
-    borderStyle: "dashed",
-    borderColor: "#C8C8C8",
+    backgroundColor: "#F0F3F6",
   },
 
   // ── Continue Button ───────────────────────────────────────────────────────
