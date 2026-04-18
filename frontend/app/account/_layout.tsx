@@ -6,7 +6,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { BottomTabBar, BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { TabBarProvider, useTabBar } from "../../components/TabBarContext";
-import { AssessmentResultProvider } from "../../services/assessmentResult.service";
 
 const TabIcon = ({
   name,
@@ -256,25 +255,14 @@ const TabsLayout = () => {
           headerShown: false,
         }}
       />
-      <Tabs.Screen
-        name="HabitudeReport"
-        options={{
-          href: null,
-          headerShown: false,
-          tabBarStyle: {display: "none"},
-        }}
-      />
     </Tabs>
   );
 };
 
 const AccountLayout = () => (
-  <AssessmentResultProvider>
-    <TabBarProvider>
-      <TabsLayout />
-    </TabBarProvider>
-  </AssessmentResultProvider>
-  
+  <TabBarProvider>
+    <TabsLayout />
+  </TabBarProvider>
 );
 
 export default AccountLayout;

@@ -1,12 +1,12 @@
 import { useLocalSearchParams, router, useFocusEffect } from "expo-router";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from "react-native";
 import React, { useState, useCallback } from "react";
-import SingleRing from "../../components/SingleRing";
-import CardStack from "../../components/CardStack";
-import { scale, verticalScale, moderateScale } from "../../utils/scale";
-import { HABITUDES, getScoreTier } from "../../constants/habitudes";
-import { useAssessmentResults, AssessmentResultsData } from "../../services/assessmentResult.service";
-import AssessmentSkeleton from "./AssessmentSkeleton";
+import SingleRing from "../components/SingleRing";
+import CardStack from "../components/CardStack";
+import { scale, verticalScale, moderateScale } from "../utils/scale";
+import { HABITUDES, getScoreTier } from "../constants/habitudes";
+import { useAssessmentResults, AssessmentResultsData } from "../services/assessmentResult.service";
+import AssessmentSkeleton from "./account/AssessmentSkeleton";
 
 
 const HabitudeReport = () => {
@@ -19,7 +19,7 @@ const HabitudeReport = () => {
             : "";
 
     
-    const { resultData, loading, hasFetched} = useAssessmentResults();
+    const { resultData, loading, hasFetched, loadAssessmentResults } = useAssessmentResults();
     const [expanded, setExpanded] = useState(false);
     const [ringAnimation, setRingAnimation] = useState(0);
 
@@ -32,18 +32,24 @@ const HabitudeReport = () => {
     const sometimesMe = habitudeResult?.sometimes_me ?? 0;
     const notMe = habitudeResult?.not_me ?? 0;
 
-    const percent = Math.round((score / 9) * 100);
+    const totalThatsMe = resultData ? HABITUDES.reduce((total, h) => {
+        const k = h.id.toLowerCase() as keyof AssessmentResultsData;
+        return total + (resultData[k]?.thats_me ?? 0);
+    }, 0) : 0;
+
+    const percent = totalThatsMe > 0 ? Math.round((score / totalThatsMe) * 100) : 0;
     const tier = getScoreTier(score);
     const content = habitude?.scoreContent[tier];
   
     useFocusEffect(
         useCallback(() => {
             setRingAnimation(Date.now());
-            if(!loading && hasFetched && !resultData)
-            {
+            if (!hasFetched && !loading) {
+                loadAssessmentResults();
+            } else if(!loading && hasFetched && !resultData) {
                 router.replace("/account/preAssessment");
             }
-        }, [loading,hasFetched,resultData])
+        }, [loading, hasFetched, resultData, loadAssessmentResults])
     );
 
     if(!parsedID)
@@ -66,12 +72,12 @@ const HabitudeReport = () => {
         >
             <View style={styles.headerContainer}>
                 <TouchableOpacity
-                    onPress={() => router.replace("/account/assessmentResult")}
+                    onPress={() => router.back()}
                     style={styles.backButton}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
                     <Image
-                        source={require("../../assets/images/resultDisplay/backArrow.png")} 
+                        source={require("../assets/images/resultDisplay/backArrow.png")} 
                         style={styles.backArrow}
                         resizeMode="contain"
                     />
@@ -137,7 +143,7 @@ const HabitudeReport = () => {
                     </Text>
                     <TouchableOpacity onPress={() => setExpanded(!expanded)} style={styles.expand}>
                         <Image
-                            source={require("../../assets/images/resultDisplay/expandBtn.png")}
+                            source={require("../assets/images/resultDisplay/expandBtn.png")}
                             style={[styles.expand, { transform: [{ rotate: expanded ? "180deg" : "0deg" }] }]}
                             resizeMode="contain"
                         />

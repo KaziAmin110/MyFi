@@ -151,7 +151,10 @@ export const submitAssessment = async (
 
     const { data: existingSessions } = await chatService.getUserSessions(userId);
     if (!existingSessions?.length) {
-      await chatService.createSession(userId);
+      // Fire-and-forget: Create the session and generate the AI opening message in the background
+      chatService.createSession(userId).catch(err => {
+        console.error("Failed to create initial chat session in background:", err);
+      });
     }
 
     return res.status(200).json({

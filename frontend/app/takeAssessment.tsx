@@ -31,6 +31,8 @@ import QuestionCardStack from "../components/assessment/QuestionCardStack";
 import AssessmentControls from "../components/assessment/AssessmentControls";
 import CompletionView from "../components/assessment/CompletionView";
 import AssessmentHeader from "../components/assessment/AssessmentHeader";
+import AssessmentResultView from "../components/assessment/AssessmentResultView";
+import { AssessmentResultsData } from "../services/assessmentResult.service";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TYPES
@@ -97,8 +99,13 @@ export default function AssessmentScreen() {
   const [furthestIndex, setFurthestIndex] = useState(0);
   // Show pre-assessment onboarding screen
   const [showPreAssessment, setShowPreAssessment] = useState(true);
+  
+  // Handlers for rendering the result within onboarding
+  const [showResults, setShowResults] = useState(false);
+  const [resultsData, setResultsData] = useState<AssessmentResultsData | null>(null);
 
   const sessionIdRef = useRef<number | null>(null);
+  const pendingPromisesRef = useRef<Promise<any>[]>([]);
 
   // Animation position for current card
   const position = useRef(new Animated.ValueXY()).current;
@@ -239,8 +246,16 @@ export default function AssessmentScreen() {
     async (sessionId: number) => {
       setSubmitting(true);
       try {
-        await submitAssessmentAPI(sessionId);
-        router.replace("/account/dashboard");
+        // Wait for any remaining answer submissions to finish processing
+        if (pendingPromisesRef.current.length > 0) {
+          await Promise.all(pendingPromisesRef.current);
+          pendingPromisesRef.current = [];
+        }
+
+        const res = await submitAssessmentAPI(sessionId);
+        setResultsData(res.habitude_summary as AssessmentResultsData);
+        setShowResults(true);
+        setSubmitting(false);
       } catch (err: any) {
         console.error("Failed to submit assessment:", err);
         router.replace("/account/dashboard");
@@ -263,10 +278,11 @@ export default function AssessmentScreen() {
         return;
       }
 
-      // Submit answer to backend (fire-and-forget for UX speed)
-      submitAnswerAPI(sessionId, question.id, answerToValue(answer)).catch(
+      // Submit answer to backend (fire-and-forget for UX speed, but tracked to prevent race conditions)
+      const submitPromise = submitAnswerAPI(sessionId, question.id, answerToValue(answer)).catch(
         (err) => console.error("Failed to submit answer:", err),
       );
+      pendingPromisesRef.current.push(submitPromise);
 
       // Save answer locally
       setAnswersMap((prev) => ({ ...prev, [idx]: answer }));
@@ -412,13 +428,24 @@ export default function AssessmentScreen() {
 
   // ── Completion Screen ──────────────────────────────────────────────────
 
-  if (completed) {
+  if (completed && !showResults) {
     return (
       <CompletionView
         onFinish={() =>
           sessionIdRef.current && handleSubmitAssessment(sessionIdRef.current)
         }
         colors={COLORS}
+      />
+    );
+  }
+
+  // ── Results View ───────────────────────────────────────────────────────
+
+  if (showResults && resultsData) {
+    return (
+      <AssessmentResultView
+        resultData={resultsData}
+        onContinue={() => router.replace("/account/dashboard")}
       />
     );
   }

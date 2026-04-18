@@ -2,10 +2,13 @@ import { Stack } from "expo-router";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import './globals.css';
 
+import { AssessmentResultProvider } from "../services/assessmentResult.service";
+
 export default function RootLayout() {
   return (
-    <SafeAreaProvider>
-      <Stack>
+    <AssessmentResultProvider>
+      <SafeAreaProvider>
+        <Stack>
         <Stack.Screen
           name="index"
           options={{ headerShown: false}}
@@ -21,10 +24,16 @@ export default function RootLayout() {
         />
 
         <Stack.Screen
+          name="HabitudeReport"
+          options={{ headerShown: false, presentation: "modal" }}
+        />
+
+        <Stack.Screen
           name="account"
           options={{ headerShown: false}}
         />
       </Stack>
-    </SafeAreaProvider>
+      </SafeAreaProvider>
+    </AssessmentResultProvider>
   )
 }
