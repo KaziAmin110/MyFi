@@ -1,5 +1,11 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Animated } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Animated,
+} from "react-native";
 
 interface AssessmentControlsProps {
   handleButton: (answer: any) => void;
@@ -201,7 +207,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E5E5EA",
   },
-  btnImg: { width: 34, height: 34, resizeMode: "contain" },
+  btnImg: { width: 30, height: 30, resizeMode: "contain" },
   btnImgOverlay: { position: "absolute" },
   btnLabel: {
     fontSize: 11,

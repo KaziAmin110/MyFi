@@ -61,14 +61,6 @@ const COLORS = {
   textSecondary: "#8E8E93",
 };
 
-const CARD_BORDER_COLORS = [
-  "#3A8F3F", // Green
-  "#21428F", // Blue
-  "#C81220", // Red
-  "#E5A800", // Yellow
-  "#7B1FA2", // Purple
-];
-
 function answerToValue(answer: Answer): number {
   switch (answer) {
     case "not_me":
@@ -85,7 +77,6 @@ function valueToAnswer(val: number): Answer {
   if (val === 0) return "sometimes";
   return "thats_me";
 }
-
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MAIN COMPONENT
@@ -475,18 +466,6 @@ export default function AssessmentScreen() {
           panResponder={panResponder}
           rotate={rotate}
           isRevisiting={isRevisiting}
-          frontBorderColor={
-            CARD_BORDER_COLORS[currentIndex % CARD_BORDER_COLORS.length]
-          }
-          middleBorderColor={
-            CARD_BORDER_COLORS[(currentIndex + 1) % CARD_BORDER_COLORS.length]
-          }
-          backBorderColor={
-            CARD_BORDER_COLORS[(currentIndex + 2) % CARD_BORDER_COLORS.length]
-          }
-          back3BorderColor={
-            CARD_BORDER_COLORS[(currentIndex + 3) % CARD_BORDER_COLORS.length]
-          }
           LogoBadge={LogoBadge}
         />
 
@@ -521,7 +500,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   subtitle: {
-    fontSize: 20,
+    fontSize: 18,
     color: COLORS.textPrimary,
     marginTop: 8, // Reduced from 12
     marginBottom: 12, // Reduced from 20

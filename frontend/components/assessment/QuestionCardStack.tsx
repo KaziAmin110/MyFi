@@ -28,10 +28,6 @@ interface QuestionCardStackProps {
   panResponder: PanResponderInstance;
   rotate: Animated.AnimatedInterpolation<string | number>;
   isRevisiting: boolean;
-  frontBorderColor: string;
-  middleBorderColor: string;
-  backBorderColor: string;
-  back3BorderColor: string;
   LogoBadge: any;
 }
 
@@ -44,85 +40,77 @@ const QuestionCardStack: React.FC<QuestionCardStackProps> = ({
   panResponder,
   rotate,
   isRevisiting,
-  frontBorderColor,
-  middleBorderColor,
-  backBorderColor,
-  back3BorderColor,
   LogoBadge,
 }) => {
-  // Back card animated styles
+  // ── Back cards sit ABOVE the front card — peeking out from the top ──
+  // Card 1 behind: sits 18px above the front card
   const back1Scale = dragProgress.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.94, 1],
+    outputRange: [0.96, 1],
   });
   const back1TranslateY = dragProgress.interpolate({
     inputRange: [0, 1],
-    outputRange: [-18, 0], // Compacted from -24
-  });
-  const back1Opacity = dragProgress.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, 1],
+    outputRange: [-18, 0],
   });
 
+  // Card 2 behind: sits 36px above
   const back2Scale = dragProgress.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.88, 0.94],
+    outputRange: [0.92, 0.96],
   });
   const back2TranslateY = dragProgress.interpolate({
     inputRange: [0, 1],
-    outputRange: [-36, -18], // Compacted from -48
-  });
-  const back2Opacity = dragProgress.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, 1],
+    outputRange: [-36, -18],
   });
 
+  // Card 3 behind: barely visible at top
   const back3Scale = dragProgress.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.82, 0.88],
+    outputRange: [0.88, 0.92],
   });
   const back3TranslateY = dragProgress.interpolate({
     inputRange: [0, 1],
-    outputRange: [-54, -36], // Compacted from -72
+    outputRange: [-54, -36],
   });
   const back3Opacity = dragProgress.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 1],
+    inputRange: [0, 0.5, 1],
+    outputRange: [0.5, 0.7, 1],
   });
 
-  const backCardTextScale = dragProgress.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.9, 1],
-    extrapolate: "clamp",
-  });
-
-  const renderInnerCard = (text: string, opacity?: any) => (
-    <View style={styles.innerCard}>
-      <LogoBadge style={styles.logoTopLeft} />
-      <Animated.View
-        style={[
-          styles.cardTextContainer,
-          opacity && { opacity },
-          { transform: [{ scale: backCardTextScale }] },
-        ]}
-      >
-        <Text style={styles.cardText}>{text}</Text>
-      </Animated.View>
-      <LogoBadge style={styles.logoBottomRight} />
-    </View>
-  );
+  const renderInnerCard = (text: string) => {
+    const isLongText = text.length > 80;
+    return (
+      <View style={styles.innerCard}>
+        <LogoBadge style={styles.logoTopLeft} />
+        <Animated.View style={styles.cardTextContainer}>
+          <Text
+            style={[
+              styles.cardText,
+              // Left-align long text — center alignment becomes hard to read at 5+ lines
+              { textAlign: isLongText ? "left" : "center" },
+            ]}
+            adjustsFontSizeToFit
+            minimumFontScale={0.6}
+            numberOfLines={10}
+          >
+            {text}
+          </Text>
+        </Animated.View>
+        <LogoBadge style={styles.logoBottomRight} />
+      </View>
+    );
+  };
 
   return (
     <View style={styles.cardContainer}>
-      {/* 3rd back card */}
+      {/* 3rd back card — barely peeking */}
       {currentIndex + 3 < totalQuestions && (
         <Animated.View
           style={[
             styles.card,
             styles.cardBack2,
+            styles.cardBackTinted3,
             {
-              backgroundColor: back3BorderColor,
-              shadowColor: back3BorderColor,
               opacity: back3Opacity,
               transform: [
                 { scale: back3Scale },
@@ -133,16 +121,14 @@ const QuestionCardStack: React.FC<QuestionCardStackProps> = ({
         />
       )}
 
-      {/* Back card */}
+      {/* 2nd back card */}
       {currentIndex + 2 < totalQuestions && (
         <Animated.View
           style={[
             styles.card,
             styles.cardBack2,
+            styles.cardBackTinted2,
             {
-              backgroundColor: backBorderColor,
-              shadowColor: backBorderColor,
-              opacity: back2Opacity,
               transform: [
                 { scale: back2Scale },
                 { translateY: back2TranslateY },
@@ -152,16 +138,14 @@ const QuestionCardStack: React.FC<QuestionCardStackProps> = ({
         />
       )}
 
-      {/* Middle card */}
+      {/* 1st back card — clearly peeking from the top */}
       {currentIndex + 1 < totalQuestions && (
         <Animated.View
           style={[
             styles.card,
             styles.cardBack1,
+            styles.cardBackTinted1,
             {
-              backgroundColor: middleBorderColor,
-              shadowColor: middleBorderColor,
-              opacity: back1Opacity,
               transform: [
                 { scale: back1Scale },
                 { translateY: back1TranslateY },
@@ -179,8 +163,6 @@ const QuestionCardStack: React.FC<QuestionCardStackProps> = ({
           styles.card,
           styles.cardFront,
           {
-            backgroundColor: frontBorderColor,
-            shadowColor: frontBorderColor,
             transform: [
               { translateX: position.x },
               { translateY: position.y },
@@ -208,28 +190,43 @@ const styles = StyleSheet.create({
     height: CARD_CONTAINER_HEIGHT,
     alignItems: "center",
     justifyContent: "flex-start",
-    paddingTop: 18, // Reduced from 48 for compactness
+    paddingTop: 18,
   },
   card: {
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
+    backgroundColor: "#FFFFFF",
     borderRadius: 32,
     position: "absolute",
-    shadowColor: "#000000",
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 8,
-    padding: 12, // Reduced from 18 to 12 for a slimmer border look
+    // Removed hard black border — depth conveyed via layered shadows
+    borderWidth: 0,
+    // Soft, layered shadow for premium physical depth
+    shadowColor: "#1A2B4A",
+    shadowOpacity: 0.14,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 12,
+  },
+  // Subtle gray tints for the back cards — differentiate from white front
+  cardBackTinted1: {
+    backgroundColor: "#F0F2F5",
+  },
+  cardBackTinted2: {
+    backgroundColor: "#E5E8ED",
+  },
+  cardBackTinted3: {
+    backgroundColor: "#DADDE3",
   },
   innerCard: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 20,
+    borderRadius: 32,
     alignItems: "center",
     justifyContent: "center",
     position: "relative",
     overflow: "hidden",
+    // Whisper-thin inner border for card definition without harshness
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.06)",
   },
   cardFront: {
     zIndex: 10,
@@ -244,33 +241,33 @@ const styles = StyleSheet.create({
     top: 24,
   },
   cardTextContainer: {
-    width: "85%",
+    width: "78%",
     alignSelf: "center",
     justifyContent: "center",
     alignItems: "center",
   },
   cardText: {
-    fontSize: 32,
+    fontSize: 30,
     fontWeight: "600",
-    textAlign: "center",
+    // textAlign is set dynamically in renderInnerCard based on text length
     color: "#1C1C1E",
-    lineHeight: 38,
+    lineHeight: 40,
     letterSpacing: -0.6,
   },
   logoTopLeft: {
     position: "absolute",
     top: 14,
     left: 14,
-    width: 26,
-    height: 26,
+    width: 28,
+    height: 28,
     opacity: 0.9,
   },
   logoBottomRight: {
     position: "absolute",
     bottom: 14,
     right: 14,
-    width: 26,
-    height: 26,
+    width: 28,
+    height: 28,
     opacity: 0.9,
   },
   revisitBadge: {
