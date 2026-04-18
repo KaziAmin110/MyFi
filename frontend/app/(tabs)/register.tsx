@@ -217,7 +217,7 @@ const Register = () => {
             <TouchableOpacity
                 disabled={loading}
                 onPress={handleRegister}
-                className="bg-primary rounded-xl py-4 mt-5 mb-10"
+                className="bg-primary rounded-xl py-4 mt-5 mb-10 shadow-md shadow-blue-200"
             >
                 <Text className="text-center text-white font-medium text-lg">
                     {loading ? "Registering..." : "Register"}

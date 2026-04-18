@@ -7,12 +7,14 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { Link } from "expo-router";
 import React, { useState } from "react";
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { API_URL } from "../../utils/api";
+import {scale} from "../../utils/scale";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
@@ -69,9 +71,16 @@ const ForgotPassword = () => {
       >
         <View className="flex-1 px-6 justify-center">
           <View className="items-center mb-8">
-            <View className="w-20 h-20 bg-blue-50 rounded-full items-center justify-center mb-6">
-              <Feather name="lock" size={32} color="#345995" />
-            </View>
+          <Image
+            source={require("../../assets/images/logoGradient.png")}
+            style={{
+              width: scale(150),
+              height: scale(150),
+              resizeMode: "contain",
+              alignSelf: "center",
+            
+            }}
+          />
             <Text className="text-3xl font-bold text-gray-900 text-center mb-3">
               Forgot Password?
             </Text>
