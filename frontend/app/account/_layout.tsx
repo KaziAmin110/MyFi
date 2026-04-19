@@ -32,7 +32,7 @@ const TabIcon = ({
   }, [focused, scale]);
 
   const { width } = useWindowDimensions();
-  const dynamicSize = Math.min(26, Math.max(20, width * 0.06));
+  const dynamicSize = Math.min(30, Math.max(24, width * 0.07));
 
   return (
     <RNAnimated.View style={{ alignItems: "center", transform: [{ scale }] }}>
@@ -85,9 +85,9 @@ const TabsLayout = () => {
   const resultsTabFocused =
     currentScreen === "assessment" || currentScreen === "assessmentResult";
   
-  // Compact navbar logic
-  const tabHeight = isIos ? (insets.bottom > 0 ? 74 : 64) : 60;
-  const bottomPadding = isIos ? (insets.bottom > 0 ? insets.bottom - 12 : 4) : 4;
+  // Expanded navbar logic for better readability
+  const tabHeight = isIos ? (insets.bottom > 0 ? 90 : 76) : 70;
+  const bottomPadding = isIos ? (insets.bottom > 0 ? insets.bottom - 4 : 8) : 8;
 
   return (
     <Tabs
@@ -97,10 +97,10 @@ const TabsLayout = () => {
         tabBarActiveTintColor: "#3059AD",
         tabBarInactiveTintColor: "#9CA3AF",
         tabBarLabelStyle: {
-          fontSize: 9,
+          fontSize: 11,
           fontWeight: "600",
-          letterSpacing: 0.1,
-          marginTop: -2,
+          letterSpacing: 0.2,
+          marginTop: 2,
         },
         tabBarItemStyle: {
           paddingVertical: 2,
@@ -150,7 +150,7 @@ const TabsLayout = () => {
               color={color}
               size={size}
               focused={focused}
-            />
+            /> 
           ),
         }}
       />
@@ -197,10 +197,10 @@ const TabsLayout = () => {
           tabBarLabel: ({ focused, color }) => (
             <Text
               style={{
-                fontSize: 9,
+                fontSize: 11,
                 fontWeight: "600",
-                letterSpacing: 0.1,
-                marginTop: -2,
+                letterSpacing: 0.2,
+                marginTop: 2,
                 color: focused || resultsTabFocused ? "#3059AD" : color,
               }}
             >
