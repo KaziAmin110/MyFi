@@ -245,6 +245,7 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     paddingHorizontal: scale(10),
     paddingVertical: scale(8),
+    marginBottom: scale(16),
   },
   row: {
     flexDirection: "row",
