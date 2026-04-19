@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderRadius: 20,
     marginHorizontal: moderateScale(16),
-    marginBottom: moderateVerticalScale(24),
+    marginBottom: moderateVerticalScale(16),
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,

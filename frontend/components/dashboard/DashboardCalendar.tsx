@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
   calendar: {
     paddingVertical: moderateVerticalScale(6),
     paddingHorizontal: moderateScale(20),
-    marginBottom: moderateVerticalScale(24),
+    marginBottom: moderateVerticalScale(16),
   },
   calendarHeader: {
     flexDirection: "row",

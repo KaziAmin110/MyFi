@@ -223,7 +223,6 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 28,
     paddingTop: moderateVerticalScale(25),
     paddingBottom: moderateVerticalScale(12),
-    marginTop: moderateVerticalScale(4),
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.04,
