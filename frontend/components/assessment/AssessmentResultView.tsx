@@ -21,7 +21,7 @@ import { AssessmentResultsData } from "@/services/assessmentResult.service";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 
-const RING_SIZE = Math.min(SCREEN_HEIGHT * 0.32, SCREEN_WIDTH * 0.65);
+const RING_SIZE = Math.min(SCREEN_HEIGHT * 0.28, SCREEN_WIDTH * 0.58);
 const STROKE_WIDTH = RING_SIZE * 0.14; // proportional stroke
 
 interface AssessmentResultViewProps {
@@ -77,8 +77,8 @@ const AssessmentResultView: React.FC<AssessmentResultViewProps> = ({
         contentContainerStyle={[
           styles.scrollContainer,
           {
-            paddingTop: insets.top + verticalScale(20),
-            paddingBottom: insets.bottom + verticalScale(40),
+            paddingTop: insets.top + verticalScale(10),
+            paddingBottom: insets.bottom + verticalScale(20),
           },
         ]}
         showsVerticalScrollIndicator={false}
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#111111",
     letterSpacing: -1,
-    marginBottom: verticalScale(6),
+    marginBottom: verticalScale(2),
   },
   subheading: {
     fontSize: moderateScale(16),
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
   ringWrapper: {
     justifyContent: "center",
     alignItems: "center",
-    marginVertical: verticalScale(20),
+    marginVertical: verticalScale(10),
   },
   centerText: {
     position: "absolute",
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   centerLabel: {
-    fontSize: moderateScale(15),
+    fontSize: moderateScale(12),
     fontWeight: "800",
     color: "#6D839C",
     letterSpacing: 2.5,
@@ -249,7 +249,7 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: SCREEN_HEIGHT * 0.02,
+    paddingVertical: verticalScale(12),
   },
   colorBox: {
     width: scale(24),
@@ -277,10 +277,10 @@ const styles = StyleSheet.create({
     color: "#111111",
   },
   divider: {
-    borderBottomWidth: 1,
-    borderBottomColor: "#D6E0EC",
+    borderWidth: 1,
+    borderColor: "#E0E5EC",
     borderStyle: "dashed",
-    width: "100%",
+    borderRadius: 1,
   },
 
   // ── Continue Button ───────────────────────────────────────────────────────
