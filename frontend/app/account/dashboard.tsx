@@ -238,7 +238,7 @@ const Dashboard = () => {
           style={[styles.hero, { width: contentWidth, alignSelf: "center" }]}
         >
           <MaskedView
-            maskElement={<Text style={styles.title}>Hello {firstName}!</Text>}
+            maskElement={<Text style={styles.title}>Hey {firstName}!</Text>}
           >
             <LinearGradient
               colors={["#12BD37", "#3059AD"]}
@@ -423,8 +423,12 @@ const Dashboard = () => {
             resizeMode="contain"
           />
           <View style={styles.appointmentText}>
-            <Text style={styles.appointmentTitle}>Setup a reminder</Text>
-            <Text style={styles.appointmentSubTitle}>
+            <Text style={styles.appointmentTitle}>Setup a Reminder</Text>
+            <Text
+              style={styles.appointmentSubTitle}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+            >
               Schedule a weekly meeting with your AI Coach
             </Text>
           </View>
@@ -438,9 +442,6 @@ const Dashboard = () => {
             { paddingBottom: insets.bottom + 20, flex: 1 },
           ]}
         >
-          {/* Drag handle pill */}
-          <View style={styles.dragHandle} />
-
           <Text style={styles.cardTitle}>Learn about the Habitudes</Text>
           <Text style={styles.cardSubTitle}>
             Press any card for more information
@@ -799,14 +800,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    paddingTop: moderateVerticalScale(12),
+    paddingTop: moderateVerticalScale(25),
     paddingBottom: moderateVerticalScale(12),
     marginTop: moderateVerticalScale(4),
-    alignItems: "center",
-    // Subtle top shadow to lift the panel
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.04,
+    alignItems: "center",
     shadowRadius: 8,
     elevation: 4,
   },
