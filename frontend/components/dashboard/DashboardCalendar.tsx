@@ -36,7 +36,12 @@ export const DashboardCalendar: React.FC<DashboardCalendarProps> = ({
   onNavigateToReminders,
 }) => {
   return (
-    <View style={[styles.calendar, { width: contentWidth as any, alignSelf: "center" }]}>
+    <View
+      style={[
+        styles.calendar,
+        { width: contentWidth as any, alignSelf: "center" },
+      ]}
+    >
       <View style={styles.calendarHeader}>
         <Pressable
           onPress={handlePrevWeek}
@@ -56,10 +61,7 @@ export const DashboardCalendar: React.FC<DashboardCalendarProps> = ({
         <Text style={styles.monthName}>{currentMonthYear}</Text>
         <Pressable
           onPress={handleNextWeek}
-          style={({ pressed }) => [
-            styles.navBtn,
-            pressed && { opacity: 0.5 },
-          ]}
+          style={({ pressed }) => [styles.navBtn, pressed && { opacity: 0.5 }]}
         >
           <Ionicons name="chevron-forward" size={20} color="#3D3D3D" />
         </Pressable>
@@ -121,7 +123,7 @@ const styles = StyleSheet.create({
     marginBottom: moderateVerticalScale(6),
   },
   monthName: {
-    fontSize: moderateScale(18),
+    fontSize: moderateScale(20),
     fontWeight: "700",
     color: "#3D3D3D",
     paddingBottom: moderateVerticalScale(6),
@@ -139,7 +141,7 @@ const styles = StyleSheet.create({
   },
   dayLabel: {
     marginBottom: 4,
-    fontSize: moderateScale(13),
+    fontSize: moderateScale(15),
   },
   todayLabel: {
     color: "#000000",
@@ -158,16 +160,16 @@ const styles = StyleSheet.create({
     color: "#000000",
   },
   dateBubble: {
-    width: moderateScale(32),
-    height: moderateScale(32),
-    borderRadius: moderateScale(16),
+    width: moderateScale(36),
+    height: moderateScale(36),
+    borderRadius: moderateScale(18),
     backgroundColor: "#FFFFFF",
     alignItems: "center",
     justifyContent: "center",
   },
   date: {
     fontWeight: "600",
-    fontSize: moderateScale(13),
+    fontSize: moderateScale(14),
   },
   blueDot: {
     marginTop: 4,
