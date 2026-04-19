@@ -64,6 +64,14 @@ const handleLogout = async () => {
   router.replace("/(tabs)");
 };
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+const getInitials = (name: string): string => {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0][0].toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+};
+
 // ─── Constants ───────────────────────────────────────────────────────────────
 const HERO_HEIGHT = 200;
 const AVATAR_SIZE = 150;
@@ -296,7 +304,9 @@ export default function Profile() {
                   />
                 ) : (
                   <View style={styles.avatarPlaceholder}>
-                    <Ionicons name="person" size={46} color="#3059AD" />
+                    <Text style={styles.initialsText}>
+                      {getInitials(user?.name || "?")}
+                    </Text>
                   </View>
                 )}
                 {uploadingAvatar && (
@@ -608,7 +618,13 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#D5E6FF",
+    backgroundColor: "#3059AD",
+  },
+  initialsText: {
+    fontSize: 48,
+    fontWeight: "600",
+    color: "#FFFFFF",
+    letterSpacing: -1,
   },
   cameraBtn: {
     position: "absolute",
