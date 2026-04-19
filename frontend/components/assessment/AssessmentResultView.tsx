@@ -21,7 +21,7 @@ import { AssessmentResultsData } from "@/services/assessmentResult.service";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 
-const RING_SIZE = Math.min(SCREEN_HEIGHT * 0.23, SCREEN_WIDTH * 0.5);
+const RING_SIZE = Math.min(SCREEN_HEIGHT * 0.32, SCREEN_WIDTH * 0.65);
 const STROKE_WIDTH = RING_SIZE * 0.14; // proportional stroke
 
 interface AssessmentResultViewProps {
@@ -110,7 +110,7 @@ const AssessmentResultView: React.FC<AssessmentResultViewProps> = ({
               {activeHabitude?.id?.toUpperCase()}
             </Text>
             <Text
-              style={[styles.centerNum, { fontSize: RING_SIZE * 0.28 }]}
+              style={[styles.centerNum, { fontSize: RING_SIZE * 0.25 }]}
               adjustsFontSizeToFit
               numberOfLines={1}
             >
@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
   },
   heading: {
     fontSize: moderateScale(34),
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#111111",
     letterSpacing: -1,
     marginBottom: verticalScale(6),
@@ -223,14 +223,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   centerLabel: {
-    fontSize: moderateScale(13),
-    fontWeight: "700",
+    fontSize: moderateScale(15),
+    fontWeight: "800",
     color: "#6D839C",
     letterSpacing: 2.5,
     marginBottom: verticalScale(2),
   },
   centerNum: {
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#1A1A1A",
     letterSpacing: -2,
   },
@@ -242,15 +242,9 @@ const styles = StyleSheet.create({
     alignItems: "stretch",
   },
   card: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 24,
-    paddingHorizontal: scale(20),
+    backgroundColor: "transparent",
+    paddingHorizontal: scale(10),
     paddingVertical: scale(8),
-    shadowColor: "#000",
-    shadowOpacity: 0.04,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 4,
   },
   row: {
     flexDirection: "row",
@@ -283,8 +277,10 @@ const styles = StyleSheet.create({
     color: "#111111",
   },
   divider: {
-    height: 1,
-    backgroundColor: "#F0F3F6",
+    borderBottomWidth: 1,
+    borderBottomColor: "#D6E0EC",
+    borderStyle: "dashed",
+    width: "100%",
   },
 
   // ── Continue Button ───────────────────────────────────────────────────────
