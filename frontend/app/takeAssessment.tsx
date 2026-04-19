@@ -32,6 +32,7 @@ import AssessmentControls from "../components/assessment/AssessmentControls";
 import CompletionView from "../components/assessment/CompletionView";
 import AssessmentHeader from "../components/assessment/AssessmentHeader";
 import AssessmentResultView from "../components/assessment/AssessmentResultView";
+import AssessmentResultSkeleton from "../components/assessment/AssessmentResultSkeleton";
 import { AssessmentResultsData } from "../services/assessmentResult.service";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -419,11 +420,7 @@ export default function AssessmentScreen() {
   }
 
   if (submitting) {
-    return (
-      <SafeAreaView style={[styles.container, { justifyContent: "center" }]}>
-        <ActivityIndicator size="large" color="#43A047" />
-      </SafeAreaView>
-    );
+    return <AssessmentResultSkeleton />;
   }
 
   // ── Completion Screen ──────────────────────────────────────────────────
