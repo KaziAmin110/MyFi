@@ -111,22 +111,22 @@ export const DashboardCalendar: React.FC<DashboardCalendarProps> = ({
 
 const styles = StyleSheet.create({
   calendar: {
-    paddingVertical: moderateVerticalScale(6),
+    paddingVertical: moderateVerticalScale(2),
     paddingHorizontal: moderateScale(20),
-    marginBottom: moderateVerticalScale(16),
+    marginBottom: moderateVerticalScale(8),
   },
   calendarHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: moderateScale(4),
-    marginBottom: moderateVerticalScale(6),
+    marginBottom: moderateVerticalScale(2),
   },
   monthName: {
-    fontSize: moderateScale(20),
+    fontSize: moderateScale(18),
     fontWeight: "700",
     color: "#3D3D3D",
-    paddingBottom: moderateVerticalScale(6),
+    paddingBottom: moderateVerticalScale(2),
   },
   navBtn: {
     padding: 4,
@@ -140,8 +140,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   dayLabel: {
-    marginBottom: 4,
-    fontSize: moderateScale(15),
+    marginBottom: 2,
+    fontSize: moderateScale(13),
+    paddingTop: moderateVerticalScale(2),
   },
   todayLabel: {
     color: "#000000",
@@ -160,16 +161,17 @@ const styles = StyleSheet.create({
     color: "#000000",
   },
   dateBubble: {
-    width: moderateScale(36),
-    height: moderateScale(36),
-    borderRadius: moderateScale(18),
+    width: moderateScale(30),
+    height: moderateScale(30),
+    borderRadius: moderateScale(15),
     backgroundColor: "#FFFFFF",
     alignItems: "center",
     justifyContent: "center",
+    marginTop: moderateVerticalScale(5),
   },
   date: {
     fontWeight: "600",
-    fontSize: moderateScale(14),
+    fontSize: moderateScale(12),
   },
   blueDot: {
     marginTop: 4,
