@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
     marginBottom: moderateVerticalScale(2),
   },
   monthName: {
-    fontSize: moderateScale(18),
+    fontSize: moderateScale(15),
     fontWeight: "700",
     color: "#3D3D3D",
     paddingBottom: moderateVerticalScale(2),
@@ -168,6 +168,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginTop: moderateVerticalScale(5),
+    marginBottom: moderateVerticalScale(7),
   },
   date: {
     fontWeight: "600",
