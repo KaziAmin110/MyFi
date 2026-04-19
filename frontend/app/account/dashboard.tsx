@@ -20,10 +20,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import HabitCard from "../../components/HabitCard";
 import { Ionicons } from "@expo/vector-icons";
 import { appointmentsApi } from "../../utils/api";
-import {
-  moderateScale,
-  moderateVerticalScale,
-} from "../../utils/scale";
+import { moderateScale, moderateVerticalScale } from "../../utils/scale";
 import * as Haptics from "expo-haptics";
 
 const Dashboard = () => {
@@ -33,8 +30,6 @@ const Dashboard = () => {
   const isTablet = width > 500;
   const maxWidth = 600;
   const contentWidth = width > maxWidth ? maxWidth : ("100%" as const);
-
-
 
   const [firstName, setFirstName] = useState("");
   const [anchorDate, setAnchorDate] = useState(new Date());
@@ -228,17 +223,15 @@ const Dashboard = () => {
       end={{ x: 0.5, y: 0.4 }}
       style={styles.background}
     >
-      {/* Single scrollable column — the tier-1 pattern */}
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={[
+      {/* Single non-scrollable column */}
+      <View
+        style={[
+          styles.scroll,
           styles.scrollContent,
           {
             paddingTop: insets.top + (isTablet ? 20 : 12),
           },
         ]}
-        showsVerticalScrollIndicator={false}
-        bounces={true}
       >
         {/* ── Hero ── */}
         <View
@@ -305,14 +298,14 @@ const Dashboard = () => {
               const dateStr = day.toISOString().split("T")[0];
               const hasReminder = appointmentDates.includes(dateStr);
               return (
-                <Pressable 
-                  key={day.toISOString()} 
+                <Pressable
+                  key={day.toISOString()}
                   style={styles.day}
                   onPress={() => {
                     if (hasReminder) {
                       router.push({
                         pathname: "/account/reminders",
-                        params: { highlightDate: dateStr }
+                        params: { highlightDate: dateStr },
                       });
                     }
                   }}
@@ -430,7 +423,7 @@ const Dashboard = () => {
             resizeMode="contain"
           />
           <View style={styles.appointmentText}>
-            <Text style={styles.appointmentTitle}>Set up a reminder</Text>
+            <Text style={styles.appointmentTitle}>Setup a reminder</Text>
             <Text style={styles.appointmentSubTitle}>
               Schedule a weekly meeting with your AI Coach
             </Text>
@@ -438,12 +431,12 @@ const Dashboard = () => {
           <Ionicons name="chevron-forward" size={18} color="#AAAAAA" />
         </Pressable>
 
-        {/* Spacer to push the habitude section down */}
-        <View style={{ flexGrow: 1, minHeight: 16 }} />
-
         {/* ── Habit Cards Section ── */}
         <View
-          style={[styles.cardsSection, { paddingBottom: insets.bottom + 90 }]}
+          style={[
+            styles.cardsSection,
+            { paddingBottom: insets.bottom + 20, flex: 1 },
+          ]}
         >
           {/* Drag handle pill */}
           <View style={styles.dragHandle} />
@@ -455,7 +448,7 @@ const Dashboard = () => {
 
           <HabitCard onSelect={openHabit} />
         </View>
-      </ScrollView>
+      </View>
 
       {/* ── Habit Detail Modal ── */}
       <Modal
@@ -643,7 +636,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     color: "#3D3D3D",
-    fontSize: moderateScale(16),
+    fontSize: moderateScale(18),
     fontWeight: "600",
     marginTop: moderateVerticalScale(4),
     marginBottom: moderateVerticalScale(2),
@@ -667,9 +660,10 @@ const styles = StyleSheet.create({
     marginBottom: moderateVerticalScale(6),
   },
   monthName: {
-    fontSize: moderateScale(15),
+    fontSize: moderateScale(18),
     fontWeight: "700",
     color: "#3D3D3D",
+    paddingBottom: moderateVerticalScale(6),
   },
   navBtn: {
     padding: 4,
@@ -684,7 +678,7 @@ const styles = StyleSheet.create({
   },
   dayLabel: {
     marginBottom: 4,
-    fontSize: moderateScale(11),
+    fontSize: moderateScale(13),
   },
   todayLabel: {
     color: "#000000",
@@ -737,11 +731,11 @@ const styles = StyleSheet.create({
 
   // ── Money Mood card ───────────────────────
   moneyMood: {
-    paddingVertical: moderateVerticalScale(14),
+    paddingVertical: moderateVerticalScale(16),
     paddingHorizontal: moderateScale(20),
   },
   moneyMoodTitle: {
-    fontSize: moderateScale(14),
+    fontSize: moderateScale(16),
     fontWeight: "600",
     color: "#3D3D3D",
     marginBottom: moderateVerticalScale(10),
@@ -774,10 +768,11 @@ const styles = StyleSheet.create({
 
   // ── Appointment card ──────────────────────
   appointmentDisplay: {
-    paddingVertical: moderateVerticalScale(14),
+    paddingVertical: moderateVerticalScale(18),
     paddingHorizontal: moderateScale(20),
     flexDirection: "row",
     alignItems: "center",
+    marginBottom: moderateVerticalScale(8),
   },
   calPic: {
     marginRight: moderateScale(14),
@@ -788,13 +783,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   appointmentTitle: {
-    fontSize: moderateScale(15),
+    fontSize: moderateScale(18),
     fontWeight: "600",
     marginBottom: 3,
-    color: "#1A1A1A",
+    color: "#3D3D3D",
   },
   appointmentSubTitle: {
-    fontSize: moderateScale(12),
+    fontSize: moderateScale(15),
     color: "#6A6A6A",
     lineHeight: moderateScale(18),
   },
@@ -805,7 +800,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     paddingTop: moderateVerticalScale(12),
-    paddingBottom: moderateVerticalScale(24),
+    paddingBottom: moderateVerticalScale(12),
     marginTop: moderateVerticalScale(4),
     alignItems: "center",
     // Subtle top shadow to lift the panel
@@ -823,13 +818,13 @@ const styles = StyleSheet.create({
     marginBottom: moderateVerticalScale(12),
   },
   cardTitle: {
-    fontSize: moderateScale(16),
+    fontSize: moderateScale(18),
     fontWeight: "600",
-    color: "#1A1A1A",
+    color: "#3D3D3D",
     marginBottom: moderateVerticalScale(4),
   },
   cardSubTitle: {
-    fontSize: moderateScale(12),
+    fontSize: moderateScale(14),
     color: "#6A6A6A",
     marginBottom: moderateVerticalScale(8),
   },
