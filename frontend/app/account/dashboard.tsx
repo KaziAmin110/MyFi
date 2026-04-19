@@ -23,8 +23,6 @@ import { appointmentsApi } from "../../utils/api";
 import {
   moderateScale,
   moderateVerticalScale,
-  scale,
-  verticalScale,
 } from "../../utils/scale";
 import * as Haptics from "expo-haptics";
 
@@ -36,8 +34,7 @@ const Dashboard = () => {
   const maxWidth = 600;
   const contentWidth = width > maxWidth ? maxWidth : ("100%" as const);
 
-  // Responsive sizing based on screen height
-  const isSmallScreen = height < 700;
+
 
   const [firstName, setFirstName] = useState("");
   const [anchorDate, setAnchorDate] = useState(new Date());
@@ -66,7 +63,7 @@ const Dashboard = () => {
     if (habitOpen) {
       modalTranslateY.setValue(0);
     }
-  }, [habitOpen]);
+  }, [habitOpen, modalTranslateY]);
 
   const panResponder = useRef(
     PanResponder.create({
@@ -640,13 +637,13 @@ const styles = StyleSheet.create({
     marginBottom: moderateVerticalScale(16),
   },
   title: {
-    fontSize: moderateScale(32),
+    fontSize: moderateScale(34),
     fontWeight: "700",
     textAlign: "center",
   },
   subtitle: {
     color: "#3D3D3D",
-    fontSize: moderateScale(13),
+    fontSize: moderateScale(16),
     fontWeight: "600",
     marginTop: moderateVerticalScale(4),
     marginBottom: moderateVerticalScale(2),
