@@ -281,36 +281,38 @@ export default function Profile() {
 
         {/* ── Avatar ─────────────────────────────────────────────────── */}
         <View style={[styles.avatarWrapper, { marginTop: -avatarPullUp }]}>
-          <View style={styles.avatarRing}>
-            <View style={styles.avatarInner}>
-              {user?.avatar_url ? (
-                <Image
-                  source={{ uri: user.avatar_url }}
-                  style={styles.avatarImage}
-                  fadeDuration={0}
-                />
-              ) : (
-                <View style={styles.avatarPlaceholder}>
-                  <Ionicons name="person" size={46} color="#3059AD" />
-                </View>
-              )}
-              {uploadingAvatar && (
-                <View style={styles.uploadOverlay}>
-                  <ActivityIndicator color="#fff" />
+          <TouchableOpacity
+            onPress={handleEditAvatar}
+            activeOpacity={0.85}
+            disabled={uploadingAvatar}
+          >
+            <View style={styles.avatarRing}>
+              <View style={styles.avatarInner}>
+                {user?.avatar_url ? (
+                  <Image
+                    source={{ uri: user.avatar_url }}
+                    style={styles.avatarImage}
+                    fadeDuration={0}
+                  />
+                ) : (
+                  <View style={styles.avatarPlaceholder}>
+                    <Ionicons name="person" size={46} color="#3059AD" />
+                  </View>
+                )}
+                {uploadingAvatar && (
+                  <View style={styles.uploadOverlay}>
+                    <ActivityIndicator color="#fff" />
+                  </View>
+                )}
+              </View>
+
+              {!uploadingAvatar && (
+                <View style={styles.cameraBtn}>
+                  <Ionicons name="camera" size={13} color="#fff" />
                 </View>
               )}
             </View>
-
-            {!uploadingAvatar && (
-              <TouchableOpacity
-                style={styles.cameraBtn}
-                onPress={handleEditAvatar}
-                activeOpacity={0.85}
-              >
-                <Ionicons name="camera" size={13} color="#fff" />
-              </TouchableOpacity>
-            )}
-          </View>
+          </TouchableOpacity>
         </View>
 
         {/* ── Name & Email ────────────────────────────────────────────── */}
