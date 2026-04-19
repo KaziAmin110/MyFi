@@ -3,17 +3,21 @@ import * as SecureStore from "expo-secure-store";
 import MaskedView from "@react-native-masked-view/masked-view";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as Notifications from "expo-notifications";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
+  Switch,
   Modal,
   TextInput,
   Alert,
   ActivityIndicator,
   Image,
   ScrollView,
+  Linking,
+  Platform,
 } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
@@ -80,6 +84,8 @@ export default function Profile() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
 
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+
   const loadUser = async () => {
     try {
       setLoading(true);
@@ -95,9 +101,52 @@ export default function Profile() {
     }
   };
 
+  const checkNotificationPermission = async () => {
+    const { status } = await Notifications.getPermissionsAsync();
+    setNotificationsEnabled(status === "granted");
+  };
+
+  const openNotificationSettings = () => {
+    // iOS: app-settings: opens THIS app's Settings page (includes Notifications toggle)
+    // Android: opens app notification settings directly
+    if (Platform.OS === "ios") {
+      Linking.openURL("app-settings:");
+    } else {
+      Linking.openSettings();
+    }
+  };
+
+  const handleToggleNotifications = async (value: boolean) => {
+    if (value) {
+      const { status } = await Notifications.requestPermissionsAsync();
+      if (status === "granted") {
+        setNotificationsEnabled(true);
+      } else {
+        Alert.alert(
+          "Notifications Blocked",
+          "To enable notifications, please allow access in your device Settings.",
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Open Settings", onPress: openNotificationSettings },
+          ]
+        );
+      }
+    } else {
+      Alert.alert(
+        "Disable Notifications",
+        "To turn off notifications, please go to your device Settings.",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Open Settings", onPress: openNotificationSettings },
+        ]
+      );
+    }
+  };
+
   useFocusEffect(
     useCallback(() => {
       loadUser();
+      checkNotificationPermission();
     }, []),
   );
 
@@ -302,6 +351,11 @@ export default function Profile() {
               label="Change Password"
               onPress={() => setIsPasswordModalVisible(true)}
             />
+            <View style={styles.divider} />
+            <NotificationRow
+              enabled={notificationsEnabled}
+              onToggle={handleToggleNotifications}
+            />
           </View>
         </View>
 
@@ -460,6 +514,35 @@ function SettingsRow({
   );
 }
 
+// ─── Notification Row ─────────────────────────────────────────────────────────
+function NotificationRow({
+  enabled,
+  onToggle,
+}: {
+  enabled: boolean;
+  onToggle: (value: boolean) => void;
+}) {
+  return (
+    <View style={styles.row}>
+      <View style={[styles.iconBadge, { backgroundColor: "#EBF2FF" }]}>
+        <Ionicons
+          name={enabled ? "notifications-outline" : "notifications-off-outline"}
+          size={17}
+          color="#3059AD"
+        />
+      </View>
+      <Text style={[styles.rowLabel, { color: "#1F2937" }]}>Notifications</Text>
+      <Switch
+        value={enabled}
+        onValueChange={onToggle}
+        trackColor={{ false: "#D1D5DB", true: "#BFDBFE" }}
+        thumbColor={enabled ? "#3059AD" : "#9CA3AF"}
+        ios_backgroundColor="#D1D5DB"
+      />
+    </View>
+  );
+}
+
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   root: {
@@ -578,14 +661,16 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#8FA8CC",
+    color: "#3059ad",
     letterSpacing: 1.3,
     marginBottom: 8,
     marginLeft: 6,
   },
   sectionCard: {
-    backgroundColor: "#D4E6FA",
+    backgroundColor: "#FFFFFF",
     borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
     overflow: "hidden",
     shadowColor: "#3059AD",
     shadowOffset: { width: 0, height: 4 },
