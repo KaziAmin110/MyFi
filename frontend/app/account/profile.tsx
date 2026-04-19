@@ -13,6 +13,7 @@ import {
   Alert,
   ActivityIndicator,
   Image,
+  ScrollView,
 } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
@@ -59,17 +60,20 @@ const handleLogout = async () => {
   router.replace("/(tabs)");
 };
 
+// ─── Constants ───────────────────────────────────────────────────────────────
+const HERO_HEIGHT = 200;
+const AVATAR_SIZE = 150;
+const AVATAR_BORDER = 5;
+
 export default function Profile() {
   const insets = useSafeAreaInsets();
   const [user, setUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Modals Visibility
   const [isUpdateModalVisible, setIsUpdateModalVisible] = useState(false);
   const [isPasswordModalVisible, setIsPasswordModalVisible] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
-  // Form States
   const [newName, setNewName] = useState("");
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -84,7 +88,6 @@ export default function Profile() {
       setNewName(data.user.name);
     } catch (error) {
       console.error("Failed to load user context:", error);
-      // Fallback to local store if API fails
       const stored = await SecureStore.getItemAsync("user");
       if (stored) setUser(JSON.parse(stored));
     } finally {
@@ -103,12 +106,10 @@ export default function Profile() {
       Alert.alert("Error", "Name cannot be empty");
       return;
     }
-
     try {
       setActionLoading(true);
       const updatedUser = await updateProfile(newName);
       setUser(updatedUser);
-      // Update local storage too
       await SecureStore.setItemAsync("user", JSON.stringify(updatedUser));
       Alert.alert("Success", "Profile updated successfully");
       setIsUpdateModalVisible(false);
@@ -124,18 +125,15 @@ export default function Profile() {
       Alert.alert("Error", "Please fill in all password fields");
       return;
     }
-
     if (newPassword !== confirmPassword) {
       Alert.alert("Error", "New passwords do not match");
       return;
     }
-
     try {
       setActionLoading(true);
       await changePassword(oldPassword, newPassword);
       Alert.alert("Success", "Password changed successfully");
       setIsPasswordModalVisible(false);
-      // Clear password fields
       setOldPassword("");
       setNewPassword("");
       setConfirmPassword("");
@@ -148,7 +146,6 @@ export default function Profile() {
 
   const handleEditAvatar = async () => {
     try {
-      // Request permissions
       const { status } =
         await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== "granted") {
@@ -159,7 +156,6 @@ export default function Profile() {
         return;
       }
 
-      // Launch picker
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
@@ -169,18 +165,13 @@ export default function Profile() {
 
       if (!result.canceled && result.assets && result.assets[0]) {
         const selectedImage = result.assets[0];
-        
-        // Optimistically update the UI with the local URI
-        if (user) {
-          setUser({ ...user, avatar_url: selectedImage.uri });
-        }
+        if (user) setUser({ ...user, avatar_url: selectedImage.uri });
 
-        // Prepare FormData
         const formData = new FormData();
         const uriParts = selectedImage.uri.split(".");
         const fileType = uriParts[uriParts.length - 1];
 
-        // @ts-ignore - React Native FormData expects an object for the file
+        // @ts-ignore
         formData.append("avatar", {
           uri: selectedImage.uri,
           name: `avatar.${fileType}`,
@@ -190,8 +181,6 @@ export default function Profile() {
         setUploadingAvatar(true);
         const updatedUser = await updateAvatar(formData);
         setUser(updatedUser);
-
-        // Update local storage
         await SecureStore.setItemAsync("user", JSON.stringify(updatedUser));
       }
     } catch (error: any) {
@@ -207,85 +196,130 @@ export default function Profile() {
 
   if (loading && !user) {
     return (
-      <View style={[styles.container, { justifyContent: "center" }]}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#3059AD" />
       </View>
     );
   }
 
+  const avatarPullUp = AVATAR_SIZE / 2 + AVATAR_BORDER;
+
   return (
-    <View style={[styles.container, { paddingBottom: insets.bottom + 90 }]}>
-      {/* Avatar Section */}
-      <View style={styles.header}>
-        <LinearGradient
-          colors={["#A5C2F0", "#BCD1F0"]}
-          style={StyleSheet.absoluteFill}
-        />
+    <LinearGradient
+      colors={["#FFFFFF", "rgba(188, 209, 240, 0.4)"]}
+      locations={[0.5, 1]}
+      style={styles.root}
+    >
+      {/* ── topGradient image overlay — identical to chat screen ────── */}
+      <Image
+        source={require("../../assets/images/resultDisplay/topGradient.png")}
+        style={styles.topGradientImg}
+        resizeMode="stretch"
+      />
 
-        {/* Avatar */}
-        {/* Avatar */}
-        <View style={styles.avatarContainer}>
-          <View style={styles.avatarInside}>
-            {user?.avatar_url ? (
-              <Image
-                source={{ uri: user.avatar_url }}
-                style={styles.avatarImage}
-                fadeDuration={0}
-              />
-            ) : (
-              <View style={styles.avatarPlaceholder}>
-                <Ionicons name="person" size={68} color="#3059AD" />
-              </View>
-            )}
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
+        {/* ── Hero Banner ─────────────────────────────────────────────── */}
+        <View style={[styles.hero, { paddingTop: insets.top + 16 }]}>
+          {/* No inner gradient — the topGradient image handles the top colour */}
+          {/* Spacer so the avatar hangs off the bottom */}
+          <View style={{ height: avatarPullUp }} />
+        </View>
 
-            {uploadingAvatar && (
-              <View style={styles.uploadingOverlay}>
-                <ActivityIndicator color="#fff" />
-              </View>
+        {/* ── Avatar ─────────────────────────────────────────────────── */}
+        <View style={[styles.avatarWrapper, { marginTop: -avatarPullUp }]}>
+          <View style={styles.avatarRing}>
+            <View style={styles.avatarInner}>
+              {user?.avatar_url ? (
+                <Image
+                  source={{ uri: user.avatar_url }}
+                  style={styles.avatarImage}
+                  fadeDuration={0}
+                />
+              ) : (
+                <View style={styles.avatarPlaceholder}>
+                  <Ionicons name="person" size={46} color="#3059AD" />
+                </View>
+              )}
+              {uploadingAvatar && (
+                <View style={styles.uploadOverlay}>
+                  <ActivityIndicator color="#fff" />
+                </View>
+              )}
+            </View>
+
+            {!uploadingAvatar && (
+              <TouchableOpacity
+                style={styles.cameraBtn}
+                onPress={handleEditAvatar}
+                activeOpacity={0.85}
+              >
+                <Ionicons name="camera" size={13} color="#fff" />
+              </TouchableOpacity>
             )}
           </View>
+        </View>
 
-          {!uploadingAvatar && (
-            <TouchableOpacity
-              style={styles.editAvatarButton}
-              onPress={handleEditAvatar}
-              activeOpacity={0.8}
+        {/* ── Name & Email ────────────────────────────────────────────── */}
+        <View style={styles.nameBlock}>
+          <MaskedView
+            maskElement={
+              <Text style={styles.displayName}>{user?.name || "User"}</Text>
+            }
+          >
+            <LinearGradient
+              colors={["#12BD37", "#3059AD"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
             >
-              <Ionicons name="camera" size={24} color="#fff" />
-            </TouchableOpacity>
-          )}
+              <Text style={[styles.displayName, { opacity: 0 }]}>
+                {user?.name || "User"}
+              </Text>
+            </LinearGradient>
+          </MaskedView>
+
+          {user?.email ? (
+            <Text style={styles.emailText}>{user.email}</Text>
+          ) : null}
         </View>
-      </View>
 
-      <View style={styles.contentContainer}>
-        <View style={styles.card}>
-          {/* Gradient username */}
-          <GradientText text={user?.name || "User"} />
-
-          {/* Account Actions */}
-          <ProfileItem
-            label="Update Profile"
-            icon="person-outline"
-            onPress={() => setIsUpdateModalVisible(true)}
-          />
-
-          <ProfileItem
-            label="Change Password"
-            icon="lock-closed-outline"
-            onPress={() => setIsPasswordModalVisible(true)}
-          />
-
-          <ProfileItem
-            label="Log Out"
-            icon="log-out-outline"
-            onPress={handleLogout}
-            isDestructive
-            hideBorder
-          />
+        {/* ── ACCOUNT section ─────────────────────────────────────────── */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>ACCOUNT</Text>
+          <View style={styles.sectionCard}>
+            <SettingsRow
+              icon="person-outline"
+              label="Update Profile"
+              onPress={() => setIsUpdateModalVisible(true)}
+            />
+            <View style={styles.divider} />
+            <SettingsRow
+              icon="lock-closed-outline"
+              label="Change Password"
+              onPress={() => setIsPasswordModalVisible(true)}
+            />
+          </View>
         </View>
-      </View>
 
-      {/* Update Profile Modal */}
+        {/* ── SESSION section ─────────────────────────────────────────── */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>SESSION</Text>
+          <View style={styles.sectionCard}>
+            <SettingsRow
+              icon="log-out-outline"
+              label="Log Out"
+              onPress={handleLogout}
+              isDestructive
+            />
+          </View>
+        </View>
+      </ScrollView>
+
+      {/* ── Update Profile Modal ─────────────────────────────────────── */}
       <Modal
         visible={isUpdateModalVisible}
         transparent
@@ -293,7 +327,8 @@ export default function Profile() {
         onRequestClose={() => setIsUpdateModalVisible(false)}
       >
         <View style={styles.modalBackdrop}>
-          <View style={styles.modalContent}>
+          <View style={styles.modalSheet}>
+            <View style={styles.sheetHandle} />
             <Text style={styles.modalTitle}>Update Profile</Text>
 
             <Text style={styles.inputLabel}>Full Name</Text>
@@ -302,26 +337,26 @@ export default function Profile() {
               value={newName}
               onChangeText={setNewName}
               placeholder="Enter your name"
+              placeholderTextColor="#9CA3AF"
               autoFocus
             />
 
-            <View style={styles.modalButtons}>
+            <View style={styles.modalBtns}>
               <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
+                style={[styles.modalBtn, styles.cancelBtn]}
                 onPress={() => setIsUpdateModalVisible(false)}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <Text style={styles.cancelBtnText}>Cancel</Text>
               </TouchableOpacity>
-
               <TouchableOpacity
-                style={[styles.modalButton, styles.saveButton]}
+                style={[styles.modalBtn, styles.saveBtn]}
                 onPress={handleUpdateProfile}
                 disabled={actionLoading}
               >
                 {actionLoading ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
-                  <Text style={styles.saveButtonText}>Save Changes</Text>
+                  <Text style={styles.saveBtnText}>Save Changes</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -329,7 +364,7 @@ export default function Profile() {
         </View>
       </Modal>
 
-      {/* Change Password Modal */}
+      {/* ── Change Password Modal ────────────────────────────────────── */}
       <Modal
         visible={isPasswordModalVisible}
         transparent
@@ -337,15 +372,17 @@ export default function Profile() {
         onRequestClose={() => setIsPasswordModalVisible(false)}
       >
         <View style={styles.modalBackdrop}>
-          <View style={styles.modalContent}>
+          <View style={styles.modalSheet}>
+            <View style={styles.sheetHandle} />
             <Text style={styles.modalTitle}>Change Password</Text>
 
-            <Text style={styles.inputLabel}>Old Password</Text>
+            <Text style={styles.inputLabel}>Current Password</Text>
             <TextInput
               style={styles.input}
               value={oldPassword}
               onChangeText={setOldPassword}
-              placeholder="Enter old password"
+              placeholder="Enter current password"
+              placeholderTextColor="#9CA3AF"
               secureTextEntry
             />
 
@@ -355,6 +392,7 @@ export default function Profile() {
               value={newPassword}
               onChangeText={setNewPassword}
               placeholder="Enter new password"
+              placeholderTextColor="#9CA3AF"
               secureTextEntry
             />
 
@@ -364,210 +402,247 @@ export default function Profile() {
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               placeholder="Confirm new password"
+              placeholderTextColor="#9CA3AF"
               secureTextEntry
             />
 
-            <View style={styles.modalButtons}>
+            <View style={styles.modalBtns}>
               <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
+                style={[styles.modalBtn, styles.cancelBtn]}
                 onPress={() => setIsPasswordModalVisible(false)}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <Text style={styles.cancelBtnText}>Cancel</Text>
               </TouchableOpacity>
-
               <TouchableOpacity
-                style={[styles.modalButton, styles.saveButton]}
+                style={[styles.modalBtn, styles.saveBtn]}
                 onPress={handleChangePassword}
                 disabled={actionLoading}
               >
                 {actionLoading ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
-                  <Text style={styles.saveButtonText}>Change Password</Text>
+                  <Text style={styles.saveBtnText}>Change Password</Text>
                 )}
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
-    </View>
+    </LinearGradient>
   );
 }
 
-function GradientText({ text }: { text: string }) {
-  return (
-    <View style={{ alignItems: "center" }}>
-      <MaskedView maskElement={<Text style={styles.name}>{text}</Text>}>
-        <LinearGradient
-          colors={["#12BD37", "#3059AD"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-        >
-          <Text style={[styles.name, { opacity: 0 }]}>{text}</Text>
-        </LinearGradient>
-      </MaskedView>
-    </View>
-  );
-}
-
-function ProfileItem({
-  label,
+// ─── Settings Row ─────────────────────────────────────────────────────────────
+function SettingsRow({
   icon,
+  label,
   onPress,
   isDestructive = false,
-  hideBorder = false,
 }: {
-  label: string;
   icon: keyof typeof Ionicons.glyphMap;
+  label: string;
   onPress: () => void;
   isDestructive?: boolean;
-  hideBorder?: boolean;
 }) {
+  const iconColor = isDestructive ? "#EF4444" : "#3059AD";
+  const badgeBg = isDestructive ? "#FEF2F2" : "#EBF2FF";
+  const labelColor = isDestructive ? "#EF4444" : "#1F2937";
+  const chevronColor = isDestructive ? "#FCA5A5" : "#B8CBE8";
+
   return (
-    <TouchableOpacity
-      style={[styles.item, hideBorder && { borderBottomWidth: 0 }]}
-      onPress={onPress}
-    >
-      <View style={styles.itemLeft}>
-        <Ionicons
-          name={icon}
-          size={24}
-          color={isDestructive ? "#EF4444" : "#4B5563"}
-          style={{ marginRight: 16 }}
-        />
-        <Text style={[styles.itemText, isDestructive && { color: "#EF4444" }]}>
-          {label}
-        </Text>
+    <TouchableOpacity style={styles.row} onPress={onPress} activeOpacity={0.65}>
+      <View style={[styles.iconBadge, { backgroundColor: badgeBg }]}>
+        <Ionicons name={icon} size={17} color={iconColor} />
       </View>
-      <Ionicons name="chevron-forward" size={20} color="#D1D5DB" />
+      <Text style={[styles.rowLabel, { color: labelColor }]}>{label}</Text>
+      <Ionicons name="chevron-forward" size={15} color={chevronColor} />
     </TouchableOpacity>
   );
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
-    backgroundColor: "#BCD1F0",
   },
-  header: {
-    height: 210, // Slightly taller for more presence
-    alignItems: "center",
+  loadingContainer: {
+    flex: 1,
     justifyContent: "center",
-    borderBottomLeftRadius: 40,
-    borderBottomRightRadius: 40,
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
   },
-  avatarContainer: {
+
+  // ── Chat-matching top gradient image ──────────────────────────────
+  topGradientImg: {
     position: "absolute",
-    bottom: -80, // Sits half-way out of the header
-    width: 160,
-    height: 160,
-    borderRadius: 80,
+    top: 0,
+    left: 0,
+    right: 0,
+    width: "100%",
+    height: 200,
+  },
+
+  // ── Hero ──────────────────────────────────────────────────────────
+  hero: {
+    height: HERO_HEIGHT,
+    alignItems: "center",
+    justifyContent: "flex-start",
+    paddingHorizontal: 20,
+  },
+
+  // ── Avatar ────────────────────────────────────────────────────────
+  avatarWrapper: {
+    alignItems: "center",
+    marginBottom: 6,
+  },
+  avatarRing: {
+    width: AVATAR_SIZE + AVATAR_BORDER * 2,
+    height: AVATAR_SIZE + AVATAR_BORDER * 2,
+    borderRadius: (AVATAR_SIZE + AVATAR_BORDER * 2) / 2,
     backgroundColor: "#fff",
-    borderWidth: 6, // Increased border thickness
-    borderColor: "#fff",
-    elevation: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    overflow: "visible", // To allow button to show clearly
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: "#3059AD",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 14,
   },
-  avatarInside: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 80,
-    overflow: "hidden", // Force all children (image, overlay) to be circular
-    backgroundColor: "#F3F4F6", // Consistent background color
+  avatarInner: {
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
+    borderRadius: AVATAR_SIZE / 2,
+    overflow: "hidden",
+    backgroundColor: "#D5E6FF",
   },
   avatarImage: {
     width: "100%",
     height: "100%",
   },
   avatarPlaceholder: {
-    width: "100%",
-    height: "100%",
-    backgroundColor: "#F3F4F6",
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 80,
+    backgroundColor: "#D5E6FF",
   },
-  editAvatarButton: {
+  cameraBtn: {
     position: "absolute",
-    bottom: 4,
-    right: 4,
+    bottom: 5,
+    right: 5,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: "#3059AD",
-    width: 48,
-    height: 48,
-    borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 4,
+    borderWidth: 2.5,
     borderColor: "#fff",
-    elevation: 8,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
-    shadowRadius: 6,
+    shadowRadius: 4,
+    elevation: 6,
   },
-  uploadingOverlay: {
+  uploadOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    backgroundColor: "rgba(0,0,0,0.4)",
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 80,
   },
-  card: {
-    marginTop: 110, // Push below the avatar (which is -80)
-    marginHorizontal: 20,
-    backgroundColor: "#fff",
-    borderRadius: 32,
+
+  // ── Name block ────────────────────────────────────────────────────
+  nameBlock: {
+    alignItems: "center",
+    marginTop: 10,
+    marginBottom: 28,
     paddingHorizontal: 24,
-    paddingTop: 32,
-    paddingBottom: 16,
-    elevation: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
   },
-  name: {
-    fontSize: 32,
+  displayName: {
+    fontSize: 35,
     fontWeight: "700",
-    marginBottom: 32,
+    letterSpacing: -0.3,
     textAlign: "center",
-    letterSpacing: -0.5,
   },
-  item: {
+  emailText: {
+    marginTop: 4,
+    fontSize: 16,
+    color: "#6B7280",
+    fontWeight: "500",
+  },
+
+  // ── Sections ──────────────────────────────────────────────────────
+  section: {
+    marginHorizontal: 20,
+    marginBottom: 18,
+  },
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#8FA8CC",
+    letterSpacing: 1.3,
+    marginBottom: 8,
+    marginLeft: 6,
+  },
+  sectionCard: {
+    backgroundColor: "#D4E6FA",
+    borderRadius: 18,
+    overflow: "hidden",
+    shadowColor: "#3059AD",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    elevation: 5,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "#EEF3FB",
+    marginLeft: 58,
+  },
+  row: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 18,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
+    paddingVertical: 14,
+    paddingHorizontal: 16,
   },
-  itemLeft: {
-    flexDirection: "row",
+  iconBadge: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
     alignItems: "center",
+    justifyContent: "center",
+    marginRight: 14,
   },
-  itemText: {
-    fontSize: 17,
-    color: "#1F2937",
+  rowLabel: {
+    flex: 1,
+    fontSize: 16,
     fontWeight: "600",
   },
-  // Modal Styles
+
+  // ── Modals ────────────────────────────────────────────────────────
   modalBackdrop: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    padding: 20,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "flex-end",
   },
-  modalContent: {
+  modalSheet: {
     backgroundColor: "#fff",
-    borderRadius: 24,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     padding: 24,
+    paddingBottom: 40,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
     elevation: 20,
+  },
+  sheetHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#E5E7EB",
+    alignSelf: "center",
+    marginBottom: 20,
   },
   modalTitle: {
     fontSize: 20,
@@ -577,51 +652,49 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "600",
-    color: "#4B5563",
-    marginBottom: 8,
+    color: "#6B7280",
+    marginBottom: 6,
+    marginLeft: 2,
   },
   input: {
     backgroundColor: "#F9FAFB",
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: "#E5E7EB",
     borderRadius: 12,
-    padding: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     fontSize: 16,
-    marginBottom: 16,
+    marginBottom: 14,
     color: "#1F2937",
   },
-  modalButtons: {
+  modalBtns: {
     flexDirection: "row",
     gap: 12,
-    marginTop: 8,
+    marginTop: 6,
   },
-  modalButton: {
+  modalBtn: {
     flex: 1,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
   },
-  cancelButton: {
+  cancelBtn: {
     backgroundColor: "#F3F4F6",
   },
-  saveButton: {
+  saveBtn: {
     backgroundColor: "#3059AD",
   },
-  cancelButtonText: {
-    color: "#4B5563",
+  cancelBtnText: {
+    color: "#6B7280",
     fontWeight: "600",
     fontSize: 16,
   },
-  saveButtonText: {
+  saveBtnText: {
     color: "#fff",
-    fontWeight: "600",
+    fontWeight: "700",
     fontSize: 16,
-  },
-  contentContainer: {
-    flex: 1,
-    // Removed justifyContent: "center" to prevent card from being pulled up
   },
 });
