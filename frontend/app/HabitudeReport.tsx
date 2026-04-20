@@ -32,12 +32,8 @@ const HabitudeReport = () => {
     const sometimesMe = habitudeResult?.sometimes_me ?? 0;
     const notMe = habitudeResult?.not_me ?? 0;
 
-    const totalThatsMe = resultData ? HABITUDES.reduce((total, h) => {
-        const k = h.id.toLowerCase() as keyof AssessmentResultsData;
-        return total + (resultData[k]?.thats_me ?? 0);
-    }, 0) : 0;
-
-    const percent = totalThatsMe > 0 ? Math.round((score / totalThatsMe) * 100) : 0;
+    const QUESTIONS_PER_SECTION = 9;
+    const percent = Math.round((score / QUESTIONS_PER_SECTION) * 100);
     const tier = getScoreTier(score);
     const content = habitude?.scoreContent[tier];
   
