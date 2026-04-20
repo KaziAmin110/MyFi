@@ -20,7 +20,6 @@ const cards = [
     subtext: "Your Habits + Attitudes = Your Money Personality",
     imageSz: 200,
     subtextSize: moderateScale(18),
-    imageMarginBottom: verticalScale(45),
     subtextMarginTop: verticalScale(15),
     fontWeight: "400",
     slidePadding: moderateVerticalScale(120),
@@ -142,14 +141,15 @@ export default function Index() {
           <Text style={styles.primaryBtnTxt}>Get Started</Text>
         </Pressable>
 
-        <Link href="/login" asChild>
+        
           <Text style={{ fontSize: moderateScale(15) }}>
             Have an account?{" "}
-            <Text style={{ color: "#345995", fontWeight: "700"}}>
-              Log in
-            </Text>
+            <Link href="/login" asChild>
+                <Text style={{ color: "#345995", fontWeight: "700" }}>
+                  Log in
+                </Text>
+            </Link>
           </Text>
-        </Link>
       </View>
     </View>
   );
