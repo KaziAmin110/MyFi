@@ -7,7 +7,6 @@ import {
   ScrollView,
   SafeAreaView,
   Platform,
-  ActivityIndicator,
   Alert,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -16,6 +15,10 @@ import { useRouter, useFocusEffect, useLocalSearchParams } from "expo-router";
 import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
 import { appointmentsApi, userApi } from "../../utils/api";
+
+import { SkeletonReminderCard } from "../../components/reminders/SkeletonReminderCard";
+import { ReminderCard } from "../../components/reminders/ReminderCard";
+import { EmptyReminderState } from "../../components/reminders/EmptyReminderState";
 
 const RemindersScreen = () => {
   const router = useRouter();
@@ -127,9 +130,8 @@ const RemindersScreen = () => {
 
       if (!projectId) {
         console.warn(
-          "Push notifications are not configured: Missing EAS project ID in app.json"
+          "Push notifications are not configured: Missing EAS project ID in app.json",
         );
-        // We still return true to allow the user to proceed without push notifications
         return true;
       }
 
@@ -194,96 +196,27 @@ const RemindersScreen = () => {
         </View>
 
         {loading ? (
-          <View
-            style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
           >
-            <ActivityIndicator size="large" color="#3B66C5" />
-          </View>
+            <SkeletonReminderCard />
+            <SkeletonReminderCard />
+            <SkeletonReminderCard />
+          </ScrollView>
         ) : (
           <ScrollView contentContainerStyle={styles.scrollContent}>
             {filteredReminders.length === 0 ? (
-              <View style={styles.emptyStateContainer}>
-                <View style={styles.emptyStateCard}>
-                  <View style={styles.emptyStateIconContainer}>
-                    <Ionicons
-                      name="calendar-outline"
-                      size={40}
-                      color="#3B66C5"
-                    />
-                  </View>
-                  <Text style={styles.emptyStateTitle}>No Reminders</Text>
-                  <Text style={styles.emptyStateSubtitle}>
-                    {activeTab === "All"
-                      ? "You haven't created any reminders yet. Tap the + button below to get started."
-                      : "You don't have any upcoming reminders. Tap the + button below to add one."}
-                  </Text>
-                </View>
-              </View>
+              <EmptyReminderState activeTab={activeTab} />
             ) : (
               filteredReminders.map((reminder) => (
-                <View
+                <ReminderCard
                   key={`${reminder.type}-${reminder.id}`}
-                  style={[
-                    styles.reminderCard,
-                    !reminder.active && styles.inactiveCard,
-                    highlightDate === reminder.date && styles.highlightedCard,
-                  ]}
-                >
-                  <View style={styles.cardHeader}>
-                    <View style={styles.timeInfo}>
-                      <Text style={styles.timeText}>{reminder.time}</Text>
-                      <Text
-                        style={[
-                          styles.reminderTitle,
-                          reminder.active
-                            ? styles.activeTitle
-                            : styles.inactiveTitle,
-                        ]}
-                      >
-                        {reminder.title}
-                      </Text>
-                      {reminder.description && (
-                        <Text style={styles.descriptionText}>
-                          {reminder.description}
-                        </Text>
-                      )}
-                    </View>
-
-                    <View
-                      style={[
-                        styles.calendarBadge,
-                        !reminder.active && styles.inactiveBadge,
-                      ]}
-                    >
-                      <View
-                        style={[
-                          styles.monthStrip,
-                          !reminder.active && styles.inactiveMonthStrip,
-                        ]}
-                      >
-                        <Text style={styles.monthText}>{reminder.month}</Text>
-                      </View>
-                      <Text style={styles.dayText}>{reminder.day}</Text>
-                    </View>
-                  </View>
-
-                  {reminder.active && (
-                    <View style={styles.cardFooter}>
-                      <TouchableOpacity
-                        style={styles.cancelButton}
-                        onPress={() => handleDelete(reminder.id)}
-                      >
-                        <Text style={styles.cancelText}>Cancel</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.editButton}
-                        onPress={() => handleEdit(reminder)}
-                      >
-                        <Text style={styles.editText}>Edit</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                </View>
+                  reminder={reminder}
+                  highlightDate={highlightDate}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
               ))
             )}
           </ScrollView>
@@ -367,115 +300,6 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
     flexGrow: 1,
   },
-  reminderCard: {
-    backgroundColor: "white",
-    borderRadius: 24,
-    padding: 24,
-    marginBottom: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  inactiveCard: {
-    backgroundColor: "#E8E8E8",
-    shadowOpacity: 0,
-  },
-  highlightedCard: {
-    borderColor: "#3B66C5",
-    borderWidth: 2,
-  },
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  timeInfo: {
-    flex: 1,
-  },
-  timeText: {
-    fontSize: 14,
-    color: "#888",
-    marginBottom: 4,
-  },
-  reminderTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    marginBottom: 8,
-  },
-  activeTitle: {
-    color: "#3B66C5",
-  },
-  inactiveTitle: {
-    color: "#999",
-  },
-  descriptionText: {
-    fontSize: 15,
-    color: "#555",
-    lineHeight: 20,
-  },
-  calendarBadge: {
-    width: 60,
-    height: 70,
-    borderWidth: 1,
-    borderColor: "#3B66C5",
-    borderRadius: 10,
-    alignItems: "center",
-    overflow: "hidden",
-  },
-  inactiveBadge: {
-    borderColor: "#999",
-  },
-  monthStrip: {
-    backgroundColor: "white",
-    width: "100%",
-    paddingVertical: 4,
-    alignItems: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: "#3B66C5",
-  },
-  inactiveMonthStrip: {
-    borderBottomColor: "#999",
-  },
-  monthText: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#3B66C5",
-  },
-  dayText: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: "#333",
-    marginTop: 8,
-  },
-  cardFooter: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 24,
-  },
-  cancelButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 30,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "#DDD",
-  },
-  cancelText: {
-    color: "#888",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  editButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 40,
-    borderRadius: 20,
-    backgroundColor: "#3B66C5",
-  },
-  editText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
-  },
   addButton: {
     position: "absolute",
     bottom: 30,
@@ -491,46 +315,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 5,
     elevation: 8,
-  },
-  emptyStateContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 60,
-  },
-  emptyStateCard: {
-    backgroundColor: "white",
-    borderRadius: 24,
-    paddingVertical: 40,
-    paddingHorizontal: 24,
-    alignItems: "center",
-    width: "100%",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  emptyStateIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: "rgba(59, 102, 197, 0.1)",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 24,
-  },
-  emptyStateTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#333",
-    marginBottom: 12,
-  },
-  emptyStateSubtitle: {
-    fontSize: 16,
-    color: "#666",
-    textAlign: "center",
-    lineHeight: 24,
   },
 });
 

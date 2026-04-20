@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { useRef, useCallback } from "react";
 import * as Haptics from "expo-haptics";
-import { moderateScale, moderateVerticalScale } from "./../utils/scale";
+import { moderateScale } from "./../utils/scale";
 
 type Habit = {
   id: string;
@@ -27,13 +27,19 @@ type HabitCardsProps = {
   onSelect: (habit: Habit) => void;
 };
 
-const AnimatedCard = ({ item, onSelect }: { item: Habit; onSelect: (habit: Habit) => void }) => {
+const AnimatedCard = ({
+  item,
+  onSelect,
+}: {
+  item: Habit;
+  onSelect: (habit: Habit) => void;
+}) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
-  const { width, height } = useWindowDimensions();
+  const { height } = useWindowDimensions();
 
-  // Responsive: ~20% of screen height, capped between 140–165pt
-  // Smaller cap prevents the cards crowding the tab bar on iPhone SE
-  const cardHeight = Math.min(Math.max(height * 0.20, 110), 165);
+  // Responsive: ~23% of screen height, capped between 130–190pt
+  // Adjusted larger to better fill screen bottom gap
+  const cardHeight = Math.min(Math.max(height * 0.23, 130), 190);
   // Width proportional to height
   const cardWidth = cardHeight * 0.72;
 
@@ -57,20 +63,36 @@ const AnimatedCard = ({ item, onSelect }: { item: Habit; onSelect: (habit: Habit
   };
 
   return (
-    <Animated.View style={[styles.pressable, { transform: [{ scale: scaleAnim }] }]}>
+    <Animated.View
+      style={[styles.pressable, { transform: [{ scale: scaleAnim }] }]}
+    >
       <Pressable
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         onPress={() => onSelect(item)}
       >
-        <View style={[styles.outerCard, { borderColor: item.borderColor, width: cardWidth, height: cardHeight }]}>
+        <View
+          style={[
+            styles.outerCard,
+            {
+              borderColor: item.borderColor,
+              width: cardWidth,
+              height: cardHeight,
+            },
+          ]}
+        >
           <View style={[styles.innerBorder, { borderColor: item.borderColor }]}>
             <View style={styles.cardContent}>
-              <Text style={styles.title}>{item.title}</Text>
+              <Text style={styles.title} numberOfLines={1} adjustsFontSizeToFit>
+                {item.title}
+              </Text>
               <View style={styles.imageContainer}>
                 <Image
                   source={item.image}
-                  style={[styles.icon, { height: cardHeight * 0.45, width: cardWidth * 0.7 }]}
+                  style={[
+                    styles.icon,
+                    { height: cardHeight * 0.5, width: cardWidth * 0.75 },
+                  ]}
                   resizeMode="contain"
                 />
               </View>
@@ -284,7 +306,7 @@ const styles = StyleSheet.create({
   },
   title: {
     width: "100%",
-    fontSize: moderateScale(13),
+    fontSize: moderateScale(15),
     fontWeight: "700",
     color: "#5A5A5A",
     textAlign: "center",
@@ -295,7 +317,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   icon: {
-    height: 95,
-    width: 95,
+    height: 100,
+    width: 100,
   },
 });
