@@ -14,6 +14,7 @@ import * as AuthSession from "expo-auth-session";
 import { supabase } from "../../lib/supabase";
 import { getUserContext } from "../../services/user.service";
 import { API_URL as BASE_URL } from "../../utils/api";
+import {scale, verticalScale, moderateScale, moderateVerticalScale} from "../../utils/scale";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -35,7 +36,7 @@ export async function signIn(data: { email: string; password: string }) {
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false); // Track password visibility
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -62,7 +63,6 @@ const Login = () => {
       const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUri);
 
       if (result.type === "success" && result.url) {
-        // Parse the token from the URL fragment
         const fragment = result.url.split("#")[1];
         if (!fragment) throw new Error("No fragment found in redirect URL");
 
@@ -76,7 +76,6 @@ const Login = () => {
 
         if (!supabase_access_token) throw new Error("No access token found in redirect URL");
 
-        // Exchange Supabase token for our backend JWT
         const res = await fetch(`${API_URL}/google-signin`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -118,7 +117,6 @@ const Login = () => {
     }
   }, []);
 
-
   const handleLogin = async () => {
     setLoading(true);
     setError("");
@@ -126,21 +124,15 @@ const Login = () => {
     try {
       const data = await signIn({ email, password });
 
-      // Extract what the backend returns
       const token = data.accessToken ?? data.token ?? data.jwt;
       const refreshToken = data.refreshToken;
       const user = data.user;
 
-      // Store safely
       if (token) await SecureStore.setItemAsync("token", String(token));
       if (refreshToken)
         await SecureStore.setItemAsync("refreshToken", String(refreshToken));
+      if (user) await SecureStore.setItemAsync("user", JSON.stringify(user));
 
-      if (user) {
-        await SecureStore.setItemAsync("user", JSON.stringify(user));
-      }
-
-      // Check onboarding status before navigating
       try {
         const context = await getUserContext();
         if (!context.user.onboarding_completed) {
@@ -149,7 +141,6 @@ const Login = () => {
           router.replace("/account/dashboard");
         }
       } catch (contextErr) {
-        // Fallback — if context call fails, go to dashboard
         console.error("Failed to fetch user context:", contextErr);
         router.replace("/account/dashboard");
       }
@@ -161,43 +152,52 @@ const Login = () => {
   };
 
   return (
-    <ScrollView className="flex-1 px-6 pt-16 bg-white">
-      <TouchableOpacity onPress={() => router.replace("/")} className="mb-8">
+    <ScrollView
+      style={{ paddingHorizontal: scale(24) }}
+      className="flex-1 bg-white"
+      contentContainerStyle={{ paddingTop: verticalScale(32), paddingBottom: verticalScale(40) }}
+    >
+      <TouchableOpacity onPress={() => router.replace("/")} style={{ marginBottom: verticalScale(32) }}
+       hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
+       >
         <Image
           source={require("../../assets/images/back.png")}
-          className="w-6 h-6"
+          style={{ width: scale(24), height: scale(24) }}
           resizeMode="contain"
         />
       </TouchableOpacity>
 
-      <Text className="text-center #151414 text-3xl font-semibold mb-8">
+      <Text style={{ fontSize: moderateScale(32), marginBottom: verticalScale(45) }} className="text-center text-[#151414] font-semibold">
         Welcome Back!
       </Text>
 
-      <Text className="mb-1 font-medium text-black">Email Address</Text>
+      <Text style={{ fontSize: moderateScale(16), marginBottom: verticalScale(4) }} className="font-medium text-black">Email Address</Text>
       <TextInput
         value={email}
         onChangeText={setEmail}
-        keyboardType="email-address" // Show "@" key on the keyboard
-        autoCapitalize="none" // prevent capitalization of the first letter
-        autoComplete="email" // iOS autofill
-        autoCorrect={false} // disable autocorrect
-        placeholder="Enter your email address"
-        placeholderTextColor="#BABABA"
-        className="px-4 py-3 mb-4 bg-light rounded-xl"
+        keyboardType="email-address"
+        autoCapitalize="none"
+        autoComplete="email"
+        autoCorrect={false}
+        placeholder="moneyhabitudes@example.com"
+        placeholderTextColor="#797676"  
+        style={{ paddingVertical: verticalScale(12), paddingHorizontal: scale(16), fontSize: moderateScale(15), marginBottom: verticalScale(14) }}
+        className="bg-white rounded-xl border border-[#747775]"
       />
-      <Text className="mb-1 font-medium text-black">Password</Text>
-      <View className="flex-row items-center px-4 py-3 mb-4 bg-light rounded-xl">
+
+      <Text style={{ fontSize: moderateScale(16), marginBottom: verticalScale(4) }} className="font-medium text-black">Password</Text>
+      <View style={{ paddingVertical: verticalScale(12), paddingHorizontal: scale(16), marginBottom: verticalScale(14) }} 
+      className="bg-white rounded-xl border border-[#747775] flex-row items-center">
         <TextInput
           secureTextEntry={!showPassword}
           value={password}
           onChangeText={setPassword}
-          autoCapitalize="none" // prevent capitalization of the first letter
-          placeholder="••••••••••"
-          placeholderTextColor="#BABABA"
+          autoCapitalize="none"   
+          placeholder="•••••••••••••••"
+          placeholderTextColor="#797676"
+          style={{ fontSize: moderateScale(15) }}
           className="flex-1"
         />
-
         <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
           <Image
             source={
@@ -205,60 +205,64 @@ const Login = () => {
                 ? require("../../assets/images/eye-off.png")
                 : require("../../assets/images/eye.png")
             }
-            className="w-4 h-4"
+            style={{ width: scale(18), height: scale(18) }}
             resizeMode="contain"
           />
         </TouchableOpacity>
       </View>
 
-      <Link href="/forgot_password" className="text-right text-sm #111010">
+      <Link href="/forgot_password" style={{ fontSize: moderateScale(13), textAlign: "right", color: "#111010", marginBottom: verticalScale(8) }}>
         Forgot password?
       </Link>
 
-      {error ? <Text className="text-red-500 mb-2">{error}</Text> : null}
+      {error ? <Text style={{ fontSize: moderateScale(13) }} className="text-red-500 mb-2">{error}</Text> : null}
 
       <TouchableOpacity
         disabled={loading}
         onPress={handleLogin}
-        className="py-4 mt-5 mb-20 bg-primary rounded-xl shadow-md shadow-blue-200"
-      >
-        <Text className="text-lg font-medium text-center text-white">
-          {loading ? "Logging in..." : "Log in"}
+        style={{ paddingVertical: verticalScale(14), marginTop: verticalScale(16), marginBottom: verticalScale(24) }}
+        className="bg-primary shadow-md shadow-blue-200 rounded-full"
+      > 
+        <Text style={{ fontSize: moderateScale(17) }} className="text-center text-white font-semibold">
+          {loading ? "Logging in..." : "Login"}
         </Text>
       </TouchableOpacity>
 
-      <View className="flex-row items-center mb-6">
-        <View className="flex-1 h-px bg-black" />
-        <Text className="mx-3 text-black">Log in with</Text>
-        <View className="flex-1 h-px bg-black" />
+      <View style={{ marginBottom: verticalScale(20) }} className="flex-row items-center">
+        <View className="flex-1 h-px bg-[#747775]" />
+        <Text style={{ fontSize: moderateScale(16) }} className="mx-3 text-black">Or</Text>
+        <View className="flex-1 h-px bg-[#747775]" />
       </View>
 
-      <View className="flex-row justify-center mb-10 space-x-8">
-        <TouchableOpacity
-          disabled={loading}
-          onPress={handleGoogleLogin}
-        >
-          <Image
-            source={require("../../assets/images/google.png")}
-            className="w-10 h-10 mr-5"
-            resizeMode="contain"
-          />
-        </TouchableOpacity>
-
-        <TouchableOpacity>
-          <Image
-            source={require("../../assets/images/apple.png")}
-            className="w-10 h-10 ml-5"
-            resizeMode="contain"
-          />
-        </TouchableOpacity>
+      <View className="mb-4 items-center w-full">
+            <TouchableOpacity
+                disabled={loading}
+                onPress={handleGoogleLogin}
+                className={`flex-row items-center justify-center w-full rounded-full border border-[#747775] bg-white px-4 py-3 gap-x-2.5 ${loading ? "opacity-60" : "opacity-100"}`}
+                activeOpacity={0.7}
+                
+            >
+                <Image
+                source={require("../../assets/images/google.png")}
+                style={{ width: scale(25), height: scale(25) }}
+                resizeMode="contain"
+                />
+                <Text className="font-medium text-lg text-[#1F1F1F] tracking-wide">
+                Continue with Google
+                </Text>
+            </TouchableOpacity>
       </View>
 
-      <View className="flex-row justify-center pb-10">
-        <Text className="text-black">Don&apos;t have an account? </Text>
-        <Link href="/register" className="font-semibold text-black">
-          Sign up
-        </Link>
+      <View className="flex-row justify-center">
+          <Text style={{ fontSize: moderateScale(15) }}>
+            Don't have an account?{" "}
+            <Link href="/register" asChild>
+              <Text style={{ color: "#345995", fontWeight: "700" }}>
+                Sign up
+              </Text>
+            </Link>
+          </Text>
+
       </View>
     </ScrollView>
   );
