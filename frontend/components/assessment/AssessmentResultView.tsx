@@ -49,11 +49,11 @@ const AssessmentResultView: React.FC<AssessmentResultViewProps> = ({
     return { ...h, score };
   });
 
-  const totalThatsMe = habitudes.reduce((sum, item) => sum + item.score, 0);
+  const QUESTIONS_PER_SECTION = 9;
 
   const habitudesWithPercent = habitudes.map((h) => ({
     ...h,
-    percent: totalThatsMe > 0 ? Math.round((h.score / totalThatsMe) * 100) : 0,
+    percent: Math.round((h.score / QUESTIONS_PER_SECTION) * 100),
   }));
 
   const sortedHabitudes = [...habitudesWithPercent].sort(

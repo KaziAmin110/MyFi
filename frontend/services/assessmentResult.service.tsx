@@ -126,7 +126,7 @@ export const AssessmentResultProvider = ({
     } finally {
       setLoading(false);
     }
-  }, [loading, resultData]);
+  }, [loading]);
 
   const clearAssessmentResults = useCallback(() => {
     setResultData(null);
